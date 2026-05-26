@@ -2094,10 +2094,11 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	reqModel, reqStream, promptCacheKey := extractOpenAIRequestMetaFromBody(body)
 	originalModel := reqModel
 
-	if account.Type == AccountTypeAPIKey && !openai_compat.ShouldUseResponsesAPI(account.Extra) {
+	if account.Type == AccountTypeAPIKey && openai_compat.ShouldRouteResponsesViaChatCompletions(account.Extra) {
 		return s.forwardResponsesViaRawChatCompletions(ctx, c, account, body)
 	}
 
+	preserveEndpointMode := account.Type == AccountTypeAPIKey && openai_compat.IsPreserveEndpointMode(account.Extra)
 	compatMessagesBridge := isOpenAICompatMessagesBridgeBody(body)
 	setOpenAICompatMessagesBridgeContext(c, compatMessagesBridge)
 
@@ -2227,7 +2228,8 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	}
 
 	// 非透传模式下，instructions 为空时注入默认指令。
-	if isInstructionsEmpty(reqBody) && !compatMessagesBridge {
+	// preserve_endpoint 表示按客户端入站端点直达上游，不能替客户端补协议字段。
+	if isInstructionsEmpty(reqBody) && !compatMessagesBridge && !preserveEndpointMode {
 		reqBody["instructions"] = "You are a helpful coding assistant."
 		bodyModified = true
 		markPatchSet("instructions", "You are a helpful coding assistant.")

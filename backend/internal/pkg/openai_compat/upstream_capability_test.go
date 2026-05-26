@@ -18,6 +18,7 @@ func TestResolveResponsesSupport(t *testing.T) {
 		{"value nil", map[string]any{ExtraKeyResponsesSupported: nil}, ResponsesSupportUnknown},
 		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses)}, ResponsesSupportYes},
 		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions)}, ResponsesSupportNo},
+		{"preserve endpoint follows probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: true}, ResponsesSupportYes},
 		{"auto follows probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeAuto), ExtraKeyResponsesSupported: false}, ResponsesSupportNo},
 		{"invalid mode follows probe", map[string]any{ExtraKeyResponsesMode: "bogus", ExtraKeyResponsesSupported: true}, ResponsesSupportYes},
 		{"force responses overrides probe false", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, ResponsesSupportYes},
@@ -52,6 +53,7 @@ func TestShouldUseResponsesAPI(t *testing.T) {
 		// 手动覆盖：覆盖自动探测结果
 		{"force responses overrides unsupported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, true},
 		{"force chat completions overrides supported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions), ExtraKeyResponsesSupported: true}, false},
+		{"preserve endpoint keeps chat on chat", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: true}, false},
 	}
 
 	for _, tc := range tests {
@@ -74,6 +76,7 @@ func TestNormalizeResponsesSupportMode(t *testing.T) {
 		{"auto", "auto", ResponsesSupportModeAuto},
 		{"force responses", "force_responses", ResponsesSupportModeForceResponses},
 		{"force chat completions", "force_chat_completions", ResponsesSupportModeForceChatCompletions},
+		{"preserve endpoint", "preserve_endpoint", ResponsesSupportModePreserveEndpoint},
 		{"invalid", "enabled", ResponsesSupportModeAuto},
 	}
 
@@ -82,6 +85,55 @@ func TestNormalizeResponsesSupportMode(t *testing.T) {
 			got := NormalizeResponsesSupportMode(tc.mode)
 			if got != tc.want {
 				t.Errorf("NormalizeResponsesSupportMode(%q) = %q, want %q", tc.mode, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsPreserveEndpointMode(t *testing.T) {
+	tests := []struct {
+		name  string
+		extra map[string]any
+		want  bool
+	}{
+		{"nil", nil, false},
+		{"auto", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeAuto)}, false},
+		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses)}, false},
+		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions)}, false},
+		{"preserve endpoint", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint)}, true},
+		{"invalid", map[string]any{ExtraKeyResponsesMode: "bogus"}, false},
+		{"non string", map[string]any{ExtraKeyResponsesMode: true}, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := IsPreserveEndpointMode(tc.extra)
+			if got != tc.want {
+				t.Errorf("IsPreserveEndpointMode(%v) = %v, want %v", tc.extra, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestShouldRouteResponsesViaChatCompletions(t *testing.T) {
+	tests := []struct {
+		name  string
+		extra map[string]any
+		want  bool
+	}{
+		{"unknown keeps responses", nil, false},
+		{"supported keeps responses", map[string]any{ExtraKeyResponsesSupported: true}, false},
+		{"unsupported routes responses via chat", map[string]any{ExtraKeyResponsesSupported: false}, true},
+		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions), ExtraKeyResponsesSupported: true}, true},
+		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, false},
+		{"preserve endpoint keeps responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: false}, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ShouldRouteResponsesViaChatCompletions(tc.extra)
+			if got != tc.want {
+				t.Errorf("ShouldRouteResponsesViaChatCompletions(%v) = %v, want %v", tc.extra, got, tc.want)
 			}
 		})
 	}

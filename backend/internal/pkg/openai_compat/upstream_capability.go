@@ -47,11 +47,16 @@ const (
 
 	// ResponsesSupportModeForceChatCompletions 强制使用 /v1/chat/completions。
 	ResponsesSupportModeForceChatCompletions ResponsesSupportMode = "force_chat_completions"
+
+	// ResponsesSupportModePreserveEndpoint 保持客户端入站端点，不做
+	// Chat Completions <-> Responses 的跨协议自动转换。
+	ResponsesSupportModePreserveEndpoint ResponsesSupportMode = "preserve_endpoint"
 )
 
 // ExtraKeyResponsesMode 是 accounts.extra JSON 中存储手动覆盖模式的键名。
 // 值类型为 string：auto=跟随探测，force_responses=强制 Responses，
-// force_chat_completions=强制 Chat Completions。
+// force_chat_completions=强制 Chat Completions，
+// preserve_endpoint=保持客户端入站端点。
 const ExtraKeyResponsesMode = "openai_responses_mode"
 
 // ExtraKeyResponsesSupported 是 accounts.extra JSON 中存储自动探测结果的键名。
@@ -66,9 +71,20 @@ func NormalizeResponsesSupportMode(mode string) ResponsesSupportMode {
 		return ResponsesSupportModeForceResponses
 	case ResponsesSupportModeForceChatCompletions:
 		return ResponsesSupportModeForceChatCompletions
+	case ResponsesSupportModePreserveEndpoint:
+		return ResponsesSupportModePreserveEndpoint
 	default:
 		return ResponsesSupportModeAuto
 	}
+}
+
+// IsPreserveEndpointMode 判断账号是否显式配置为保持客户端入站端点。
+func IsPreserveEndpointMode(extra map[string]any) bool {
+	if extra == nil {
+		return false
+	}
+	mode, ok := extra[ExtraKeyResponsesMode].(string)
+	return ok && NormalizeResponsesSupportMode(mode) == ResponsesSupportModePreserveEndpoint
 }
 
 // ResolveResponsesSupport 从账号的 extra map 中读取手动覆盖模式与探测标记。
@@ -85,6 +101,9 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 			return ResponsesSupportYes
 		case ResponsesSupportModeForceChatCompletions:
 			return ResponsesSupportNo
+		case ResponsesSupportModePreserveEndpoint:
+			// "保持入站端点"不是上游能力判断：Chat 入站走 Chat，
+			// Responses 入站走 Responses。继续读取探测标记以供状态展示。
 		}
 	}
 	v, ok := extra[ExtraKeyResponsesSupported]
@@ -111,5 +130,37 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 // 仅当账号已探测且确认不支持时返回 false，此时调用方应走 CC 直转路径
 // （详见 internal/service/openai_gateway_chat_completions_raw.go）。
 func ShouldUseResponsesAPI(extra map[string]any) bool {
+	return ShouldRouteChatCompletionsViaResponses(extra)
+}
+
+// ShouldRouteChatCompletionsViaResponses 判断入站 /v1/chat/completions
+// 是否应转换为上游 /v1/responses。
+func ShouldRouteChatCompletionsViaResponses(extra map[string]any) bool {
+	if extra != nil {
+		if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
+			switch NormalizeResponsesSupportMode(mode) {
+			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModeForceChatCompletions:
+				return false
+			case ResponsesSupportModeForceResponses:
+				return true
+			}
+		}
+	}
 	return ResolveResponsesSupport(extra) != ResponsesSupportNo
+}
+
+// ShouldRouteResponsesViaChatCompletions 判断入站 /v1/responses 是否应转换为
+// 上游 /v1/chat/completions。
+func ShouldRouteResponsesViaChatCompletions(extra map[string]any) bool {
+	if extra != nil {
+		if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
+			switch NormalizeResponsesSupportMode(mode) {
+			case ResponsesSupportModeForceChatCompletions:
+				return true
+			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModeForceResponses:
+				return false
+			}
+		}
+	}
+	return ResolveResponsesSupport(extra) == ResponsesSupportNo
 }

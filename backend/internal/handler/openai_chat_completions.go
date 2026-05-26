@@ -312,7 +312,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 // CC→Responses conversion path.
 func resolveRawCCUpstreamEndpoint(c *gin.Context, account *service.Account) string {
 	if account != nil && account.Type == service.AccountTypeAPIKey &&
-		!openai_compat.ShouldUseResponsesAPI(account.Extra) {
+		!openai_compat.ShouldRouteChatCompletionsViaResponses(account.Extra) {
 		return "/v1/chat/completions"
 	}
 	return GetUpstreamEndpoint(c, account.Platform)
