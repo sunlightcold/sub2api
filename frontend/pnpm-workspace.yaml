@@ -1,2 +1,5 @@
+packages:
+  - .
+
 overrides:
   js-cookie: 3.0.7
