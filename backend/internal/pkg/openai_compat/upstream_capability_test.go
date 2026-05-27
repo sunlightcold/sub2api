@@ -19,6 +19,7 @@ func TestResolveResponsesSupport(t *testing.T) {
 		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses)}, ResponsesSupportYes},
 		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions)}, ResponsesSupportNo},
 		{"preserve endpoint follows probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: true}, ResponsesSupportYes},
+		{"preserve chat endpoint follows probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: false}, ResponsesSupportNo},
 		{"auto follows probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeAuto), ExtraKeyResponsesSupported: false}, ResponsesSupportNo},
 		{"invalid mode follows probe", map[string]any{ExtraKeyResponsesMode: "bogus", ExtraKeyResponsesSupported: true}, ResponsesSupportYes},
 		{"force responses overrides probe false", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, ResponsesSupportYes},
@@ -54,6 +55,7 @@ func TestShouldUseResponsesAPI(t *testing.T) {
 		{"force responses overrides unsupported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, true},
 		{"force chat completions overrides supported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions), ExtraKeyResponsesSupported: true}, false},
 		{"preserve endpoint keeps chat on chat", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: true}, false},
+		{"preserve chat endpoint keeps chat on chat", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: true}, false},
 	}
 
 	for _, tc := range tests {
@@ -77,6 +79,7 @@ func TestNormalizeResponsesSupportMode(t *testing.T) {
 		{"force responses", "force_responses", ResponsesSupportModeForceResponses},
 		{"force chat completions", "force_chat_completions", ResponsesSupportModeForceChatCompletions},
 		{"preserve endpoint", "preserve_endpoint", ResponsesSupportModePreserveEndpoint},
+		{"preserve chat endpoint", "preserve_chat_endpoint", ResponsesSupportModePreserveChatEndpoint},
 		{"invalid", "enabled", ResponsesSupportModeAuto},
 	}
 
@@ -101,6 +104,7 @@ func TestIsPreserveEndpointMode(t *testing.T) {
 		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses)}, false},
 		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions)}, false},
 		{"preserve endpoint", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint)}, true},
+		{"preserve chat endpoint", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint)}, false},
 		{"invalid", map[string]any{ExtraKeyResponsesMode: "bogus"}, false},
 		{"non string", map[string]any{ExtraKeyResponsesMode: true}, false},
 	}
@@ -127,6 +131,8 @@ func TestShouldRouteResponsesViaChatCompletions(t *testing.T) {
 		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions), ExtraKeyResponsesSupported: true}, true},
 		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, false},
 		{"preserve endpoint keeps responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: false}, false},
+		{"preserve chat endpoint follows unsupported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: false}, true},
+		{"preserve chat endpoint follows supported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: true}, false},
 	}
 
 	for _, tc := range tests {

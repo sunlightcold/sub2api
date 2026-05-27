@@ -976,7 +976,12 @@ export interface CodexUsageSnapshot {
 }
 
 export type OpenAICompactMode = 'auto' | 'force_on' | 'force_off'
-export type OpenAIResponsesMode = 'auto' | 'preserve_endpoint' | 'force_responses' | 'force_chat_completions'
+export type OpenAIResponsesMode =
+  | 'auto'
+  | 'preserve_endpoint'
+  | 'preserve_chat_endpoint'
+  | 'force_responses'
+  | 'force_chat_completions'
 
 export interface OpenAICompactState {
   openai_compact_mode?: OpenAICompactMode
