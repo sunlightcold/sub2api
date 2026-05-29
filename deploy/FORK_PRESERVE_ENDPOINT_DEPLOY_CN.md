@@ -183,7 +183,7 @@ docker compose up -d sub2api
 ```bash
 git clone https://github.com/sunlightcold/sub2api.git
 cd sub2api
-docker build -f deploy/Dockerfile -t sub2api:preserve-endpoint .
+docker build -f Dockerfile -t sub2api:preserve-endpoint .
 ```
 
 然后把部署目录里的 `docker-compose.yml` 改成：
