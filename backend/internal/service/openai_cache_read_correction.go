@@ -239,12 +239,6 @@ func buildOpenAICacheReadPrefixFingerprint(c *gin.Context, body []byte, model st
 		prefixBytes += len(raw)
 		totalBytes += len(raw)
 	}
-	addTotalOnly := func(raw string) {
-		raw = strings.TrimSpace(raw)
-		if raw != "" {
-			totalBytes += len(raw)
-		}
-	}
 	addMonolithicStablePrefix := func(label string, raw string) {
 		raw = strings.TrimSpace(raw)
 		if raw == "" {
