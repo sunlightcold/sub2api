@@ -3036,6 +3036,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 
 		reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
 		serviceTier := extractOpenAIServiceTierFromBody(body)
+		cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, body, originalModel)
 		// 上游接受后只保留计费需要的标量，避免响应处理期间继续保活完整 input/tools map。
 		reqBody = nil
 
@@ -3045,7 +3046,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		imageCount := 0
 		var imageOutputSizes []string
 		if reqStream {
-			streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
+			streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel, cacheReadCorrection)
 			if err != nil {
 				return nil, err
 			}
@@ -3054,7 +3055,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 			imageCount = streamResult.imageCount
 			imageOutputSizes = streamResult.imageOutputSizes
 		} else {
-			nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel)
+			nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel, cacheReadCorrection)
 			if err != nil {
 				return nil, err
 			}
@@ -3285,13 +3286,14 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	}
 
 	serviceTier := extractOpenAIServiceTierFromBody(body)
+	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, body, reqModel)
 
 	var usage *OpenAIUsage
 	var firstTokenMs *int
 	imageCount := 0
 	var imageOutputSizes []string
 	if reqStream {
-		result, err := s.handleStreamingResponsePassthrough(ctx, resp, c, account, startTime, reqModel, upstreamPassthroughModel)
+		result, err := s.handleStreamingResponsePassthrough(ctx, resp, c, account, startTime, reqModel, upstreamPassthroughModel, cacheReadCorrection)
 		if err != nil {
 			return nil, err
 		}
@@ -3300,7 +3302,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		imageCount = result.imageCount
 		imageOutputSizes = result.imageOutputSizes
 	} else {
-		result, err := s.handleNonStreamingResponsePassthrough(ctx, resp, c, reqModel, upstreamPassthroughModel)
+		result, err := s.handleNonStreamingResponsePassthrough(ctx, resp, c, account, reqModel, upstreamPassthroughModel, cacheReadCorrection)
 		if err != nil {
 			return nil, err
 		}
@@ -3762,6 +3764,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	startTime time.Time,
 	originalModel string,
 	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*openaiStreamingResultPassthrough, error) {
 	writeOpenAIPassthroughResponseHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 
@@ -3849,7 +3852,16 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			if trimmedData == "[DONE]" {
 				sawDone = true
 			}
+			s.parseSSEUsageBytes(dataBytes, usage)
 			if openAIStreamEventIsTerminal(trimmedData) {
+				if correctedData, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, dataBytes, upstreamRequestID); corrected {
+					dataBytes = correctedData
+					trimmedData = strings.TrimSpace(string(correctedData))
+					line = "data: " + trimmedData
+					if correctedUsage != nil {
+						*usage = *correctedUsage
+					}
+				}
 				sawTerminalEvent = true
 			}
 			imageCounter.AddSSEData(dataBytes)
@@ -3858,7 +3870,6 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				ms := int(time.Since(startTime).Milliseconds())
 				firstTokenMs = &ms
 			}
-			s.parseSSEUsageBytes(dataBytes, usage)
 		}
 
 		if !clientDisconnected {
@@ -3936,8 +3947,10 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
+	account *Account,
 	originalModel string,
 	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*openaiNonStreamingResultPassthrough, error) {
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
@@ -3949,7 +3962,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	// stream=false was requested. Without this conversion the client would
 	// receive raw SSE text or a terminal event with empty output.
 	if isEventStreamResponse(resp.Header) {
-		return s.handlePassthroughSSEToJSON(resp, c, body, originalModel, mappedModel)
+		return s.handlePassthroughSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
 	}
 
 	usage := &OpenAIUsage{}
@@ -3974,6 +3987,12 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
+	if correctedBody, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); corrected {
+		body = correctedBody
+		if correctedUsage != nil {
+			usage = correctedUsage
+		}
+	}
 	c.Data(resp.StatusCode, contentType, body)
 	return &openaiNonStreamingResultPassthrough{
 		OpenAIUsage:      usage,
@@ -3987,7 +4006,16 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 // response for the passthrough path. It mirrors handleSSEToJSON while
 // preserving passthrough payloads, except compact-only model remapping may
 // rewrite model fields back to the original requested model.
-func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(resp *http.Response, c *gin.Context, body []byte, originalModel string, mappedModel string) (*openaiNonStreamingResultPassthrough, error) {
+func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(
+	ctx context.Context,
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	originalModel string,
+	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
+) (*openaiNonStreamingResultPassthrough, error) {
 	bodyText := string(body)
 	finalResponse, ok := extractCodexFinalResponse(bodyText)
 
@@ -4011,6 +4039,12 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(resp *http.Response, c
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
+		if correctedBody, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); corrected {
+			body = correctedBody
+			if correctedUsage != nil {
+				usage = correctedUsage
+			}
+		}
 	} else {
 		terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
 		if terminalOK && terminalType == "response.failed" {
@@ -4024,6 +4058,7 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(resp *http.Response, c
 		if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 			bodyText = s.replaceModelInSSEBody(bodyText, mappedModel, originalModel)
 		}
+		bodyText, usage = s.correctOpenAICacheReadSSEBody(ctx, account, cacheReadCorrection, bodyText, resp.Header.Get("x-request-id"), usage)
 		body = []byte(bodyText)
 	}
 
@@ -4513,7 +4548,16 @@ type openaiNonStreamingResult struct {
 	imageOutputSizes []string
 }
 
-func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string) (*openaiStreamingResult, error) {
+func (s *OpenAIGatewayService) handleStreamingResponse(
+	ctx context.Context,
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	startTime time.Time,
+	originalModel string,
+	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
+) (*openaiStreamingResult, error) {
 	if s.responseHeaderFilter != nil {
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
 	}
@@ -4723,6 +4767,18 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				forceFlushFailedEvent = true
 				sawFailedEvent = true
 			}
+			s.parseSSEUsageBytes(dataBytes, usage)
+			if openAIStreamEventIsTerminal(data) {
+				if correctedData, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, dataBytes, upstreamRequestID); corrected {
+					dataBytes = correctedData
+					data = string(correctedData)
+					line = "data: " + data
+					eventType = strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
+					if correctedUsage != nil {
+						*usage = *correctedUsage
+					}
+				}
+			}
 			imageCounter.AddSSEData(dataBytes)
 
 			// Correct Codex tool calls if needed (apply_patch -> edit, etc.)
@@ -4763,7 +4819,6 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				ms := int(time.Since(startTime).Milliseconds())
 				firstTokenMs = &ms
 			}
-			s.parseSSEUsageBytes(dataBytes, usage)
 			return
 		}
 
@@ -5078,7 +5133,15 @@ func openAIUsageFromGJSON(value gjson.Result) (OpenAIUsage, bool) {
 	}, true
 }
 
-func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, originalModel, mappedModel string) (*openaiNonStreamingResult, error) {
+func (s *OpenAIGatewayService) handleNonStreamingResponse(
+	ctx context.Context,
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	originalModel string,
+	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
+) (*openaiNonStreamingResult, error) {
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
 		return nil, err
@@ -5088,7 +5151,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 	// Some OpenAI-compatible upstreams (including other sub2api instances)
 	// may return SSE even when stream=false was requested.
 	if isEventStreamResponse(resp.Header) {
-		return s.handleSSEToJSON(resp, c, body, originalModel, mappedModel)
+		return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
 	}
 	bodyLooksLikeSSE := bytes.Contains(body, []byte("data:")) || bytes.Contains(body, []byte("event:"))
 
@@ -5098,13 +5161,13 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 	// positives on JSON responses that coincidentally contain "data:" or
 	// "event:" in their text content.
 	if account.Type == AccountTypeOAuth && bodyLooksLikeSSE {
-		return s.handleSSEToJSON(resp, c, body, originalModel, mappedModel)
+		return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
 	}
 
 	usageValue, usageOK := extractOpenAIUsageFromJSONBytes(body)
 	if !usageOK {
 		if bodyLooksLikeSSE {
-			return s.handleSSEToJSON(resp, c, body, originalModel, mappedModel)
+			return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
 		}
 		return nil, fmt.Errorf("parse response: invalid json response")
 	}
@@ -5113,6 +5176,14 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(ctx context.Context, r
 	// Replace model in response if needed
 	if originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
+	}
+	if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); correctedUsage != nil || bodyChanged {
+		if bodyChanged {
+			body = correctedBody
+		}
+		if correctedUsage != nil {
+			usage = correctedUsage
+		}
 	}
 
 	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
@@ -5139,7 +5210,16 @@ func isEventStreamResponse(header http.Header) bool {
 	return strings.Contains(contentType, "text/event-stream")
 }
 
-func (s *OpenAIGatewayService) handleSSEToJSON(resp *http.Response, c *gin.Context, body []byte, originalModel, mappedModel string) (*openaiNonStreamingResult, error) {
+func (s *OpenAIGatewayService) handleSSEToJSON(
+	ctx context.Context,
+	resp *http.Response,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	originalModel string,
+	mappedModel string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
+) (*openaiNonStreamingResult, error) {
 	bodyText := string(body)
 	finalResponse, ok := extractCodexFinalResponse(bodyText)
 
@@ -5164,6 +5244,14 @@ func (s *OpenAIGatewayService) handleSSEToJSON(resp *http.Response, c *gin.Conte
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
+		if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); correctedUsage != nil || bodyChanged {
+			if bodyChanged {
+				body = correctedBody
+			}
+			if correctedUsage != nil {
+				usage = correctedUsage
+			}
+		}
 	} else {
 		terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
 		if terminalOK && terminalType == "response.failed" {
@@ -5177,6 +5265,7 @@ func (s *OpenAIGatewayService) handleSSEToJSON(resp *http.Response, c *gin.Conte
 		if originalModel != mappedModel {
 			bodyText = s.replaceModelInSSEBody(bodyText, mappedModel, originalModel)
 		}
+		bodyText, usage = s.correctOpenAICacheReadSSEBody(ctx, account, cacheReadCorrection, bodyText, resp.Header.Get("x-request-id"), usage)
 		body = []byte(bodyText)
 	}
 

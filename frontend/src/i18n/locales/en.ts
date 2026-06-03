@@ -3401,6 +3401,17 @@ export default {
         compactModelMapping: 'Compact-only model mapping',
         compactModelMappingDesc:
           'Only applies to /responses/compact. Use this when the upstream compact endpoint requires a special compact model.',
+        cacheReadCorrection: 'Cache-read correction',
+        cacheReadCorrectionDesc:
+          'Only applies to OpenAI API Key accounts. When enabled, requests are not modified; when upstream cache-read tokens look abnormally low, the gateway corrects both response and billing usage based on local prefix recognition. Defaults are tuned for typical OpenAI cache behavior and can be used as-is.',
+        cacheReadWarmRatioMin: 'Warm min ratio',
+        cacheReadWarmRatioMax: 'Warm max ratio',
+        cacheReadWarmingRatioMin: 'Warming min ratio',
+        cacheReadWarmingRatioMax: 'Warming max ratio',
+        cacheReadMinInputTokens: 'Min input tokens',
+        cacheReadStateTTLMinutes: 'State TTL (minutes)',
+        cacheReadCorrectionHint:
+          'Recommended defaults: 88%-94% warm range, 35%-75% warming range, no correction for a newly seen prefix, 1024 min input tokens, and 60-minute state retention. Usually no extra tuning is needed.',
         compactSupported: 'Compact supported',
         compactUnsupported: 'Compact unsupported',
         compactAuto: 'Compact Auto',

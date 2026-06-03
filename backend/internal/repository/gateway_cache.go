@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 )
 
 const stickySessionPrefix = "sticky_session:"
+const openAICacheReadStatePrefix = "openai_cache_read_state:"
 
 type gatewayCache struct {
 	rdb *redis.Client
@@ -50,4 +52,31 @@ func (c *gatewayCache) RefreshSessionTTL(ctx context.Context, groupID int64, ses
 func (c *gatewayCache) DeleteSessionAccountID(ctx context.Context, groupID int64, sessionHash string) error {
 	key := buildSessionKey(groupID, sessionHash)
 	return c.rdb.Del(ctx, key).Err()
+}
+
+func buildOpenAICacheReadStateKey(key string) string {
+	return openAICacheReadStatePrefix + key
+}
+
+func (c *gatewayCache) GetOpenAICacheReadState(ctx context.Context, key string) (*service.OpenAICacheReadState, error) {
+	payload, err := c.rdb.Get(ctx, buildOpenAICacheReadStateKey(key)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	var state service.OpenAICacheReadState
+	if err := json.Unmarshal(payload, &state); err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+func (c *gatewayCache) SetOpenAICacheReadState(ctx context.Context, key string, state *service.OpenAICacheReadState, ttl time.Duration) error {
+	if state == nil {
+		return nil
+	}
+	payload, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return c.rdb.Set(ctx, buildOpenAICacheReadStateKey(key), payload, ttl).Err()
 }

@@ -3544,6 +3544,17 @@ export default {
         compactModelMapping: 'Compact 专属模型映射',
         compactModelMappingDesc:
           '仅在 /responses/compact 请求中生效。当上游 compact 端点需要特殊 compact 模型时使用。',
+        cacheReadCorrection: '缓存读取修正',
+        cacheReadCorrectionDesc:
+          '仅对 OpenAI API Key 账号生效。开启后不修改请求参数，只在上游返回缓存读取 Token 明显偏低时按本地前缀识别同时修正响应和计费 usage；默认值已按 OpenAI 常见缓存表现设置，可直接启用。',
+        cacheReadWarmRatioMin: '热态最小比例',
+        cacheReadWarmRatioMax: '热态最大比例',
+        cacheReadWarmingRatioMin: '预热最小比例',
+        cacheReadWarmingRatioMax: '预热最大比例',
+        cacheReadMinInputTokens: '最小输入 Token',
+        cacheReadStateTTLMinutes: '状态 TTL（分钟）',
+        cacheReadCorrectionHint:
+          '推荐默认值：热态 88%-94%，预热 35%-75%，首次识别到的新前缀不补缓存，最小输入 1024 Token，状态保留 60 分钟；通常无需额外调整。',
         compactSupported: '支持 Compact',
         compactUnsupported: '不支持 Compact',
         compactAuto: 'Compact Auto',

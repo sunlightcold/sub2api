@@ -927,6 +927,84 @@
         </div>
       </div>
 
+      <!-- OpenAI API Key cache-read correction -->
+      <div v-if="allOpenAIAPIKey" class="border-t border-gray-200 pt-4 dark:border-dark-600">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex-1 pr-4">
+            <label
+              id="bulk-edit-openai-cache-read-correction-label"
+              class="input-label mb-0"
+              for="bulk-edit-openai-cache-read-correction-enabled"
+            >
+              {{ t('admin.accounts.openai.cacheReadCorrection') }}
+            </label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('admin.accounts.openai.cacheReadCorrectionDesc') }}
+            </p>
+          </div>
+          <input
+            v-model="enableOpenAICacheReadCorrection"
+            id="bulk-edit-openai-cache-read-correction-enabled"
+            type="checkbox"
+            aria-controls="bulk-edit-openai-cache-read-correction"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+        </div>
+        <div
+          id="bulk-edit-openai-cache-read-correction"
+          :class="!enableOpenAICacheReadCorrection && 'pointer-events-none opacity-50'"
+          class="space-y-3"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('admin.accounts.openai.cacheReadCorrection') }}</span>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                openAICacheReadCorrectionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
+              ]"
+              @click="openAICacheReadCorrectionEnabled = !openAICacheReadCorrectionEnabled"
+            >
+              <span
+                :class="[
+                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                  openAICacheReadCorrectionEnabled ? 'translate-x-5' : 'translate-x-0'
+                ]"
+              />
+            </button>
+          </div>
+          <div v-if="openAICacheReadCorrectionEnabled" class="space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-dark-700">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMin') }}</label>
+                <input v-model.number="openAICacheReadRatioMin" type="number" min="0" max="1" step="0.01" class="input" />
+              </div>
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMax') }}</label>
+                <input v-model.number="openAICacheReadRatioMax" type="number" min="0" max="1" step="0.01" class="input" />
+              </div>
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMin') }}</label>
+                <input v-model.number="openAICacheReadWarmingRatioMin" type="number" min="0" max="1" step="0.01" class="input" />
+              </div>
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMax') }}</label>
+                <input v-model.number="openAICacheReadWarmingRatioMax" type="number" min="0" max="1" step="0.01" class="input" />
+              </div>
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadMinInputTokens') }}</label>
+                <input v-model.number="openAICacheReadMinInputTokens" type="number" min="1" step="1" class="input" />
+              </div>
+              <div>
+                <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadStateTTLMinutes') }}</label>
+                <input v-model.number="openAICacheReadStateTTLMinutes" type="number" min="1" max="1440" step="1" class="input" />
+              </div>
+            </div>
+            <p class="input-hint">{{ t('admin.accounts.openai.cacheReadCorrectionHint') }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- RPM Limit (仅全部为 Anthropic OAuth/SetupToken 时显示) -->
       <div v-if="allAnthropicOAuthOrSetupToken" class="border-t border-gray-200 pt-4 dark:border-dark-600">
         <div class="mb-3 flex items-center justify-between">
@@ -1266,6 +1344,7 @@ const enableCodexCLIOnly = ref(false)
 const enableCodexCLIOnlyAllowClaudeCode = ref(false)
 const enableOpenAICompactMode = ref(false)
 const enableOpenAICompactModelMapping = ref(false)
+const enableOpenAICacheReadCorrection = ref(false)
 const enableRpmLimit = ref(false)
 
 // State - field values
@@ -1294,6 +1373,13 @@ const codexCLIOnlyEnabled = ref(false)
 const codexCLIOnlyAllowClaudeCodeEnabled = ref(false)
 const openAICompactMode = ref<OpenAICompactMode>('auto')
 const openAICompactModelMappings = ref<ModelMapping[]>([])
+const openAICacheReadCorrectionEnabled = ref(false)
+const openAICacheReadRatioMin = ref(0.88)
+const openAICacheReadRatioMax = ref(0.94)
+const openAICacheReadWarmingRatioMin = ref(0.35)
+const openAICacheReadWarmingRatioMax = ref(0.75)
+const openAICacheReadMinInputTokens = ref(1024)
+const openAICacheReadStateTTLMinutes = ref(60)
 const rpmLimitEnabled = ref(false)
 const bulkBaseRpm = ref<number | null>(null)
 const bulkRpmStrategy = ref<'tiered' | 'sticky_exempt'>('tiered')
@@ -1433,6 +1519,41 @@ const buildOpenAICompactModelMapping = (): Record<string, string> | null => {
   return buildModelMappingPayload('mapping', [], openAICompactModelMappings.value)
 }
 
+const clampRatio = (value: number, fallback: number) => {
+  if (!Number.isFinite(value)) return fallback
+  if (value > 1) value = value / 100
+  return Math.min(1, Math.max(0, value))
+}
+
+const writeOpenAICacheReadCorrectionExtra = (extra: Record<string, unknown>) => {
+  if (!openAICacheReadCorrectionEnabled.value) {
+    extra.openai_cache_read_correction_enabled = false
+    return
+  }
+  const warmMin = clampRatio(openAICacheReadRatioMin.value, 0.88)
+  const warmMax = clampRatio(openAICacheReadRatioMax.value, 0.94)
+  const warmingMin = clampRatio(openAICacheReadWarmingRatioMin.value, 0.35)
+  const warmingMax = clampRatio(openAICacheReadWarmingRatioMax.value, 0.75)
+  extra.openai_cache_read_correction_enabled = true
+  extra.openai_cache_read_ratio_min = Math.min(warmMin, warmMax)
+  extra.openai_cache_read_ratio_max = Math.max(warmMin, warmMax)
+  extra.openai_cache_read_warming_ratio_min = Math.min(warmingMin, warmingMax)
+  extra.openai_cache_read_warming_ratio_max = Math.max(warmingMin, warmingMax)
+  extra.openai_cache_read_min_input_tokens = Math.max(1, Math.trunc(openAICacheReadMinInputTokens.value || 1024))
+  extra.openai_cache_state_ttl_minutes = Math.max(1, Math.trunc(openAICacheReadStateTTLMinutes.value || 60))
+}
+
+const resetOpenAICacheReadCorrectionState = () => {
+  enableOpenAICacheReadCorrection.value = false
+  openAICacheReadCorrectionEnabled.value = false
+  openAICacheReadRatioMin.value = 0.88
+  openAICacheReadRatioMax.value = 0.94
+  openAICacheReadWarmingRatioMin.value = 0.35
+  openAICacheReadWarmingRatioMax.value = 0.75
+  openAICacheReadMinInputTokens.value = 1024
+  openAICacheReadStateTTLMinutes.value = 60
+}
+
 const buildUpdatePayload = (): Record<string, unknown> | null => {
   const updates: Record<string, unknown> = {}
   const credentials: Record<string, unknown> = {}
@@ -1557,6 +1678,11 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     credentialsChanged = true
   }
 
+  if (enableOpenAICacheReadCorrection.value) {
+    const extra = ensureExtra()
+    writeOpenAICacheReadCorrectionExtra(extra)
+  }
+
   // RPM limit settings (写入 extra 字段)
   if (enableRpmLimit.value) {
     const extra = ensureExtra()
@@ -1656,6 +1782,7 @@ const handleSubmit = async () => {
     enableCodexCLIOnlyAllowClaudeCode.value ||
     enableOpenAICompactMode.value ||
     enableOpenAICompactModelMapping.value ||
+    enableOpenAICacheReadCorrection.value ||
     enableRpmLimit.value ||
     userMsgQueueMode.value !== null
 
@@ -1783,6 +1910,7 @@ watch(
       codexCLIOnlyAllowClaudeCodeEnabled.value = false
       openAICompactMode.value = 'auto'
       openAICompactModelMappings.value = []
+      resetOpenAICacheReadCorrectionState()
       rpmLimitEnabled.value = false
       bulkBaseRpm.value = null
       bulkRpmStrategy.value = 'tiered'
