@@ -36,6 +36,7 @@ const (
 	defaultOpenAICacheReadMinInputTokens     = 1024
 	defaultOpenAICacheReadStateTTL           = time.Hour
 	defaultOpenAICacheReadPrefixMaxHashBytes = 1 << 20
+	defaultOpenAICacheReadMonolithicFraction = 0.90
 	minOpenAICacheReadStateTTL               = time.Minute
 	maxOpenAICacheReadStateTTL               = 24 * time.Hour
 	minOpenAICacheReadPrefixMaxHashBytes     = 4 << 10
@@ -244,6 +245,26 @@ func buildOpenAICacheReadPrefixFingerprint(c *gin.Context, body []byte, model st
 			totalBytes += len(raw)
 		}
 	}
+	addMonolithicStablePrefix := func(label string, raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		totalBytes += len(raw)
+		prefixLen := int(math.Floor(float64(len(raw)) * defaultOpenAICacheReadMonolithicFraction))
+		if prefixLen <= 0 {
+			return
+		}
+		if prefixLen > len(raw) {
+			prefixLen = len(raw)
+		}
+		w.writeString("|")
+		w.writeString(label)
+		w.writeString(":")
+		w.writeString(fmt.Sprintf("%d/%d:", prefixLen, len(raw)))
+		w.writeRaw(raw[:prefixLen])
+		prefixBytes += prefixLen
+	}
 
 	addStable("instructions", gjson.GetBytes(body, "instructions").Raw)
 	addStable("developer", gjson.GetBytes(body, "developer").Raw)
@@ -254,43 +275,51 @@ func buildOpenAICacheReadPrefixFingerprint(c *gin.Context, body []byte, model st
 
 	if messages := gjson.GetBytes(body, "messages"); messages.IsArray() {
 		items := messages.Array()
-		prefixCount := len(items)
-		if prefixCount > 0 {
-			prefixCount--
-		}
-		w.writeString("|messages_count:")
-		w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
-		for i, item := range items {
-			raw := strings.TrimSpace(item.Raw)
-			if i < prefixCount {
-				w.writeString("|msg:")
-				w.writeRaw(raw)
-				prefixBytes += len(raw)
+		if len(items) == 1 {
+			addMonolithicStablePrefix("messages_single", items[0].Raw)
+		} else {
+			prefixCount := len(items)
+			if prefixCount > 0 {
+				prefixCount--
 			}
-			totalBytes += len(raw)
+			w.writeString("|messages_count:")
+			w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
+			for i, item := range items {
+				raw := strings.TrimSpace(item.Raw)
+				if i < prefixCount {
+					w.writeString("|msg:")
+					w.writeRaw(raw)
+					prefixBytes += len(raw)
+				}
+				totalBytes += len(raw)
+			}
 		}
 	}
 
 	if input := gjson.GetBytes(body, "input"); input.Exists() {
 		if input.IsArray() {
 			items := input.Array()
-			prefixCount := len(items)
-			if prefixCount > 0 {
-				prefixCount--
-			}
-			w.writeString("|input_count:")
-			w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
-			for i, item := range items {
-				raw := strings.TrimSpace(item.Raw)
-				if i < prefixCount {
-					w.writeString("|input:")
-					w.writeRaw(raw)
-					prefixBytes += len(raw)
+			if len(items) == 1 {
+				addMonolithicStablePrefix("input_single", items[0].Raw)
+			} else {
+				prefixCount := len(items)
+				if prefixCount > 0 {
+					prefixCount--
 				}
-				totalBytes += len(raw)
+				w.writeString("|input_count:")
+				w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
+				for i, item := range items {
+					raw := strings.TrimSpace(item.Raw)
+					if i < prefixCount {
+						w.writeString("|input:")
+						w.writeRaw(raw)
+						prefixBytes += len(raw)
+					}
+					totalBytes += len(raw)
+				}
 			}
 		} else {
-			addTotalOnly(input.Raw)
+			addMonolithicStablePrefix("input", input.Raw)
 		}
 	}
 

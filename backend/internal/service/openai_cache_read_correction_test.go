@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -149,6 +150,37 @@ func TestOpenAICacheReadCorrection_DoesNotLowerNormalUpstreamCache(t *testing.T)
 	usage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 9900}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, third, usage, "req_normal")
 	require.Equal(t, 9900, usage.CacheReadInputTokens)
+}
+
+func TestOpenAICacheReadCorrection_SingleInputObjectProducesCacheableFraction(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	account := &Account{
+		ID:       5,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Extra: map[string]any{
+			openAICacheReadCorrectionEnabledKey: true,
+			openAICacheReadRatioMinKey:          0.88,
+			openAICacheReadRatioMaxKey:          0.94,
+		},
+	}
+	body := []byte(`{"model":"gpt-5.4","input":{"type":"message","role":"user","content":"` + strings.Repeat("x", 2000) + `"}}`)
+
+	correction := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	require.NotNil(t, correction)
+	require.Greater(t, correction.cacheableFraction, 0.0)
+	cache.states = make(map[string]*OpenAICacheReadState)
+	cache.states[correction.stateKey] = &OpenAICacheReadState{SeenCount: 2, LastInputTokens: 2000}
+
+	correction = svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	require.NotNil(t, correction)
+	require.Equal(t, 2, correction.priorSeenCount)
+
+	usage := &OpenAIUsage{InputTokens: 2000, OutputTokens: 10, CacheReadInputTokens: 10}
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, correction, usage, "req_single_input")
+	require.Greater(t, usage.CacheReadInputTokens, 10)
 }
 
 func TestOpenAICacheReadCorrection_WarmPrefixCorrectsWithinConfiguredRange(t *testing.T) {
