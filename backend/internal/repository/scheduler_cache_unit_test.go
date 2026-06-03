@@ -36,6 +36,43 @@ func TestBuildSchedulerMetadataAccount_KeepsOpenAIWSFlags(t *testing.T) {
 	require.Nil(t, got.Extra["unused_large_field"])
 }
 
+func TestBuildSchedulerMetadataAccount_KeepsOpenAICacheReadCorrectionConfig(t *testing.T) {
+	account := service.Account{
+		ID:       43,
+		Platform: service.PlatformOpenAI,
+		Type:     service.AccountTypeAPIKey,
+		Extra: map[string]any{
+			"openai_cache_read_correction_enabled":     true,
+			"openai_cache_read_ratio_min":              0.88,
+			"openai_cache_read_ratio_max":              0.94,
+			"openai_cache_read_warming_ratio_min":      0.35,
+			"openai_cache_read_warming_ratio_max":      0.75,
+			"openai_cache_read_cold_ratio_min":         0,
+			"openai_cache_read_cold_ratio_max":         0,
+			"openai_cache_read_min_input_tokens":       1024,
+			"openai_cache_state_ttl_minutes":           60,
+			"openai_cache_prefix_max_hash_bytes":       1048576,
+			"openai_cache_read_large_debug_payload":    "drop-me",
+			"openai_cache_read_unrelated_runtime_blob": "drop-me",
+		},
+	}
+
+	got := buildSchedulerMetadataAccount(account)
+
+	require.Equal(t, true, got.Extra["openai_cache_read_correction_enabled"])
+	require.Equal(t, 0.88, got.Extra["openai_cache_read_ratio_min"])
+	require.Equal(t, 0.94, got.Extra["openai_cache_read_ratio_max"])
+	require.Equal(t, 0.35, got.Extra["openai_cache_read_warming_ratio_min"])
+	require.Equal(t, 0.75, got.Extra["openai_cache_read_warming_ratio_max"])
+	require.Equal(t, 0, got.Extra["openai_cache_read_cold_ratio_min"])
+	require.Equal(t, 0, got.Extra["openai_cache_read_cold_ratio_max"])
+	require.Equal(t, 1024, got.Extra["openai_cache_read_min_input_tokens"])
+	require.Equal(t, 60, got.Extra["openai_cache_state_ttl_minutes"])
+	require.Equal(t, 1048576, got.Extra["openai_cache_prefix_max_hash_bytes"])
+	require.Nil(t, got.Extra["openai_cache_read_large_debug_payload"])
+	require.Nil(t, got.Extra["openai_cache_read_unrelated_runtime_blob"])
+}
+
 func TestBuildSchedulerMetadataAccount_KeepsSlimGroupMembership(t *testing.T) {
 	account := service.Account{
 		ID:       42,
