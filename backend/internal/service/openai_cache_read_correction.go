@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -36,18 +37,31 @@ const (
 	defaultOpenAICacheReadMinInputTokens     = 1024
 	defaultOpenAICacheReadStateTTL           = time.Hour
 	defaultOpenAICacheReadPrefixMaxHashBytes = 1 << 20
-	defaultOpenAICacheReadMonolithicFraction = 0.90
 	minOpenAICacheReadStateTTL               = time.Minute
 	maxOpenAICacheReadStateTTL               = 24 * time.Hour
 	minOpenAICacheReadPrefixMaxHashBytes     = 4 << 10
 	maxOpenAICacheReadPrefixMaxHashBytes     = 8 << 20
+	openAICacheReadRoutePrefixBytes          = 1024
+	openAICacheReadCandidateMinBytes         = 1024
+	openAICacheReadCandidateStepBytes        = 2048
+	openAICacheReadMaxStatePrefixes          = 128
 )
 
 type OpenAICacheReadState struct {
-	SeenCount        int   `json:"seen_count"`
-	LastSeenUnix     int64 `json:"last_seen_unix"`
-	LastInputTokens  int   `json:"last_input_tokens"`
-	LastCachedTokens int   `json:"last_cached_tokens"`
+	SeenCount        int                          `json:"seen_count"`
+	LastSeenUnix     int64                        `json:"last_seen_unix"`
+	LastInputTokens  int                          `json:"last_input_tokens"`
+	LastCachedTokens int                          `json:"last_cached_tokens"`
+	Prefixes         []OpenAICacheReadPrefixState `json:"prefixes,omitempty"`
+}
+
+type OpenAICacheReadPrefixState struct {
+	Hash             string `json:"hash"`
+	Bytes            int    `json:"bytes"`
+	SeenCount        int    `json:"seen_count"`
+	LastSeenUnix     int64  `json:"last_seen_unix"`
+	LastInputTokens  int    `json:"last_input_tokens"`
+	LastCachedTokens int    `json:"last_cached_tokens"`
 }
 
 type OpenAICacheReadStateCache interface {
@@ -75,6 +89,9 @@ type openAICacheReadCorrectionContext struct {
 	prefixHash        string
 	priorSeenCount    int
 	cacheableFraction float64
+	promptProfile     openAICacheReadPromptProfile
+	state             *OpenAICacheReadState
+	matchedPrefix     *OpenAICacheReadPrefixState
 }
 
 type openAICacheReadCorrectionResult struct {
@@ -187,18 +204,38 @@ func (s *OpenAIGatewayService) prepareOpenAICacheReadCorrection(
 	if !ok || cache == nil {
 		return nil
 	}
-	prefixHash, fraction := buildOpenAICacheReadPrefixFingerprint(c, requestBody, model, cfg.PrefixMaxHashBytes)
-	if prefixHash == "" {
+	profile := buildOpenAICacheReadPromptProfile(c, requestBody, model, cfg.PrefixMaxHashBytes)
+	if profile.RouteHash == "" || len(profile.Candidates) == 0 {
 		return nil
 	}
 	endpoint := "unknown"
 	if c != nil && c.Request != nil && strings.TrimSpace(c.Request.URL.Path) != "" {
 		endpoint = strings.TrimSpace(c.Request.URL.Path)
 	}
-	stateKey := fmt.Sprintf("openai_cache_read:%d:%s:%s:%s", account.ID, strings.TrimSpace(model), endpoint, prefixHash)
+	stateKey := fmt.Sprintf("openai_cache_read:v2:%d:%s:%s:%s", account.ID, strings.TrimSpace(model), endpoint, profile.RouteHash)
 	var priorSeen int
-	if state, err := cache.GetOpenAICacheReadState(ctx, stateKey); err == nil && state != nil {
-		priorSeen = state.SeenCount
+	var fraction float64
+	var matched *OpenAICacheReadPrefixState
+	var priorState *OpenAICacheReadState
+	if loadedState, err := cache.GetOpenAICacheReadState(ctx, stateKey); err == nil && loadedState != nil {
+		priorState = loadedState
+		priorSeen = loadedState.SeenCount
+		matched = findOpenAICacheReadBestPrefixMatch(profile.Candidates, loadedState.Prefixes)
+		if matched != nil && profile.TotalBytes > 0 {
+			fraction = float64(matched.Bytes) / float64(profile.TotalBytes)
+			if fraction < 0 {
+				fraction = 0
+			}
+			if fraction > 1 {
+				fraction = 1
+			}
+		}
+	}
+	prefixHash := profile.RouteHash
+	if matched != nil {
+		prefixHash = matched.Hash
+	} else if len(profile.Candidates) > 0 {
+		prefixHash = profile.Candidates[len(profile.Candidates)-1].Hash
 	}
 	return &openAICacheReadCorrectionContext{
 		config:            cfg,
@@ -207,161 +244,202 @@ func (s *OpenAIGatewayService) prepareOpenAICacheReadCorrection(
 		prefixHash:        prefixHash,
 		priorSeenCount:    priorSeen,
 		cacheableFraction: fraction,
+		promptProfile:     profile,
+		state:             priorState,
+		matchedPrefix:     matched,
 	}
 }
 
 func buildOpenAICacheReadPrefixFingerprint(c *gin.Context, body []byte, model string, maxBytes int) (string, float64) {
-	if len(body) == 0 || !gjson.ValidBytes(body) {
+	profile := buildOpenAICacheReadPromptProfile(c, body, model, maxBytes)
+	if profile.RouteHash == "" {
 		return "", 0
 	}
-	if strings.TrimSpace(model) == "" {
-		model = strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	if len(profile.Candidates) == 0 || profile.TotalBytes <= 0 {
+		return profile.RouteHash, 0
 	}
-	h := xxhash.New()
-	w := &openAIPrefixHashWriter{h: h, maxBytes: maxBytes}
-	w.writeString("v1|")
-	if c != nil && c.Request != nil {
-		w.writeString(strings.TrimSpace(c.Request.URL.Path))
-	}
-	w.writeString("|model:")
-	w.writeString(model)
-
-	var prefixBytes, totalBytes int
-	addStable := func(label string, raw string) {
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
-			return
-		}
-		w.writeString("|")
-		w.writeString(label)
-		w.writeString(":")
-		w.writeRaw(raw)
-		prefixBytes += len(raw)
-		totalBytes += len(raw)
-	}
-	addMonolithicStablePrefix := func(label string, raw string) {
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
-			return
-		}
-		totalBytes += len(raw)
-		prefixLen := int(math.Floor(float64(len(raw)) * defaultOpenAICacheReadMonolithicFraction))
-		if prefixLen <= 0 {
-			return
-		}
-		if prefixLen > len(raw) {
-			prefixLen = len(raw)
-		}
-		w.writeString("|")
-		w.writeString(label)
-		w.writeString(":")
-		w.writeString(fmt.Sprintf("%d/%d:", prefixLen, len(raw)))
-		w.writeRaw(raw[:prefixLen])
-		prefixBytes += prefixLen
-	}
-
-	addStable("instructions", gjson.GetBytes(body, "instructions").Raw)
-	addStable("developer", gjson.GetBytes(body, "developer").Raw)
-	addStable("tools", gjson.GetBytes(body, "tools").Raw)
-	addStable("response_format", gjson.GetBytes(body, "response_format").Raw)
-	addStable("text", gjson.GetBytes(body, "text").Raw)
-	addStable("reasoning", gjson.GetBytes(body, "reasoning").Raw)
-
-	if messages := gjson.GetBytes(body, "messages"); messages.IsArray() {
-		items := messages.Array()
-		if len(items) == 1 {
-			addMonolithicStablePrefix("messages_single", items[0].Raw)
-		} else {
-			prefixCount := len(items)
-			if prefixCount > 0 {
-				prefixCount--
-			}
-			w.writeString("|messages_count:")
-			w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
-			for i, item := range items {
-				raw := strings.TrimSpace(item.Raw)
-				if i < prefixCount {
-					w.writeString("|msg:")
-					w.writeRaw(raw)
-					prefixBytes += len(raw)
-				}
-				totalBytes += len(raw)
-			}
-		}
-	}
-
-	if input := gjson.GetBytes(body, "input"); input.Exists() {
-		if input.IsArray() {
-			items := input.Array()
-			if len(items) == 1 {
-				addMonolithicStablePrefix("input_single", items[0].Raw)
-			} else {
-				prefixCount := len(items)
-				if prefixCount > 0 {
-					prefixCount--
-				}
-				w.writeString("|input_count:")
-				w.writeString(fmt.Sprintf("%d/%d", prefixCount, len(items)))
-				for i, item := range items {
-					raw := strings.TrimSpace(item.Raw)
-					if i < prefixCount {
-						w.writeString("|input:")
-						w.writeRaw(raw)
-						prefixBytes += len(raw)
-					}
-					totalBytes += len(raw)
-				}
-			}
-		} else {
-			addMonolithicStablePrefix("input", input.Raw)
-		}
-	}
-
-	if totalBytes <= 0 || prefixBytes <= 0 {
-		return fmt.Sprintf("%016x", h.Sum64()), 0
-	}
-	fraction := float64(prefixBytes) / float64(totalBytes)
+	last := profile.Candidates[len(profile.Candidates)-1]
+	fraction := float64(last.Bytes) / float64(profile.TotalBytes)
 	if fraction < 0 {
 		fraction = 0
 	}
 	if fraction > 1 {
 		fraction = 1
 	}
-	return fmt.Sprintf("%016x", h.Sum64()), fraction
+	return last.Hash, fraction
 }
 
-type openAIPrefixHashWriter struct {
-	h        *xxhash.Digest
-	written  int
-	maxBytes int
-	capped   bool
+type openAICacheReadPromptProfile struct {
+	RouteHash  string
+	TotalBytes int
+	Candidates []openAICacheReadPrefixCandidate
 }
 
-func (w *openAIPrefixHashWriter) writeString(value string) {
-	w.writeRaw(value)
+type openAICacheReadPrefixCandidate struct {
+	Hash  string
+	Bytes int
 }
 
-func (w *openAIPrefixHashWriter) writeRaw(value string) {
-	if value == "" || w == nil || w.h == nil {
-		return
+func buildOpenAICacheReadPromptProfile(c *gin.Context, body []byte, model string, maxBytes int) openAICacheReadPromptProfile {
+	if len(body) == 0 || !gjson.ValidBytes(body) {
+		return openAICacheReadPromptProfile{}
 	}
-	remaining := w.maxBytes - w.written
-	if remaining <= 0 {
-		if !w.capped {
-			_, _ = w.h.WriteString("|capped")
-			w.capped = true
+	if strings.TrimSpace(model) == "" {
+		model = strings.TrimSpace(gjson.GetBytes(body, "model").String())
+	}
+	if maxBytes <= 0 {
+		maxBytes = defaultOpenAICacheReadPrefixMaxHashBytes
+	}
+	if maxBytes < minOpenAICacheReadPrefixMaxHashBytes {
+		maxBytes = minOpenAICacheReadPrefixMaxHashBytes
+	}
+	if maxBytes > maxOpenAICacheReadPrefixMaxHashBytes {
+		maxBytes = maxOpenAICacheReadPrefixMaxHashBytes
+	}
+	builder := &strings.Builder{}
+	builder.Grow(minOpenAICacheReadInt(maxBytes, len(body)+128))
+	var totalBytes int
+	var boundaries []int
+	addPart := func(label string, raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
 		}
-		return
+		part := label + ":" + raw + "\n"
+		totalBytes += len(part)
+		if builder.Len() < maxBytes {
+			remaining := maxBytes - builder.Len()
+			if len(part) > remaining {
+				builder.WriteString(part[:remaining])
+			} else {
+				builder.WriteString(part)
+				boundaries = append(boundaries, builder.Len())
+			}
+		}
 	}
-	if len(value) > remaining {
-		value = value[:remaining]
-		w.capped = true
+
+	addPart("model", model)
+	addPart("instructions", gjson.GetBytes(body, "instructions").Raw)
+	addPart("developer", gjson.GetBytes(body, "developer").Raw)
+	addPart("tools", gjson.GetBytes(body, "tools").Raw)
+	addPart("response_format", gjson.GetBytes(body, "response_format").Raw)
+	addPart("text", gjson.GetBytes(body, "text").Raw)
+	addPart("reasoning", gjson.GetBytes(body, "reasoning").Raw)
+
+	if messages := gjson.GetBytes(body, "messages"); messages.IsArray() {
+		items := messages.Array()
+		for i, item := range items {
+			addPart(fmt.Sprintf("message[%d]", i), item.Raw)
+		}
 	}
-	_, _ = w.h.WriteString(value)
-	w.written += len(value)
-	if w.capped {
-		_, _ = w.h.WriteString("|capped")
+
+	if input := gjson.GetBytes(body, "input"); input.Exists() {
+		if input.IsArray() {
+			items := input.Array()
+			for i, item := range items {
+				addPart(fmt.Sprintf("input[%d]", i), item.Raw)
+			}
+		} else {
+			addPart("input", input.Raw)
+		}
 	}
+
+	canonical := []byte(builder.String())
+	if totalBytes <= 0 || len(canonical) == 0 {
+		return openAICacheReadPromptProfile{}
+	}
+	routeLen := minOpenAICacheReadInt(openAICacheReadRoutePrefixBytes, len(canonical))
+	routeHash := fmt.Sprintf("%016x", xxhash.Sum64(canonical[:routeLen]))
+	positions := openAICacheReadCandidatePositions(len(canonical), boundaries)
+	candidates := make([]openAICacheReadPrefixCandidate, 0, len(positions))
+	for _, pos := range positions {
+		if pos <= 0 || pos > len(canonical) {
+			continue
+		}
+		candidates = append(candidates, openAICacheReadPrefixCandidate{
+			Hash:  fmt.Sprintf("%016x", xxhash.Sum64(canonical[:pos])),
+			Bytes: pos,
+		})
+	}
+	return openAICacheReadPromptProfile{
+		RouteHash:  routeHash,
+		TotalBytes: totalBytes,
+		Candidates: candidates,
+	}
+}
+
+func openAICacheReadCandidatePositions(canonicalBytes int, boundaries []int) []int {
+	if canonicalBytes <= 0 {
+		return nil
+	}
+	seen := make(map[int]struct{})
+	var positions []int
+	add := func(pos int) {
+		if pos < openAICacheReadCandidateMinBytes {
+			return
+		}
+		if pos > canonicalBytes {
+			pos = canonicalBytes
+		}
+		if _, ok := seen[pos]; ok {
+			return
+		}
+		seen[pos] = struct{}{}
+		positions = append(positions, pos)
+	}
+	for pos := openAICacheReadCandidateMinBytes; pos <= canonicalBytes; pos += openAICacheReadCandidateStepBytes {
+		add(pos)
+	}
+	for _, pos := range boundaries {
+		add(pos)
+	}
+	add(canonicalBytes)
+	sort.Ints(positions)
+	if len(positions) <= openAICacheReadMaxStatePrefixes {
+		return positions
+	}
+	downsampled := make([]int, 0, openAICacheReadMaxStatePrefixes)
+	lastIdx := -1
+	for i := 0; i < openAICacheReadMaxStatePrefixes; i++ {
+		idx := int(math.Round(float64(i) * float64(len(positions)-1) / float64(openAICacheReadMaxStatePrefixes-1)))
+		if idx == lastIdx {
+			continue
+		}
+		downsampled = append(downsampled, positions[idx])
+		lastIdx = idx
+	}
+	return downsampled
+}
+
+func findOpenAICacheReadBestPrefixMatch(candidates []openAICacheReadPrefixCandidate, prefixes []OpenAICacheReadPrefixState) *OpenAICacheReadPrefixState {
+	if len(candidates) == 0 || len(prefixes) == 0 {
+		return nil
+	}
+	byKey := make(map[string]OpenAICacheReadPrefixState, len(prefixes))
+	for _, prefix := range prefixes {
+		if prefix.Hash == "" || prefix.Bytes <= 0 {
+			continue
+		}
+		byKey[openAICacheReadPrefixKey(prefix.Hash, prefix.Bytes)] = prefix
+	}
+	for i := len(candidates) - 1; i >= 0; i-- {
+		candidate := candidates[i]
+		if match, ok := byKey[openAICacheReadPrefixKey(candidate.Hash, candidate.Bytes)]; ok {
+			return &match
+		}
+	}
+	return nil
+}
+
+func openAICacheReadPrefixKey(hash string, bytes int) string {
+	return fmt.Sprintf("%s:%d", hash, bytes)
+}
+
+func minOpenAICacheReadInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (s *OpenAIGatewayService) correctOpenAICacheReadUsage(
@@ -439,15 +517,66 @@ func (s *OpenAIGatewayService) updateOpenAICacheReadState(ctx context.Context, a
 	if inputTokens <= 0 || inputTokens < correction.config.MinInputTokens {
 		return
 	}
+	now := time.Now().Unix()
 	next := &OpenAICacheReadState{
 		SeenCount:        correction.priorSeenCount + 1,
-		LastSeenUnix:     time.Now().Unix(),
+		LastSeenUnix:     now,
 		LastInputTokens:  inputTokens,
 		LastCachedTokens: cachedTokens,
+		Prefixes:         mergeOpenAICacheReadStatePrefixes(correction.state, correction.promptProfile.Candidates, inputTokens, cachedTokens, now),
 	}
 	if err := correction.cache.SetOpenAICacheReadState(ctx, correction.stateKey, next, correction.config.StateTTL); err != nil && account != nil {
 		logger.LegacyPrintf("service.openai_gateway", "openai_cache_read_state_write_failed account=%d err=%v", account.ID, err)
 	}
+}
+
+func mergeOpenAICacheReadStatePrefixes(
+	state *OpenAICacheReadState,
+	candidates []openAICacheReadPrefixCandidate,
+	inputTokens int,
+	cachedTokens int,
+	now int64,
+) []OpenAICacheReadPrefixState {
+	merged := make(map[string]OpenAICacheReadPrefixState)
+	if state != nil {
+		for _, prefix := range state.Prefixes {
+			if prefix.Hash == "" || prefix.Bytes <= 0 {
+				continue
+			}
+			merged[openAICacheReadPrefixKey(prefix.Hash, prefix.Bytes)] = prefix
+		}
+	}
+	for _, candidate := range candidates {
+		if candidate.Hash == "" || candidate.Bytes <= 0 {
+			continue
+		}
+		key := openAICacheReadPrefixKey(candidate.Hash, candidate.Bytes)
+		prefix := merged[key]
+		prefix.Hash = candidate.Hash
+		prefix.Bytes = candidate.Bytes
+		prefix.SeenCount++
+		prefix.LastSeenUnix = now
+		prefix.LastInputTokens = inputTokens
+		prefix.LastCachedTokens = cachedTokens
+		merged[key] = prefix
+	}
+	prefixes := make([]OpenAICacheReadPrefixState, 0, len(merged))
+	for _, prefix := range merged {
+		prefixes = append(prefixes, prefix)
+	}
+	sort.Slice(prefixes, func(i, j int) bool {
+		if prefixes[i].LastSeenUnix != prefixes[j].LastSeenUnix {
+			return prefixes[i].LastSeenUnix > prefixes[j].LastSeenUnix
+		}
+		return prefixes[i].Bytes > prefixes[j].Bytes
+	})
+	if len(prefixes) > openAICacheReadMaxStatePrefixes {
+		prefixes = prefixes[:openAICacheReadMaxStatePrefixes]
+	}
+	sort.Slice(prefixes, func(i, j int) bool {
+		return prefixes[i].Bytes < prefixes[j].Bytes
+	})
+	return prefixes
 }
 
 func (s *OpenAIGatewayService) correctOpenAICacheReadResponseBody(

@@ -55,6 +55,21 @@ func (s *openAICacheReadStateCacheStub) SetOpenAICacheReadState(_ context.Contex
 	return nil
 }
 
+func openAICacheReadTestInputBody(parts ...string) []byte {
+	var b strings.Builder
+	b.WriteString(`{"model":"gpt-5.4","input":[`)
+	for i, part := range parts {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(`{"type":"message","role":"user","content":"`)
+		b.WriteString(part)
+		b.WriteString(`"}`)
+	}
+	b.WriteString(`]}`)
+	return []byte(b.String())
+}
+
 func TestOpenAICacheReadCorrection_DefaultDisabledDoesNothing(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cache := &openAICacheReadStateCacheStub{}
@@ -85,7 +100,7 @@ func TestOpenAICacheReadCorrection_MissingUsageDoesNotChangeBodyOrState(t *testi
 			openAICacheReadCorrectionEnabledKey: true,
 		},
 	}
-	requestBody := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"stable"},{"role":"user","content":"new"}]}`)
+	requestBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 300))
 	responseBody := []byte(`{"id":"resp_1","output":[{"type":"message"}]}`)
 
 	correction := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, requestBody, "gpt-5.4")
@@ -111,7 +126,7 @@ func TestOpenAICacheReadCorrection_SkipsStateForSmallUsage(t *testing.T) {
 			openAICacheReadMinInputTokensKey:    1024,
 		},
 	}
-	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"stable"},{"role":"user","content":"new"}]}`)
+	body := openAICacheReadTestInputBody(strings.Repeat("stable-", 300))
 
 	correction := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
 	require.NotNil(t, correction)
@@ -136,7 +151,7 @@ func TestOpenAICacheReadCorrection_DoesNotLowerNormalUpstreamCache(t *testing.T)
 			openAICacheReadRatioMaxKey:          0.94,
 		},
 	}
-	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"stable prompt that repeats"},{"role":"user","content":"previous question"},{"role":"assistant","content":"previous answer"},{"role":"user","content":"new question"}]}`)
+	body := openAICacheReadTestInputBody(strings.Repeat("stable-", 600), strings.Repeat("tail-", 200))
 
 	first := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
 	require.NotNil(t, first)
@@ -170,20 +185,20 @@ func TestOpenAICacheReadCorrection_SingleInputObjectProducesCacheableFraction(t 
 
 	correction := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
 	require.NotNil(t, correction)
-	require.Greater(t, correction.cacheableFraction, 0.0)
-	cache.states = make(map[string]*OpenAICacheReadState)
-	cache.states[correction.stateKey] = &OpenAICacheReadState{SeenCount: 2, LastInputTokens: 2000}
+	require.Zero(t, correction.cacheableFraction)
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, correction, &OpenAIUsage{InputTokens: 2000, OutputTokens: 10}, "req_first")
 
 	correction = svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
 	require.NotNil(t, correction)
-	require.Equal(t, 2, correction.priorSeenCount)
+	require.Equal(t, 1, correction.priorSeenCount)
+	require.Greater(t, correction.cacheableFraction, 0.0)
 
 	usage := &OpenAIUsage{InputTokens: 2000, OutputTokens: 10, CacheReadInputTokens: 10}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, correction, usage, "req_single_input")
 	require.Greater(t, usage.CacheReadInputTokens, 10)
 }
 
-func TestOpenAICacheReadCorrection_WarmPrefixCorrectsWithinConfiguredRange(t *testing.T) {
+func TestOpenAICacheReadCorrection_AppendedResponsesInputMatchesPriorPrefix(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cache := &openAICacheReadStateCacheStub{}
 	svc := &OpenAIGatewayService{cache: cache}
@@ -198,30 +213,55 @@ func TestOpenAICacheReadCorrection_WarmPrefixCorrectsWithinConfiguredRange(t *te
 			openAICacheReadMinInputTokensKey:    1024,
 		},
 	}
-	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"stable prompt that repeats"},{"role":"user","content":"previous question"},{"role":"assistant","content":"previous answer"},{"role":"user","content":"new question"}]}`)
+	firstBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 700))
+	secondBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("next-", 180))
+	thirdBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("next-", 180), strings.Repeat("final-", 180))
 
-	first := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	first := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, firstBody, "gpt-5.4")
 	require.NotNil(t, first)
 	require.Equal(t, 0, first.priorSeenCount)
 	usage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, first, usage, "req_first")
 	require.Equal(t, 100, usage.CacheReadInputTokens, "cold default range is 0, so first sighting should not inflate cache")
 
-	second := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	second := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, secondBody, "gpt-5.4")
 	require.NotNil(t, second)
 	require.Equal(t, 1, second.priorSeenCount)
+	require.NotNil(t, second.matchedPrefix)
+	require.Greater(t, second.cacheableFraction, 0.0)
 	warmingUsage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, second, warmingUsage, "req_second")
-	require.GreaterOrEqual(t, warmingUsage.CacheReadInputTokens, 3500)
-	require.LessOrEqual(t, warmingUsage.CacheReadInputTokens, 7500)
+	require.Greater(t, warmingUsage.CacheReadInputTokens, 100)
+	require.LessOrEqual(t, warmingUsage.CacheReadInputTokens, int(float64(warmingUsage.InputTokens)*second.cacheableFraction)+1)
 
-	third := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	third := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, thirdBody, "gpt-5.4")
 	require.NotNil(t, third)
 	require.Equal(t, 2, third.priorSeenCount)
+	require.NotNil(t, third.matchedPrefix)
 	warmUsage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, third, warmUsage, "req_third")
 	cacheableCap := int(float64(warmUsage.InputTokens) * third.cacheableFraction)
 	require.GreaterOrEqual(t, warmUsage.CacheReadInputTokens, cacheableCap-1)
 	require.LessOrEqual(t, warmUsage.CacheReadInputTokens, cacheableCap+1)
 	require.GreaterOrEqual(t, cache.sets, 3)
+}
+
+func TestOpenAICacheReadCorrection_ShortPromptDoesNotCreateCorrection(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	account := &Account{
+		ID:       12,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Extra: map[string]any{
+			openAICacheReadCorrectionEnabledKey: true,
+		},
+	}
+	body := []byte(`{"model":"gpt-5.4","input":"short prompt"}`)
+
+	correction := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, body, "gpt-5.4")
+	require.Nil(t, correction)
+	require.Zero(t, cache.gets)
+	require.Zero(t, cache.sets)
 }
