@@ -193,6 +193,37 @@ func TestGatewayServiceRecordUsage_PreservesRequestedAndUpstreamModels(t *testin
 	require.Equal(t, mappedModel, *usageRepo.lastLog.UpstreamModel)
 }
 
+func TestGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+	svc.cfg.Gateway.UsageLatencyOffsetMs = 200
+	firstTokenMs := 450
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID:    "gateway_latency_offset",
+			Usage:        ClaudeUsage{InputTokens: 10, OutputTokens: 6},
+			Model:        "claude-sonnet-4",
+			Duration:     1500 * time.Millisecond,
+			FirstTokenMs: &firstTokenMs,
+		},
+		APIKey:  &APIKey{ID: 502, Quota: 100},
+		User:    &User{ID: 602},
+		Account: &Account{ID: 702},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.DurationMs)
+	require.GreaterOrEqual(t, *usageRepo.lastLog.DurationMs, 1250)
+	require.LessOrEqual(t, *usageRepo.lastLog.DurationMs, 1350)
+	require.NotNil(t, usageRepo.lastLog.FirstTokenMs)
+	require.GreaterOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 200)
+	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 300)
+	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, *usageRepo.lastLog.DurationMs)
+	require.Equal(t, 450, firstTokenMs)
+}
+
 func TestGatewayServiceRecordUsage_EmptyImageSizeDefaultsBeforeBillingAndPersistence(t *testing.T) {
 	imagePrice2K := 0.19
 	groupID := int64(901)

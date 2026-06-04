@@ -208,6 +208,10 @@ func (s *openAIAccountRuntimeStats) report(accountID int64, success bool, firstT
 	}
 }
 
+func (s *openAIAccountRuntimeStats) reportAdjusted(accountID int64, success bool, firstTokenMs *int, offsetMs int) {
+	s.report(accountID, success, AdjustUsageLatencyPtr(firstTokenMs, offsetMs))
+}
+
 func (s *openAIAccountRuntimeStats) snapshot(accountID int64) (errorRate float64, ttft float64, hasTTFT bool) {
 	if s == nil || accountID <= 0 {
 		return 0, 0, false
@@ -996,7 +1000,7 @@ func (s *defaultOpenAIAccountScheduler) ReportResult(accountID int64, success bo
 	if s == nil || s.stats == nil {
 		return
 	}
-	s.stats.report(accountID, success, firstTokenMs)
+	s.stats.reportAdjusted(accountID, success, firstTokenMs, s.service.usageLatencyOffsetMs())
 }
 
 func (s *defaultOpenAIAccountScheduler) ReportSwitch() {

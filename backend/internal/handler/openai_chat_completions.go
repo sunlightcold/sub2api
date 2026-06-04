@@ -197,7 +197,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		}
 		service.SetOpsLatencyMs(c, service.OpsResponseLatencyMsKey, responseLatencyMs)
 		if err == nil && result != nil && result.FirstTokenMs != nil {
-			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
+			if firstTokenMs := h.gatewayService.AdjustUsageLatencyPtrWithSeed(result.FirstTokenMs, result.RequestID); firstTokenMs != nil {
+				service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*firstTokenMs))
+			}
 		}
 		if err != nil {
 			if result != nil && result.ImageCount > 0 {

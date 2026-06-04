@@ -9091,8 +9091,8 @@ func (s *GatewayService) buildRecordUsageLog(
 	cost *CostBreakdown,
 	opts *recordUsageOpts,
 ) *UsageLog {
-	durationMs := int(result.Duration.Milliseconds())
 	requestID := resolveUsageBillingRequestID(ctx, result.RequestID)
+	durationMs, firstTokenMs := s.AdjustUsageLatencyMetrics(int(result.Duration.Milliseconds()), result.FirstTokenMs, requestID)
 	usageLog := &UsageLog{
 		UserID:                user.ID,
 		APIKeyID:              apiKey.ID,
@@ -9117,7 +9117,7 @@ func (s *GatewayService) buildRecordUsageLog(
 		BillingMode:           resolveBillingMode(result, cost),
 		Stream:                result.Stream,
 		DurationMs:            &durationMs,
-		FirstTokenMs:          result.FirstTokenMs,
+		FirstTokenMs:          firstTokenMs,
 		ImageCount:            result.ImageCount,
 		ImageSize:             optionalTrimmedStringPtr(result.ImageSize),
 		ImageInputSize:        optionalTrimmedStringPtr(result.ImageInputSize),

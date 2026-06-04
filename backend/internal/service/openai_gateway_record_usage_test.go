@@ -243,6 +243,39 @@ func TestOpenAIGatewayServiceRecordUsage_ZeroUsageStillWritesUsageLog(t *testing
 	require.Zero(t, billingRepo.lastCmd.AccountQuotaCost)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	svc.cfg.Gateway.UsageLatencyOffsetMs = 150
+	firstTokenMs := 120
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:    "resp_latency_offset",
+			Usage:        OpenAIUsage{InputTokens: 20, OutputTokens: 10},
+			Model:        "gpt-5.1",
+			Duration:     1200 * time.Millisecond,
+			FirstTokenMs: &firstTokenMs,
+		},
+		APIKey:  &APIKey{ID: 1001, Group: &Group{RateMultiplier: 1}},
+		User:    &User{ID: 2001},
+		Account: &Account{ID: 3001, Type: AccountTypeAPIKey},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.NotNil(t, usageRepo.lastLog.DurationMs)
+	require.GreaterOrEqual(t, *usageRepo.lastLog.DurationMs, 1000)
+	require.LessOrEqual(t, *usageRepo.lastLog.DurationMs, 1100)
+	require.NotNil(t, usageRepo.lastLog.FirstTokenMs)
+	require.GreaterOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 1)
+	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 120)
+	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, *usageRepo.lastLog.DurationMs)
+	require.Equal(t, 120, firstTokenMs)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_MissingPricingRecordsZeroCostUsageLog(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}

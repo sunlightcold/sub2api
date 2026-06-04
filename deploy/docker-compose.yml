@@ -198,6 +198,13 @@ services:
         hard: 100000
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      # 分布式部署时，生图/远程应用节点需要连接主服务器 PostgreSQL。
+      # 默认只绑定 127.0.0.1，避免数据库意外暴露到公网。
+      # 如需给另一台服务器访问，在 .env 中设置：
+      # POSTGRES_BIND_HOST=主服务器内网IP或VPN IP
+      # POSTGRES_BIND_PORT=5432
+      - "${POSTGRES_BIND_HOST:-127.0.0.1}:${POSTGRES_BIND_PORT:-5432}:5432"
     environment:
       # postgres:18-alpine 默认 PGDATA=/var/lib/postgresql/18/docker（位于镜像声明的匿名卷 /var/lib/postgresql 内）。
       # 若不显式设置 PGDATA，则即使挂载了 postgres_data 到 /var/lib/postgresql/data，数据也不会落盘到该命名卷，
@@ -219,8 +226,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    # 注意：不暴露端口到宿主机，应用通过内部网络连接
-    # 如需调试，可临时添加：ports: ["127.0.0.1:5433:5432"]
+    # 注意：请配合防火墙只允许可信的生图/远程应用节点访问。
 
   # ===========================================================================
   # Redis Cache
@@ -235,6 +241,13 @@ services:
         hard: 100000
     volumes:
       - redis_data:/data
+    ports:
+      # 分布式部署时，生图/远程应用节点需要连接主服务器 Redis。
+      # 默认只绑定 127.0.0.1，避免 Redis 意外暴露到公网。
+      # 如需给另一台服务器访问，在 .env 中设置：
+      # REDIS_BIND_HOST=主服务器内网IP或VPN IP
+      # REDIS_BIND_PORT=6379
+      - "${REDIS_BIND_HOST:-127.0.0.1}:${REDIS_BIND_PORT:-6379}:6379"
     command: >
       sh -c '
         redis-server
@@ -254,8 +267,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    # 注意：不暴露端口到宿主机，应用通过内部网络连接
-    # 如需调试，可临时添加：ports: ["127.0.0.1:6379:6379"]
+    # 注意：请配合防火墙只允许可信的生图/远程应用节点访问。
 # =============================================================================
 # Volumes
 # =============================================================================
