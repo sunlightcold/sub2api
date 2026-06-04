@@ -19,47 +19,12 @@ func NormalizeUsageLatencyOffsetMs(value any) int {
 	return offsetMs
 }
 
-func (s *GatewayService) AdjustUsageLatencyPtrForAccount(value *int, account *Account, seed string) *int {
-	return AdjustUsageLatencyPtrWithSeed(value, account.UsageLatencyOffsetMs(), seed)
-}
-
 func (s *GatewayService) AdjustUsageLatencyMetricsForAccount(durationMs int, firstTokenMs *int, account *Account, seed string) (int, *int) {
 	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, account.UsageLatencyOffsetMs(), seed)
 }
 
-func (s *OpenAIGatewayService) AdjustUsageLatencyPtrForAccount(value *int, account *Account, seed string) *int {
-	return AdjustUsageLatencyPtrWithSeed(value, account.UsageLatencyOffsetMs(), seed)
-}
-
 func (s *OpenAIGatewayService) AdjustUsageLatencyMetricsForAccount(durationMs int, firstTokenMs *int, account *Account, seed string) (int, *int) {
 	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, account.UsageLatencyOffsetMs(), seed)
-}
-
-func AdjustUsageLatencyMs(value int, offsetMs int) int {
-	return AdjustUsageLatencyMsWithSeed(value, offsetMs, "")
-}
-
-func AdjustUsageLatencyPtr(value *int, offsetMs int) *int {
-	if value == nil {
-		return nil
-	}
-	adjusted := AdjustUsageLatencyMs(*value, offsetMs)
-	return &adjusted
-}
-
-func AdjustUsageLatencyMsWithSeed(value int, offsetMs int, seed string) int {
-	hash := usageLatencyHash(seed, "single")
-	hash = usageLatencyMixInt(hash, value)
-	effectiveOffset := usageLatencyEffectiveOffset(offsetMs, hash)
-	return adjustUsageLatencyValue(value, effectiveOffset, usageLatencyMixString(hash, "fallback"))
-}
-
-func AdjustUsageLatencyPtrWithSeed(value *int, offsetMs int, seed string) *int {
-	if value == nil {
-		return nil
-	}
-	adjusted := AdjustUsageLatencyMsWithSeed(*value, offsetMs, seed)
-	return &adjusted
 }
 
 func AdjustUsageLatencyMetrics(durationMs int, firstTokenMs *int, offsetMs int, seed string) (int, *int) {

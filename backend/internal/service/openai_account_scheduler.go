@@ -78,7 +78,7 @@ type OpenAIAccountSchedulerMetricsSnapshot struct {
 
 type OpenAIAccountScheduler interface {
 	Select(ctx context.Context, req OpenAIAccountScheduleRequest) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error)
-	ReportResult(account *Account, success bool, firstTokenMs *int)
+	ReportResult(accountID int64, success bool, firstTokenMs *int)
 	ReportSwitch()
 	SnapshotMetrics() OpenAIAccountSchedulerMetricsSnapshot
 }
@@ -206,13 +206,6 @@ func (s *openAIAccountRuntimeStats) report(accountID int64, success bool, firstT
 			}
 		}
 	}
-}
-
-func (s *openAIAccountRuntimeStats) reportAdjusted(account *Account, success bool, firstTokenMs *int) {
-	if account == nil {
-		return
-	}
-	s.report(account.ID, success, AdjustUsageLatencyPtr(firstTokenMs, account.UsageLatencyOffsetMs()))
 }
 
 func (s *openAIAccountRuntimeStats) snapshot(accountID int64) (errorRate float64, ttft float64, hasTTFT bool) {
@@ -999,11 +992,11 @@ func (s *defaultOpenAIAccountScheduler) isAccountRequestCompatible(ctx context.C
 	return accountSupportsOpenAICapabilities(account, req.RequiredCapability, req.RequiredImageCapability)
 }
 
-func (s *defaultOpenAIAccountScheduler) ReportResult(account *Account, success bool, firstTokenMs *int) {
+func (s *defaultOpenAIAccountScheduler) ReportResult(accountID int64, success bool, firstTokenMs *int) {
 	if s == nil || s.stats == nil {
 		return
 	}
-	s.stats.reportAdjusted(account, success, firstTokenMs)
+	s.stats.report(accountID, success, firstTokenMs)
 }
 
 func (s *defaultOpenAIAccountScheduler) ReportSwitch() {
@@ -1281,15 +1274,15 @@ func (s *OpenAIGatewayService) isOpenAIAccountTransportCompatible(account *Accou
 	return s.getOpenAIWSProtocolResolver().Resolve(account).Transport == requiredTransport
 }
 
-func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(account *Account, success bool, firstTokenMs *int) {
-	if account == nil {
+func (s *OpenAIGatewayService) ReportOpenAIAccountScheduleResult(accountID int64, success bool, firstTokenMs *int) {
+	if accountID <= 0 {
 		return
 	}
 	scheduler := s.getOpenAIAccountScheduler(context.Background())
 	if scheduler == nil {
 		return
 	}
-	scheduler.ReportResult(account, success, firstTokenMs)
+	scheduler.ReportResult(accountID, success, firstTokenMs)
 }
 
 func (s *OpenAIGatewayService) RecordOpenAIAccountSwitch() {

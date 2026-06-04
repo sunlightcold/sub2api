@@ -197,9 +197,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		}
 		service.SetOpsLatencyMs(c, service.OpsResponseLatencyMsKey, responseLatencyMs)
 		if err == nil && result != nil && result.FirstTokenMs != nil {
-			if firstTokenMs := h.gatewayService.AdjustUsageLatencyPtrForAccount(result.FirstTokenMs, account, result.RequestID); firstTokenMs != nil {
-				service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*firstTokenMs))
-			}
+			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
 		}
 		if err != nil {
 			if result != nil && result.ImageCount > 0 {
@@ -215,7 +213,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 						h.handleFailoverExhausted(c, failoverErr, true)
 						return
 					}
-					h.gatewayService.ReportOpenAIAccountScheduleResult(account, false, nil)
+					h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 					// Pool mode: retry on the same account
 					if failoverErr.RetryableOnSameAccount {
 						retryLimit := account.GetPoolModeRetryCount()
@@ -255,7 +253,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					)
 					continue
 				}
-				h.gatewayService.ReportOpenAIAccountScheduleResult(account, false, nil)
+				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)
 				wroteFallback := h.ensureForwardErrorResponse(c, streamStarted)
 				reqLog.Warn("openai_chat_completions.forward_failed",
 					zap.Int64("account_id", account.ID),
@@ -266,9 +264,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			}
 		}
 		if result != nil {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account, true, result.FirstTokenMs)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
 		} else {
-			h.gatewayService.ReportOpenAIAccountScheduleResult(account, true, nil)
+			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
 		}
 
 		userAgent := c.GetHeader("User-Agent")
