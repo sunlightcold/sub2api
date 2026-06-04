@@ -378,6 +378,7 @@ func (s *OpenAIGatewayService) correctOpenAICacheReadUsage(
 	result := correction.correctUsage(usage, requestID)
 	s.updateOpenAICacheReadState(ctx, account, correction, usage.InputTokens, usage.CacheReadInputTokens)
 	result.OriginalCachedTokens = originalCached
+	logOpenAICacheReadCorrectionResult(account, correction, usage, requestID, result)
 	return result
 }
 
@@ -448,6 +449,33 @@ func (s *OpenAIGatewayService) updateOpenAICacheReadState(ctx context.Context, a
 	if err := correction.cache.SetOpenAICacheReadState(ctx, correction.stateKey, next, correction.config.StateTTL); err != nil && account != nil {
 		logger.LegacyPrintf("service.openai_gateway", "openai_cache_read_state_write_failed account=%d err=%v", account.ID, err)
 	}
+}
+
+func logOpenAICacheReadCorrectionResult(
+	account *Account,
+	correction *openAICacheReadCorrectionContext,
+	usage *OpenAIUsage,
+	requestID string,
+	result openAICacheReadCorrectionResult,
+) {
+	if account == nil || correction == nil || usage == nil {
+		return
+	}
+	logger.LegacyPrintf(
+		"service.openai_gateway",
+		"openai_cache_read_correction account=%d request_id=%s prior_seen=%d input_tokens=%d original_cached=%d corrected_cached=%d changed=%v target_ratio=%.4f cacheable_cap=%d cacheable_fraction=%.4f state_key=%s",
+		account.ID,
+		truncateString(strings.TrimSpace(requestID), 64),
+		correction.priorSeenCount,
+		usage.InputTokens,
+		result.OriginalCachedTokens,
+		usage.CacheReadInputTokens,
+		result.Changed,
+		result.TargetRatio,
+		result.CacheableTokenCap,
+		correction.cacheableFraction,
+		truncateString(correction.stateKey, 160),
+	)
 }
 
 func (s *OpenAIGatewayService) correctOpenAICacheReadResponseBody(

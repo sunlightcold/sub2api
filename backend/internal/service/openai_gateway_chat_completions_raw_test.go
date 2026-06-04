@@ -323,6 +323,7 @@ func TestHandleChatStreamingResponse_SilentRefusalReasoningSummaryExempt(t *test
 	svc := &OpenAIGatewayService{cfg: rawChatCompletionsTestConfig()}
 
 	result, err := svc.handleChatStreamingResponse(
+		context.Background(),
 		resp,
 		c,
 		rawChatCompletionsTestAccount(),
@@ -331,6 +332,7 @@ func TestHandleChatStreamingResponse_SilentRefusalReasoningSummaryExempt(t *test
 		"gpt-5.5",
 		time.Now(),
 		openAISilentRefusalMinRequestBodyBytes,
+		nil,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -566,10 +568,120 @@ func TestBufferRawChatCompletions_RejectsOversizedResponse(t *testing.T) {
 	svc := &OpenAIGatewayService{cfg: rawChatCompletionsTestConfig()}
 	svc.cfg.Gateway.UpstreamResponseReadMaxBytes = 3
 
-	result, err := svc.bufferRawChatCompletions(c, resp, "gpt-5.4", "gpt-5.4", "gpt-5.4", nil, nil, time.Now())
+	result, err := svc.bufferRawChatCompletions(context.Background(), c, resp, rawChatCompletionsTestAccount(), "gpt-5.4", "gpt-5.4", "gpt-5.4", nil, nil, time.Now(), nil)
 	require.ErrorIs(t, err, ErrUpstreamResponseBodyTooLarge)
 	require.Nil(t, result)
 	require.Equal(t, http.StatusBadGateway, rec.Code)
+}
+
+func TestForwardAsRawChatCompletions_CorrectsCacheReadUsage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	stableContent := strings.Repeat("stable prefix ", 400)
+	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"` + stableContent + `"},{"role":"user","content":"hello"}],"stream":false}`)
+	cache := &openAICacheReadStateCacheStub{}
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	account := rawChatCompletionsTestAccount()
+	account.Extra = map[string]any{
+		openAICacheReadCorrectionEnabledKey: true,
+		openAICacheReadRatioMinKey:          0.90,
+		openAICacheReadRatioMaxKey:          0.92,
+		openAICacheReadMinInputTokensKey:    1024,
+	}
+
+	warmupSvc := &OpenAIGatewayService{cache: cache}
+	first := warmupSvc.prepareOpenAICacheReadCorrection(context.Background(), c, account, body, "gpt-5.4")
+	require.NotNil(t, first)
+	warmupSvc.correctOpenAICacheReadUsageOnly(context.Background(), account, first, &OpenAIUsage{InputTokens: 5000, OutputTokens: 1}, "warm_1")
+	second := warmupSvc.prepareOpenAICacheReadCorrection(context.Background(), c, account, body, "gpt-5.4")
+	require.NotNil(t, second)
+	warmupSvc.correctOpenAICacheReadUsageOnly(context.Background(), account, second, &OpenAIUsage{InputTokens: 5000, OutputTokens: 1}, "warm_2")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid_raw_cache_correct"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"chatcmpl_cache","object":"chat.completion","model":"gpt-5.4","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":5000,"completion_tokens":3,"total_tokens":5003,"prompt_tokens_details":{"cached_tokens":100}}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{
+		cfg:          rawChatCompletionsTestConfig(),
+		httpUpstream: upstream,
+		cache:        cache,
+	}
+
+	result, err := svc.forwardAsRawChatCompletions(context.Background(), c, account, body, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Greater(t, result.Usage.CacheReadInputTokens, 100)
+	require.Contains(t, rec.Body.String(), `"cached_tokens":`)
+	require.Greater(t, int(gjson.Get(rec.Body.String(), "usage.prompt_tokens_details.cached_tokens").Int()), 100)
+}
+
+func TestForwardAsRawChatCompletions_StreamCorrectsCacheReadUsage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	stableContent := strings.Repeat("stable prefix ", 400)
+	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"` + stableContent + `"},{"role":"user","content":"hello"}],"stream":true}`)
+	cache := &openAICacheReadStateCacheStub{}
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	account := rawChatCompletionsTestAccount()
+	account.Extra = map[string]any{
+		openAICacheReadCorrectionEnabledKey: true,
+		openAICacheReadRatioMinKey:          0.90,
+		openAICacheReadRatioMaxKey:          0.92,
+		openAICacheReadMinInputTokensKey:    1024,
+	}
+
+	warmupSvc := &OpenAIGatewayService{cache: cache}
+	first := warmupSvc.prepareOpenAICacheReadCorrection(context.Background(), c, account, body, "gpt-5.4")
+	require.NotNil(t, first)
+	warmupSvc.correctOpenAICacheReadUsageOnly(context.Background(), account, first, &OpenAIUsage{InputTokens: 5000, OutputTokens: 1}, "warm_stream_1")
+	second := warmupSvc.prepareOpenAICacheReadCorrection(context.Background(), c, account, body, "gpt-5.4")
+	require.NotNil(t, second)
+	warmupSvc.correctOpenAICacheReadUsageOnly(context.Background(), account, second, &OpenAIUsage{InputTokens: 5000, OutputTokens: 1}, "warm_stream_2")
+
+	upstreamBody := strings.Join([]string{
+		`data: {"id":"chatcmpl_cache","object":"chat.completion.chunk","model":"gpt-5.4","choices":[{"index":0,"delta":{"content":"ok"}}]}`,
+		"",
+		`data: {"id":"chatcmpl_cache","object":"chat.completion.chunk","model":"gpt-5.4","choices":[],"usage":{"prompt_tokens":5000,"completion_tokens":3,"total_tokens":5003,"prompt_tokens_details":{"cached_tokens":100}}}`,
+		"",
+		"data: [DONE]",
+		"",
+	}, "\n")
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "x-request-id": []string{"rid_raw_stream_cache_correct"}},
+		Body:       io.NopCloser(strings.NewReader(upstreamBody)),
+	}}
+	svc := &OpenAIGatewayService{
+		cfg:          rawChatCompletionsTestConfig(),
+		httpUpstream: upstream,
+		cache:        cache,
+	}
+
+	result, err := svc.forwardAsRawChatCompletions(context.Background(), c, account, body, "")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Greater(t, result.Usage.CacheReadInputTokens, 100)
+	require.Contains(t, rec.Body.String(), `"cached_tokens":`)
+	var correctedPayload string
+	for _, line := range strings.Split(rec.Body.String(), "\n") {
+		if payload, ok := extractOpenAISSEDataLine(line); ok && gjson.Get(payload, "usage").Exists() {
+			correctedPayload = payload
+			break
+		}
+	}
+	require.NotEmpty(t, correctedPayload)
+	require.Greater(t, int(gjson.Get(correctedPayload, `usage.prompt_tokens_details.cached_tokens`).Int()), 100)
 }
 
 func rawChatCompletionsTestConfig() *config.Config {
