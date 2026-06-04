@@ -287,13 +287,12 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	}
 
 	// 9. Handle normal response
-	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, responsesBody, originalModel)
 	var result *OpenAIForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleChatStreamingResponse(ctx, resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body), cacheReadCorrection)
+		result, handleErr = s.handleChatStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body))
 	} else {
-		result, handleErr = s.handleChatBufferedStreamingResponse(ctx, resp, c, account, originalModel, billingModel, upstreamModel, startTime, cacheReadCorrection)
+		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
 	}
 
 	// Propagate ServiceTier and ReasoningEffort to result for billing
@@ -368,15 +367,12 @@ func (s *OpenAIGatewayService) handleChatCompletionsErrorResponse(
 // upstream, finds the terminal event, converts to a Chat Completions JSON
 // response, and writes it to the client.
 func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
-	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
-	account *Account,
 	originalModel string,
 	billingModel string,
 	upstreamModel string,
 	startTime time.Time,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
@@ -393,15 +389,6 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	// When the terminal event has an empty output array, reconstruct from
 	// accumulated delta events so the client receives the full content.
 	acc.SupplementResponseOutput(finalResponse)
-	correctedUsage := usage
-	s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, &correctedUsage, requestID)
-	if correctedUsage.CacheReadInputTokens != usage.CacheReadInputTokens {
-		usage = correctedUsage
-		if finalResponse.Usage == nil {
-			finalResponse.Usage = &apicompat.ResponsesUsage{}
-		}
-		finalResponse.Usage = applyOpenAIUsageToResponsesUsage(finalResponse.Usage, usage)
-	}
 
 	chatResp := apicompat.ResponsesToChatCompletions(finalResponse, originalModel)
 
@@ -424,7 +411,6 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 // handleChatStreamingResponse reads Responses SSE events from upstream,
 // converts each to Chat Completions SSE chunks, and writes them to the client.
 func (s *OpenAIGatewayService) handleChatStreamingResponse(
-	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
@@ -433,7 +419,6 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	upstreamModel string,
 	startTime time.Time,
 	requestBodyLen int,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
@@ -520,24 +505,11 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 
 		isTerminalEvent := isOpenAICompatResponsesTerminalEvent(event.Type)
 		if isTerminalEvent {
-			if correctedPayload, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, []byte(payload), requestID); corrected {
-				payload = string(correctedPayload)
-				if correctedUsage != nil {
-					usage = *correctedUsage
-				}
-				if err := json.Unmarshal([]byte(payload), &event); err != nil {
-					logger.L().Warn("openai chat_completions stream: failed to parse corrected terminal event",
-						zap.Error(err),
-						zap.String("request_id", requestID),
-					)
-				}
-			} else {
-				if event.Usage != nil {
-					usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
-				}
-				if event.Response != nil && event.Response.Usage != nil {
-					usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
-				}
+			if event.Usage != nil {
+				usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
+			}
+			if event.Response != nil && event.Response.Usage != nil {
+				usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
 			}
 		}
 

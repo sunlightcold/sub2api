@@ -107,8 +107,6 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		}
 	}
 
-	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, upstreamBody, originalModel)
-
 	logger.L().Debug("openai chat_completions raw: forwarding without protocol conversion",
 		zap.Int64("account_id", account.ID),
 		zap.String("original_model", originalModel),
@@ -222,9 +220,9 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 
 	// 8. Forward response
 	if clientStream {
-		return s.streamRawChatCompletions(ctx, c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, len(body), cacheReadCorrection)
+		return s.streamRawChatCompletions(c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, len(body))
 	}
-	return s.bufferRawChatCompletions(ctx, c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
+	return s.bufferRawChatCompletions(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
 }
 
 // streamRawChatCompletions 透传上游 CC SSE 流到客户端，并提取 usage（包括
@@ -234,7 +232,6 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 // 网关会对上游强制打开 include_usage 以保证计费完整，并原样向下游透传 usage，
 // 让级联代理或下游计费系统也能拿到完整用量。
 func (s *OpenAIGatewayService) streamRawChatCompletions(
-	ctx context.Context,
 	c *gin.Context,
 	resp *http.Response,
 	account *Account,
@@ -245,7 +242,6 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	serviceTier *string,
 	startTime time.Time,
 	requestBodyLen int,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
@@ -319,13 +315,6 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 			if trimmedPayload != "[DONE]" {
 				usageOnlyChunk := isOpenAIChatUsageOnlyStreamChunk(payload)
 				if u := extractCCStreamUsage(payload); u != nil {
-					originalCached := u.CacheReadInputTokens
-					s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, u, requestID)
-					if u.CacheReadInputTokens != originalCached {
-						if updated, err := sjson.Set(payload, "usage.prompt_tokens_details.cached_tokens", u.CacheReadInputTokens); err == nil {
-							line = strings.Replace(line, payload, updated, 1)
-						}
-					}
 					usage = *u
 				}
 				if firstTokenMs == nil && !usageOnlyChunk {
@@ -432,17 +421,14 @@ func extractCCStreamUsage(payload string) *OpenAIUsage {
 
 // bufferRawChatCompletions 透传上游 CC 非流式 JSON 响应。
 func (s *OpenAIGatewayService) bufferRawChatCompletions(
-	ctx context.Context,
 	c *gin.Context,
 	resp *http.Response,
-	account *Account,
 	originalModel string,
 	billingModel string,
 	upstreamModel string,
 	reasoningEffort *string,
 	serviceTier *string,
 	startTime time.Time,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
@@ -463,16 +449,6 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 		}
 		if ccResp.Usage.PromptTokensDetails != nil {
 			usage.CacheReadInputTokens = ccResp.Usage.PromptTokensDetails.CachedTokens
-		}
-		s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, &usage, requestID)
-		if ccResp.Usage.PromptTokensDetails == nil && usage.CacheReadInputTokens > 0 {
-			ccResp.Usage.PromptTokensDetails = &apicompat.ChatTokenDetails{}
-		}
-		if ccResp.Usage.PromptTokensDetails != nil {
-			ccResp.Usage.PromptTokensDetails.CachedTokens = usage.CacheReadInputTokens
-		}
-		if updatedBody, marshalErr := json.Marshal(ccResp); marshalErr == nil {
-			respBody = updatedBody
 		}
 	}
 
