@@ -1765,6 +1765,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 	startTime time.Time,
 	attempt int,
 	lastFailureReason string,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	if s == nil || account == nil {
 		return nil, wrapOpenAIWSFallback("invalid_state", errors.New("service or account is nil"))
@@ -2232,6 +2233,14 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 				}
 			}
 		}
+		if reqStream && openAIWSEventShouldParseUsage(eventType) {
+			if correctedMessage, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, message, responseID); corrected {
+				message = correctedMessage
+				if correctedUsage != nil {
+					*usage = *correctedUsage
+				}
+			}
+		}
 		if openAIWSEventShouldParseUsage(eventType) {
 			parseOpenAIWSResponseUsageFromCompletedEvent(message, usage)
 		}
@@ -2363,6 +2372,14 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 		}
 		finalResponse = s.correctToolCallsInResponseBody(finalResponse)
 		populateOpenAIUsageFromResponseJSON(finalResponse, usage)
+		if correctedBody, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, finalResponse, responseID); correctedUsage != nil || corrected {
+			if corrected {
+				finalResponse = correctedBody
+			}
+			if correctedUsage != nil {
+				usage = correctedUsage
+			}
+		}
 		if responseID == "" {
 			responseID = strings.TrimSpace(gjson.GetBytes(finalResponse, "id").String())
 		}

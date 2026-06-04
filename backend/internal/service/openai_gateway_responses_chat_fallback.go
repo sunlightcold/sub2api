@@ -53,6 +53,7 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	clientStream := responsesReq.Stream
 	reasoningEffort := extractOpenAIReasoningEffortFromBody(body, originalModel)
 	serviceTier := extractOpenAIServiceTierFromBody(body)
+	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, body, originalModel)
 
 	chatReq, err := apicompat.ResponsesToChatCompletionsRequest(&responsesReq)
 	if err != nil {
@@ -199,13 +200,15 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	}
 
 	if clientStream {
-		return s.streamChatCompletionsAsResponses(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+		return s.streamChatCompletionsAsResponses(ctx, c, account, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
 	}
-	return s.bufferChatCompletionsAsResponses(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+	return s.bufferChatCompletionsAsResponses(ctx, c, account, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
 }
 
 func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
+	ctx context.Context,
 	c *gin.Context,
+	account *Account,
 	resp *http.Response,
 	originalModel string,
 	billingModel string,
@@ -213,6 +216,7 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 	reasoningEffort *string,
 	serviceTier *string,
 	startTime time.Time,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
@@ -244,6 +248,8 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 	if parsed, ok := extractOpenAIUsageFromJSONBytes(respBody); ok {
 		usage = parsed
 	}
+	s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, &usage, requestID)
+	responsesResp.Usage = applyOpenAIUsageToResponsesUsage(responsesResp.Usage, usage)
 
 	if s.responseHeaderFilter != nil {
 		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
@@ -264,7 +270,9 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 }
 
 func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
+	ctx context.Context,
 	c *gin.Context,
+	account *Account,
 	resp *http.Response,
 	originalModel string,
 	billingModel string,
@@ -272,6 +280,7 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 	reasoningEffort *string,
 	serviceTier *string,
 	startTime time.Time,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 	headersWritten := false
@@ -384,6 +393,8 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 		}, fmt.Errorf("stream usage incomplete: %w", err)
 	}
 
+	s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, &usage, requestID)
+	state.Usage = applyOpenAIUsageToResponsesUsage(state.Usage, usage)
 	writeEvents(apicompat.FinalizeChatCompletionsResponsesStream(state))
 	if !clientDisconnected {
 		writeStreamHeaders()
@@ -424,4 +435,26 @@ func chatChunkStartsResponsesOutput(chunk *apicompat.ChatCompletionsChunk) bool 
 		}
 	}
 	return false
+}
+
+func applyOpenAIUsageToResponsesUsage(dst *apicompat.ResponsesUsage, usage OpenAIUsage) *apicompat.ResponsesUsage {
+	if usage.InputTokens <= 0 && usage.OutputTokens <= 0 && usage.TotalTokens <= 0 {
+		return dst
+	}
+	if dst == nil {
+		dst = &apicompat.ResponsesUsage{}
+	}
+	dst.InputTokens = usage.InputTokens
+	dst.OutputTokens = usage.OutputTokens
+	dst.TotalTokens = usage.TotalTokens
+	if dst.TotalTokens == 0 {
+		dst.TotalTokens = dst.InputTokens + dst.OutputTokens
+	}
+	if usage.CacheReadInputTokens > 0 {
+		if dst.InputTokensDetails == nil {
+			dst.InputTokensDetails = &apicompat.ResponsesInputTokensDetails{}
+		}
+		dst.InputTokensDetails.CachedTokens = usage.CacheReadInputTokens
+	}
+	return dst
 }
