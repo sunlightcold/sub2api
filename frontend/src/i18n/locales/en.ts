@@ -3491,6 +3491,9 @@ export default {
         'When enabled, warmup requests like title generation will return mock responses without consuming upstream tokens',
       autoPauseOnExpired: 'Auto Pause On Expired',
       autoPauseOnExpiredDesc: 'When enabled, the account will auto pause scheduling after it expires',
+      usageLatencyOffsetMs: 'Usage latency offset (ms)',
+      usageLatencyOffsetMsHint:
+        'Per-account setting. Subtracts this relay delay from persisted duration_ms / first_token_ms with slight stable jitter. Leave empty or set 0 to disable.',
 	  autoPause5hThreshold: '5h Usage Threshold (%)',
 	  autoPause7dThreshold: '7d Usage Threshold (%)',
 	  autoPauseThresholdHint: 'Leave empty or set 0 to use the global default threshold (configured in Ops settings); set a value to override the global default. Reaching the threshold only skips the account during scheduling and does not modify schedulable.',

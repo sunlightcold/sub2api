@@ -1,65 +1,38 @@
 package service
 
-import "github.com/Wei-Shaw/sub2api/internal/config"
-
 const (
 	usageLatencyJitterCapMs   = 50
 	usageLatencyFallbackCapMs = 50
+	usageLatencyMaxOffsetMs   = 24 * 60 * 60 * 1000
 	usageLatencyFNVOffset64   = 14695981039346656037
 	usageLatencyFNVPrime64    = 1099511628211
 )
 
-func usageLatencyOffsetMs(cfg *config.Config) int {
-	if cfg == nil || cfg.Gateway.UsageLatencyOffsetMs <= 0 {
+func NormalizeUsageLatencyOffsetMs(value any) int {
+	offsetMs := parseExtraInt(value)
+	if offsetMs <= 0 {
 		return 0
 	}
-	return cfg.Gateway.UsageLatencyOffsetMs
-}
-
-func (s *GatewayService) usageLatencyOffsetMs() int {
-	if s == nil {
-		return 0
+	if offsetMs > usageLatencyMaxOffsetMs {
+		return usageLatencyMaxOffsetMs
 	}
-	return usageLatencyOffsetMs(s.cfg)
+	return offsetMs
 }
 
-func (s *GatewayService) AdjustUsageLatencyMs(value int) int {
-	return AdjustUsageLatencyMs(value, s.usageLatencyOffsetMs())
+func (s *GatewayService) AdjustUsageLatencyPtrForAccount(value *int, account *Account, seed string) *int {
+	return AdjustUsageLatencyPtrWithSeed(value, account.UsageLatencyOffsetMs(), seed)
 }
 
-func (s *GatewayService) AdjustUsageLatencyPtr(value *int) *int {
-	return AdjustUsageLatencyPtr(value, s.usageLatencyOffsetMs())
+func (s *GatewayService) AdjustUsageLatencyMetricsForAccount(durationMs int, firstTokenMs *int, account *Account, seed string) (int, *int) {
+	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, account.UsageLatencyOffsetMs(), seed)
 }
 
-func (s *GatewayService) AdjustUsageLatencyPtrWithSeed(value *int, seed string) *int {
-	return AdjustUsageLatencyPtrWithSeed(value, s.usageLatencyOffsetMs(), seed)
+func (s *OpenAIGatewayService) AdjustUsageLatencyPtrForAccount(value *int, account *Account, seed string) *int {
+	return AdjustUsageLatencyPtrWithSeed(value, account.UsageLatencyOffsetMs(), seed)
 }
 
-func (s *GatewayService) AdjustUsageLatencyMetrics(durationMs int, firstTokenMs *int, seed string) (int, *int) {
-	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, s.usageLatencyOffsetMs(), seed)
-}
-
-func (s *OpenAIGatewayService) usageLatencyOffsetMs() int {
-	if s == nil {
-		return 0
-	}
-	return usageLatencyOffsetMs(s.cfg)
-}
-
-func (s *OpenAIGatewayService) AdjustUsageLatencyMs(value int) int {
-	return AdjustUsageLatencyMs(value, s.usageLatencyOffsetMs())
-}
-
-func (s *OpenAIGatewayService) AdjustUsageLatencyPtr(value *int) *int {
-	return AdjustUsageLatencyPtr(value, s.usageLatencyOffsetMs())
-}
-
-func (s *OpenAIGatewayService) AdjustUsageLatencyPtrWithSeed(value *int, seed string) *int {
-	return AdjustUsageLatencyPtrWithSeed(value, s.usageLatencyOffsetMs(), seed)
-}
-
-func (s *OpenAIGatewayService) AdjustUsageLatencyMetrics(durationMs int, firstTokenMs *int, seed string) (int, *int) {
-	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, s.usageLatencyOffsetMs(), seed)
+func (s *OpenAIGatewayService) AdjustUsageLatencyMetricsForAccount(durationMs int, firstTokenMs *int, account *Account, seed string) (int, *int) {
+	return AdjustUsageLatencyMetrics(durationMs, firstTokenMs, account.UsageLatencyOffsetMs(), seed)
 }
 
 func AdjustUsageLatencyMs(value int, offsetMs int) int {

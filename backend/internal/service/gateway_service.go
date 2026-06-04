@@ -9092,7 +9092,7 @@ func (s *GatewayService) buildRecordUsageLog(
 	opts *recordUsageOpts,
 ) *UsageLog {
 	requestID := resolveUsageBillingRequestID(ctx, result.RequestID)
-	durationMs, firstTokenMs := s.AdjustUsageLatencyMetrics(int(result.Duration.Milliseconds()), result.FirstTokenMs, requestID)
+	durationMs, firstTokenMs := s.AdjustUsageLatencyMetricsForAccount(int(result.Duration.Milliseconds()), result.FirstTokenMs, account, requestID)
 	usageLog := &UsageLog{
 		UserID:                user.ID,
 		APIKeyID:              apiKey.ID,

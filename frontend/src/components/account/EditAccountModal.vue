@@ -1846,6 +1846,19 @@
         </div>
       </div>
 
+      <div>
+        <label class="input-label">{{ t('admin.accounts.usageLatencyOffsetMs') }}</label>
+        <input
+          v-model.number="usageLatencyOffsetMs"
+          type="number"
+          min="0"
+          step="1"
+          class="input"
+          data-testid="usage-latency-offset-ms"
+        />
+        <p class="input-hint">{{ t('admin.accounts.usageLatencyOffsetMsHint') }}</p>
+      </div>
+
       <div
         v-if="account?.platform === 'openai'"
         class="border-t border-gray-200 pt-4 dark:border-dark-600 space-y-4"
@@ -2588,6 +2601,7 @@ const autoPause5hThreshold = ref<number | null>(null)
 const autoPause7dThreshold = ref<number | null>(null)
 const autoPause5hDisabled = ref(false)
 const autoPause7dDisabled = ref(false)
+const usageLatencyOffsetMs = ref<number | null>(null)
 const mixedScheduling = ref(false) // For antigravity accounts: enable mixed scheduling
 const allowOverages = ref(false) // For antigravity accounts: enable AI Credits overages
 const antigravityModelRestrictionMode = ref<'whitelist' | 'mapping'>('whitelist')
@@ -2890,6 +2904,16 @@ const writeOpenAICacheReadCorrectionExtra = (extra: Record<string, unknown>) => 
   extra.openai_cache_read_min_input_tokens = Math.max(1, Math.trunc(openAICacheReadMinInputTokens.value || 1024))
   extra.openai_cache_state_ttl_minutes = Math.max(1, Math.trunc(openAICacheReadStateTTLMinutes.value || 60))
 }
+
+const writeUsageLatencyOffsetExtra = (extra: Record<string, unknown>) => {
+  const offsetMs = Number(usageLatencyOffsetMs.value)
+  if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
+    delete extra.usage_latency_offset_ms
+    return
+  }
+  extra.usage_latency_offset_ms = Math.trunc(offsetMs)
+}
+
 const normalizeOpenAIResponsesMode = (mode: unknown): OpenAIResponsesMode => {
   if (
     mode === 'force_responses' ||
@@ -3085,6 +3109,9 @@ const syncFormFromAccount = (newAccount: Account | null) => {
 	autoPause7dThreshold.value = typeof extra?.auto_pause_7d_threshold === 'number' ? extra.auto_pause_7d_threshold * 100 : null
 	autoPause5hDisabled.value = extra?.auto_pause_5h_disabled === true
 	autoPause7dDisabled.value = extra?.auto_pause_7d_disabled === true
+  usageLatencyOffsetMs.value = typeof extra?.usage_latency_offset_ms === 'number'
+    ? Math.max(0, Math.trunc(extra.usage_latency_offset_ms))
+    : null
 
   // Load OpenAI passthrough toggle (OpenAI OAuth/API Key)
   openaiPassthroughEnabled.value = false
@@ -4340,6 +4367,14 @@ const handleSubmit = async () => {
       }
       // Quota notify config
       writeQuotaNotifyToExtra(newExtra, 'update')
+      updatePayload.extra = newExtra
+    }
+
+    {
+      const currentExtra = (updatePayload.extra as Record<string, unknown>) ||
+        (props.account.extra as Record<string, unknown>) || {}
+      const newExtra: Record<string, unknown> = { ...currentExtra }
+      writeUsageLatencyOffsetExtra(newExtra)
       updatePayload.extra = newExtra
     }
 

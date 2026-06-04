@@ -392,6 +392,44 @@ describe('EditAccountModal', () => {
 	  expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.auto_pause_7d_threshold).toBe(0.96)
 	})
 
+  it('submits per-account usage latency offset in extra', async () => {
+    const account = buildAccount()
+    account.extra = {
+      usage_latency_offset_ms: 180
+    }
+    updateAccountMock.mockReset()
+    checkMixedChannelRiskMock.mockReset()
+    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
+    updateAccountMock.mockResolvedValue(account)
+
+    const wrapper = mountModal(account)
+
+    await wrapper.get('[data-testid="usage-latency-offset-ms"]').setValue('250')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.usage_latency_offset_ms).toBe(250)
+  })
+
+  it('clears per-account usage latency offset when set to zero', async () => {
+    const account = buildAccount()
+    account.extra = {
+      usage_latency_offset_ms: 180
+    }
+    updateAccountMock.mockReset()
+    checkMixedChannelRiskMock.mockReset()
+    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
+    updateAccountMock.mockResolvedValue(account)
+
+    const wrapper = mountModal(account)
+
+    await wrapper.get('[data-testid="usage-latency-offset-ms"]').setValue('0')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).not.toHaveProperty('usage_latency_offset_ms')
+  })
+
 	it('submits OpenAI quota auto-pause disable flag in extra', async () => {
 	  // Toggling the per-account disable flag must persist as auto_pause_5h_disabled
 	  // so an admin can exempt one account from auto-pause even when a global default

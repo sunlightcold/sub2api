@@ -207,15 +207,6 @@ func TestLoadOpenAIResponseHeaderTimeoutFromEnv(t *testing.T) {
 	require.Equal(t, 1800, cfg.Gateway.OpenAIResponseHeaderTimeout)
 }
 
-func TestLoadGatewayUsageLatencyOffsetFromEnv(t *testing.T) {
-	resetViperWithJWTSecret(t)
-	t.Setenv("GATEWAY_USAGE_LATENCY_OFFSET_MS", "250")
-
-	cfg, err := Load()
-	require.NoError(t, err)
-	require.Equal(t, 250, cfg.Gateway.UsageLatencyOffsetMs)
-}
-
 func TestLoadOpenAIWSStickyTTLCompatibility(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	t.Setenv("GATEWAY_OPENAI_WS_STICKY_RESPONSE_ID_TTL_SECONDS", "0")
@@ -1412,11 +1403,6 @@ func TestValidateConfigErrors(t *testing.T) {
 			name:    "gateway max line size negative",
 			mutate:  func(c *Config) { c.Gateway.MaxLineSize = -1 },
 			wantErr: "gateway.max_line_size must be non-negative",
-		},
-		{
-			name:    "gateway usage latency offset negative",
-			mutate:  func(c *Config) { c.Gateway.UsageLatencyOffsetMs = -1 },
-			wantErr: "gateway.usage_latency_offset_ms must be non-negative",
 		},
 		{
 			name:    "gateway usage record worker count",

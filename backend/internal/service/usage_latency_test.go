@@ -10,6 +10,19 @@ func usageLatencyIntPtr(v int) *int {
 	return &v
 }
 
+func TestNormalizeUsageLatencyOffsetMs(t *testing.T) {
+	require.Equal(t, 0, NormalizeUsageLatencyOffsetMs(nil))
+	require.Equal(t, 0, NormalizeUsageLatencyOffsetMs(0))
+	require.Equal(t, 0, NormalizeUsageLatencyOffsetMs(-1))
+	require.Equal(t, 123, NormalizeUsageLatencyOffsetMs(123.9))
+	require.Equal(t, usageLatencyMaxOffsetMs, NormalizeUsageLatencyOffsetMs(usageLatencyMaxOffsetMs+1))
+}
+
+func TestAccountUsageLatencyOffsetMsFromExtra(t *testing.T) {
+	account := &Account{Extra: map[string]any{"usage_latency_offset_ms": 180}}
+	require.Equal(t, 180, account.UsageLatencyOffsetMs())
+}
+
 func TestAdjustUsageLatencyMetrics_DisabledPreservesValues(t *testing.T) {
 	duration, firstToken := AdjustUsageLatencyMetrics(0, usageLatencyIntPtr(0), 0, "disabled")
 

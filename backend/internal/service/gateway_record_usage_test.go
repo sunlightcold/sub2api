@@ -196,7 +196,6 @@ func TestGatewayServiceRecordUsage_PreservesRequestedAndUpstreamModels(t *testin
 func TestGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
-	svc.cfg.Gateway.UsageLatencyOffsetMs = 200
 	firstTokenMs := 450
 
 	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
@@ -209,7 +208,7 @@ func TestGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
 		},
 		APIKey:  &APIKey{ID: 502, Quota: 100},
 		User:    &User{ID: 602},
-		Account: &Account{ID: 702},
+		Account: &Account{ID: 702, Extra: map[string]any{"usage_latency_offset_ms": 200}},
 	})
 
 	require.NoError(t, err)

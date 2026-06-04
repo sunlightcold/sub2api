@@ -1743,6 +1743,15 @@ func (a *Account) GetQuotaWeeklyUsed() float64 {
 	return a.getExtraFloat64("quota_weekly_used")
 }
 
+// UsageLatencyOffsetMs returns the per-account gateway latency correction used
+// when persisting usage duration/TTFT metrics. 0 means disabled for this account.
+func (a *Account) UsageLatencyOffsetMs() int {
+	if a == nil || a.Extra == nil {
+		return 0
+	}
+	return NormalizeUsageLatencyOffsetMs(a.Extra["usage_latency_offset_ms"])
+}
+
 // getExtraFloat64 从 Extra 中读取指定 key 的 float64 值
 func (a *Account) getExtraFloat64(key string) float64 {
 	if a.Extra == nil {

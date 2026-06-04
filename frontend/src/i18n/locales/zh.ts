@@ -3629,6 +3629,9 @@ export default {
       interceptWarmupRequestsDesc: '启用后，标题生成等预热请求将返回 mock 响应，不消耗上游 token',
       autoPauseOnExpired: '过期自动暂停调度',
       autoPauseOnExpiredDesc: '启用后，账号过期将自动暂停调度',
+      usageLatencyOffsetMs: '统计延迟扣减(ms)',
+      usageLatencyOffsetMsHint:
+        '账号独立配置。写入 duration_ms / first_token_ms 时扣减该账号的中转延迟，并带轻微稳定波动；留空或填 0 表示不扣减。',
 	  autoPause5hThreshold: '5h 用量阈值(%)',
 	  autoPause7dThreshold: '7d 用量阈值(%)',
 	  autoPauseThresholdHint: '留空或填 0 表示使用全局默认阈值（在运维设置中配置）；填具体值则覆盖全局默认。达到阈值后仅在调度时跳过账号，不修改 schedulable。',

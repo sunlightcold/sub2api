@@ -524,6 +524,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
+	sanitizeUsageLatencyOffset(req.Extra)
 
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
@@ -608,6 +609,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
+	sanitizeUsageLatencyOffset(req.Extra)
 
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
@@ -2410,4 +2412,20 @@ func sanitizeExtraBaseRPM(extra map[string]any) {
 		v = 10000
 	}
 	extra["base_rpm"] = v
+}
+
+func sanitizeUsageLatencyOffset(extra map[string]any) {
+	if extra == nil {
+		return
+	}
+	raw, ok := extra["usage_latency_offset_ms"]
+	if !ok {
+		return
+	}
+	offsetMs := service.NormalizeUsageLatencyOffsetMs(raw)
+	if offsetMs <= 0 {
+		delete(extra, "usage_latency_offset_ms")
+		return
+	}
+	extra["usage_latency_offset_ms"] = offsetMs
 }

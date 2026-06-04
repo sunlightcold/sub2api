@@ -5807,7 +5807,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			requestID = upstreamRequestID
 		}
 	}
-	durationMs, firstTokenMs := s.AdjustUsageLatencyMetrics(int(result.Duration.Milliseconds()), result.FirstTokenMs, requestID)
+	durationMs, firstTokenMs := s.AdjustUsageLatencyMetricsForAccount(int(result.Duration.Milliseconds()), result.FirstTokenMs, account, requestID)
 
 	// 确定 RequestedModel（渠道映射前的原始模型）
 	requestedModel := result.Model

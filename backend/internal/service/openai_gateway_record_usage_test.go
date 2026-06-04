@@ -248,7 +248,6 @@ func TestOpenAIGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
-	svc.cfg.Gateway.UsageLatencyOffsetMs = 150
 	firstTokenMs := 120
 
 	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
@@ -261,7 +260,7 @@ func TestOpenAIGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T
 		},
 		APIKey:  &APIKey{ID: 1001, Group: &Group{RateMultiplier: 1}},
 		User:    &User{ID: 2001},
-		Account: &Account{ID: 3001, Type: AccountTypeAPIKey},
+		Account: &Account{ID: 3001, Type: AccountTypeAPIKey, Extra: map[string]any{"usage_latency_offset_ms": 150}},
 	})
 
 	require.NoError(t, err)

@@ -161,9 +161,6 @@ gateway:
   # Max bytes to read for proxy probe responses (default: 1MB)
   # 代理探测响应体读取上限（默认 1MB）
   proxy_probe_response_read_max_bytes: 1048576
-  # Relay delay to subtract from usage duration / first-token metrics on write (ms, with slight stable jitter; 0=disabled)
-  # 写入 usage duration / first-token 时扣减的中转延迟（毫秒，带轻微稳定抖动；0 表示禁用）
-  usage_latency_offset_ms: 0
   # Enable Gemini upstream response header debug logs (default: false)
   # 是否开启 Gemini 上游响应头调试日志（默认 false）
   gemini_debug_response_headers: false
