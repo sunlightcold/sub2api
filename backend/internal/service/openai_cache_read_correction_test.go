@@ -57,16 +57,16 @@ func (s *openAICacheReadStateCacheStub) SetOpenAICacheReadState(_ context.Contex
 
 func openAICacheReadTestInputBody(parts ...string) []byte {
 	var b strings.Builder
-	b.WriteString(`{"model":"gpt-5.4","input":[`)
+	_, _ = b.WriteString(`{"model":"gpt-5.4","input":[`)
 	for i, part := range parts {
 		if i > 0 {
-			b.WriteByte(',')
+			_ = b.WriteByte(',')
 		}
-		b.WriteString(`{"type":"message","role":"user","content":"`)
-		b.WriteString(part)
-		b.WriteString(`"}`)
+		_, _ = b.WriteString(`{"type":"message","role":"user","content":"`)
+		_, _ = b.WriteString(part)
+		_, _ = b.WriteString(`"}`)
 	}
-	b.WriteString(`]}`)
+	_, _ = b.WriteString(`]}`)
 	return []byte(b.String())
 }
 

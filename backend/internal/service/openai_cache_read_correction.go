@@ -250,25 +250,6 @@ func (s *OpenAIGatewayService) prepareOpenAICacheReadCorrection(
 	}
 }
 
-func buildOpenAICacheReadPrefixFingerprint(c *gin.Context, body []byte, model string, maxBytes int) (string, float64) {
-	profile := buildOpenAICacheReadPromptProfile(c, body, model, maxBytes)
-	if profile.RouteHash == "" {
-		return "", 0
-	}
-	if len(profile.Candidates) == 0 || profile.TotalBytes <= 0 {
-		return profile.RouteHash, 0
-	}
-	last := profile.Candidates[len(profile.Candidates)-1]
-	fraction := float64(last.Bytes) / float64(profile.TotalBytes)
-	if fraction < 0 {
-		fraction = 0
-	}
-	if fraction > 1 {
-		fraction = 1
-	}
-	return last.Hash, fraction
-}
-
 type openAICacheReadPromptProfile struct {
 	RouteHash  string
 	TotalBytes int
@@ -310,9 +291,9 @@ func buildOpenAICacheReadPromptProfile(c *gin.Context, body []byte, model string
 		if builder.Len() < maxBytes {
 			remaining := maxBytes - builder.Len()
 			if len(part) > remaining {
-				builder.WriteString(part[:remaining])
+				_, _ = builder.WriteString(part[:remaining])
 			} else {
-				builder.WriteString(part)
+				_, _ = builder.WriteString(part)
 				boundaries = append(boundaries, builder.Len())
 			}
 		}
