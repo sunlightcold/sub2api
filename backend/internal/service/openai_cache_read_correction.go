@@ -444,10 +444,7 @@ func (c *openAICacheReadCorrectionContext) correctUsage(usage *OpenAIUsage, requ
 	if c == nil || usage == nil || usage.InputTokens < c.config.MinInputTokens || usage.InputTokens <= 0 {
 		return openAICacheReadCorrectionResult{}
 	}
-	cacheableCap := int(math.Ceil(float64(usage.InputTokens) * c.cacheableFraction))
-	if cacheableCap <= 0 {
-		return openAICacheReadCorrectionResult{CacheableTokenCap: 0}
-	}
+	cacheableCap := usage.InputTokens
 	targetRatio := c.targetRatio(usage.InputTokens, requestID)
 	if targetRatio <= 0 {
 		return openAICacheReadCorrectionResult{TargetRatio: targetRatio, CacheableTokenCap: cacheableCap}

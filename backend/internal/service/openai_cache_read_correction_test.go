@@ -231,8 +231,8 @@ func TestOpenAICacheReadCorrection_AppendedResponsesInputMatchesPriorPrefix(t *t
 	require.Greater(t, second.cacheableFraction, 0.0)
 	warmingUsage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, second, warmingUsage, "req_second")
-	require.Greater(t, warmingUsage.CacheReadInputTokens, 100)
-	require.LessOrEqual(t, warmingUsage.CacheReadInputTokens, int(float64(warmingUsage.InputTokens)*second.cacheableFraction)+1)
+	require.GreaterOrEqual(t, warmingUsage.CacheReadInputTokens, 3500)
+	require.LessOrEqual(t, warmingUsage.CacheReadInputTokens, 7500)
 
 	third := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, thirdBody, "gpt-5.4")
 	require.NotNil(t, third)
@@ -240,10 +240,42 @@ func TestOpenAICacheReadCorrection_AppendedResponsesInputMatchesPriorPrefix(t *t
 	require.NotNil(t, third.matchedPrefix)
 	warmUsage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
 	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, third, warmUsage, "req_third")
-	cacheableCap := int(float64(warmUsage.InputTokens) * third.cacheableFraction)
-	require.GreaterOrEqual(t, warmUsage.CacheReadInputTokens, cacheableCap-1)
-	require.LessOrEqual(t, warmUsage.CacheReadInputTokens, cacheableCap+1)
+	require.GreaterOrEqual(t, warmUsage.CacheReadInputTokens, 9000)
+	require.LessOrEqual(t, warmUsage.CacheReadInputTokens, 9200)
 	require.GreaterOrEqual(t, cache.sets, 3)
+}
+
+func TestOpenAICacheReadCorrection_WarmRatioCanExceedMatchedPrefixFraction(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	account := &Account{
+		ID:       12,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Extra: map[string]any{
+			openAICacheReadCorrectionEnabledKey: true,
+			openAICacheReadRatioMinKey:          0.90,
+			openAICacheReadRatioMaxKey:          0.90,
+			openAICacheReadWarmingRatioMinKey:   0.90,
+			openAICacheReadWarmingRatioMaxKey:   0.90,
+		},
+	}
+	firstBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 700))
+	secondBody := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("new-", 1000))
+
+	first := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, firstBody, "gpt-5.4")
+	require.NotNil(t, first)
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, first, &OpenAIUsage{InputTokens: 10000, OutputTokens: 10}, "req_first")
+
+	second := svc.prepareOpenAICacheReadCorrection(context.Background(), nil, account, secondBody, "gpt-5.4")
+	require.NotNil(t, second)
+	require.NotNil(t, second.matchedPrefix)
+	require.Less(t, second.cacheableFraction, 0.90)
+
+	usage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), account, second, usage, "req_second")
+	require.Equal(t, 9000, usage.CacheReadInputTokens)
 }
 
 func TestOpenAICacheReadCorrection_ShortPromptDoesNotCreateCorrection(t *testing.T) {
@@ -251,7 +283,7 @@ func TestOpenAICacheReadCorrection_ShortPromptDoesNotCreateCorrection(t *testing
 	cache := &openAICacheReadStateCacheStub{}
 	svc := &OpenAIGatewayService{cache: cache}
 	account := &Account{
-		ID:       12,
+		ID:       13,
 		Platform: PlatformOpenAI,
 		Type:     AccountTypeAPIKey,
 		Extra: map[string]any{
