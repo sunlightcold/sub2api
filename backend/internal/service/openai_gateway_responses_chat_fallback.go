@@ -438,7 +438,7 @@ func chatChunkStartsResponsesOutput(chunk *apicompat.ChatCompletionsChunk) bool 
 }
 
 func applyOpenAIUsageToResponsesUsage(dst *apicompat.ResponsesUsage, usage OpenAIUsage) *apicompat.ResponsesUsage {
-	if usage.InputTokens <= 0 && usage.OutputTokens <= 0 && usage.TotalTokens <= 0 {
+	if usage.InputTokens <= 0 && usage.OutputTokens <= 0 {
 		return dst
 	}
 	if dst == nil {
@@ -446,10 +446,7 @@ func applyOpenAIUsageToResponsesUsage(dst *apicompat.ResponsesUsage, usage OpenA
 	}
 	dst.InputTokens = usage.InputTokens
 	dst.OutputTokens = usage.OutputTokens
-	dst.TotalTokens = usage.TotalTokens
-	if dst.TotalTokens == 0 {
-		dst.TotalTokens = dst.InputTokens + dst.OutputTokens
-	}
+	dst.TotalTokens = dst.InputTokens + dst.OutputTokens + usage.CacheCreationInputTokens
 	if usage.CacheReadInputTokens > 0 {
 		if dst.InputTokensDetails == nil {
 			dst.InputTokensDetails = &apicompat.ResponsesInputTokensDetails{}
