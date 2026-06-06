@@ -506,10 +506,14 @@ async function handleVerify(): Promise<void> {
           email: email.value,
           password: password.value,
           verify_code: verifyCode.value.trim(),
-          invitation_code: invitationCode.value || undefined,
+          ...(invitationCode.value ? { invitation_code: invitationCode.value } : {}),
           ...oauthAffiliatePayload(affCode.value || loadAffiliateReferralCode()),
-          adopt_display_name: pendingAdoptionDecision.value?.adoptDisplayName,
-          adopt_avatar: pendingAdoptionDecision.value?.adoptAvatar
+          ...(typeof pendingAdoptionDecision.value?.adoptDisplayName === 'boolean'
+            ? { adopt_display_name: pendingAdoptionDecision.value.adoptDisplayName }
+            : {}),
+          ...(typeof pendingAdoptionDecision.value?.adoptAvatar === 'boolean'
+            ? { adopt_avatar: pendingAdoptionDecision.value.adoptAvatar }
+            : {})
         }
       )
       if (isPendingOAuthSessionResponse(data)) {
