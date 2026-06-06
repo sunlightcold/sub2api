@@ -244,7 +244,7 @@ func TestForwardResponses_PreserveChatEndpointKeepsAutoResponsesCompatibility(t 
 	require.Equal(t, "http://upstream.example/v1/responses", upstream.lastReq.URL.String())
 	require.True(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
 	require.False(t, gjson.GetBytes(upstream.lastBody, "messages").Exists())
-	require.Equal(t, "You are a helpful coding assistant.", gjson.GetBytes(upstream.lastBody, "instructions").String())
+	require.Equal(t, defaultCodexSynthInstructions("gpt-5.4"), gjson.GetBytes(upstream.lastBody, "instructions").String())
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
