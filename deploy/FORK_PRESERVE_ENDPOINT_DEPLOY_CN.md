@@ -60,11 +60,7 @@ openai_responses_mode = preserve_endpoint
 
 ### 2. instructions 处理差异
 
-在 `preserve_endpoint` 严格模式下，不会因为 `/v1/responses` 请求缺少 `instructions` 而自动补：
-
-```text
-You are a helpful coding assistant.
-```
+在 `preserve_endpoint` 严格模式下，不会因为 `/v1/responses` 请求缺少 `instructions` 而自动补默认 Codex instructions。
 
 这点是本次修改的核心约束：不通过注入默认提示词来规避上游报错。
 
@@ -116,6 +112,27 @@ ghcr.io/sunlightcold/sub2api:main
 ## 生产部署方式
 
 推荐使用 GitHub Actions 构建好的 GHCR 镜像，不建议在低配置服务器上执行 `docker build --no-cache`，容易占满 CPU/内存导致服务器卡死。
+
+### 可选：主节点暴露数据库/Redis 给远程节点
+
+主 `docker-compose.yml` 和 `docker-compose.local.yml` 默认保持上游行为：PostgreSQL/Redis 不暴露到宿主机，只允许容器内网访问。
+
+如果你需要让另一台生图节点或远程应用节点连接主服务器的 PostgreSQL/Redis，必须显式叠加 override 文件：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.remote-bindings.yml up -d
+```
+
+然后在 `.env` 中按需设置：
+
+```env
+POSTGRES_BIND_HOST=主服务器内网IP或VPN IP
+POSTGRES_BIND_PORT=5432
+REDIS_BIND_HOST=主服务器内网IP或VPN IP
+REDIS_BIND_PORT=6379
+```
+
+不要把数据库或 Redis 暴露到公网。Redis 暴露给远程节点时必须设置强 `REDIS_PASSWORD`，并用防火墙只允许可信节点 IP 访问。
 
 ### 方式一：替换一键部署的镜像
 

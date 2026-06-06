@@ -1,0 +1,21 @@
+# =============================================================================
+# Optional override: expose local PostgreSQL/Redis for trusted remote app nodes.
+# =============================================================================
+# Default docker-compose.yml keeps database/cache private on the Docker network,
+# matching upstream behavior. Load this file only when a separate Sub2API node
+# must connect to this host's PostgreSQL/Redis:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.remote-bindings.yml up -d
+#
+# Keep POSTGRES_BIND_HOST/REDIS_BIND_HOST on a private/VPN address when possible
+# and restrict source IPs with a firewall.
+# =============================================================================
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_BIND_HOST:-127.0.0.1}:${POSTGRES_BIND_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_BIND_HOST:-127.0.0.1}:${REDIS_BIND_PORT:-6379}:6379"
