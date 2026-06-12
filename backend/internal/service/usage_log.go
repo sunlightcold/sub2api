@@ -155,8 +155,12 @@ type UsageLog struct {
 	OpenAIWSMode bool
 	DurationMs   *int
 	FirstTokenMs *int
-	UserAgent    *string
-	IPAddress    *string
+	// UpstreamTiming stores raw per-request diagnostic timings in milliseconds.
+	// These values are not adjusted by usage_latency_offset_ms and are intended
+	// for administrator-only troubleshooting.
+	UpstreamTiming UsageUpstreamTiming
+	UserAgent      *string
+	IPAddress      *string
 
 	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 	CacheTTLOverridden bool
@@ -178,6 +182,8 @@ type UsageLog struct {
 	Group        *Group
 	Subscription *UserSubscription
 }
+
+type UsageUpstreamTiming map[string]int64
 
 func (u *UsageLog) TotalTokens() int {
 	return u.InputTokens + u.OutputTokens + u.CacheCreationTokens + u.CacheReadTokens

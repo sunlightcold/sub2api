@@ -178,6 +178,29 @@
           <span class="text-sm text-gray-600 dark:text-gray-400">{{ formatDuration(row.duration_ms) }}</span>
         </template>
 
+        <template #cell-upstream_timing="{ row }">
+          <div v-if="hasUpstreamTiming(row)" class="text-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="font-medium text-sky-600 dark:text-sky-400">
+                {{ primaryUpstreamTimingLabel(row) }} {{ formatDuration(primaryUpstreamTimingMs(row)) }}
+              </span>
+              <div
+                class="group relative"
+                @mouseenter="showUpstreamTimingTooltip($event, row)"
+                @mouseleave="hideUpstreamTimingTooltip"
+              >
+                <div class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50">
+                  <Icon name="infoCircle" size="xs" class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400" />
+                </div>
+              </div>
+            </div>
+            <div class="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+              {{ t('admin.usage.upstreamTimingForwardShort') }} {{ formatDuration(totalUpstreamTimingMs(row)) }}
+            </div>
+          </div>
+          <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
+        </template>
+
         <template #cell-created_at="{ value }">
           <span class="text-sm text-gray-600 dark:text-gray-400">{{ formatDateTime(value) }}</span>
         </template>
@@ -399,10 +422,48 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- Upstream Timing Tooltip Portal -->
+  <Teleport to="body">
+    <div
+      v-if="upstreamTimingTooltipVisible"
+      class="fixed z-[9999] pointer-events-none -translate-y-1/2"
+      :style="{
+        left: upstreamTimingTooltipPosition.x + 'px',
+        top: upstreamTimingTooltipPosition.y + 'px'
+      }"
+    >
+      <div class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-xs text-white shadow-xl dark:border-gray-600 dark:bg-gray-800">
+        <div class="space-y-1.5">
+          <div class="mb-2 border-b border-gray-700 pb-1.5">
+            <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('admin.usage.upstreamTimingPhaseDetails') }}</div>
+            <div
+              v-for="item in upstreamTimingTooltipRows"
+              :key="item.key"
+              class="flex items-center justify-between gap-6"
+            >
+              <span class="text-gray-400">{{ item.label }}</span>
+              <span class="font-medium" :class="item.valueClass">{{ formatDuration(item.value) }}</span>
+            </div>
+          </div>
+          <div v-if="upstreamTimingDerivedRows.length" class="text-xs font-semibold text-gray-300 mb-1">{{ t('admin.usage.upstreamTimingEndToEndDetails') }}</div>
+          <div
+            v-for="item in upstreamTimingDerivedRows"
+            :key="item.key"
+            class="flex items-center justify-between gap-6"
+          >
+            <span class="text-gray-400">{{ item.label }}</span>
+            <span class="font-semibold" :class="item.valueClass">{{ formatDuration(item.value) }}</span>
+          </div>
+        </div>
+        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-gray-900 border-t-transparent dark:border-r-gray-800"></div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime, formatReasoningEffort } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
@@ -439,7 +500,7 @@ function accountBilled(row: { total_cost?: number | null; account_stats_cost?: n
 import DataTable from '@/components/common/DataTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
-import type { AdminUsageLog } from '@/types'
+import type { AdminUsageLog, UsageUpstreamTiming } from '@/types'
 import type { Column } from '@/components/common/types'
 
 interface Props {
@@ -473,6 +534,11 @@ const tokenTooltipVisible = ref(false)
 const tokenTooltipPosition = ref({ x: 0, y: 0 })
 const tokenTooltipData = ref<AdminUsageLog | null>(null)
 
+// Tooltip state - upstream timing
+const upstreamTimingTooltipVisible = ref(false)
+const upstreamTimingTooltipPosition = ref({ x: 0, y: 0 })
+const upstreamTimingTooltipData = ref<AdminUsageLog | null>(null)
+
 const getRequestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
   if (requestType === 'ws_v2') return t('usage.ws')
@@ -500,6 +566,128 @@ const formatDuration = (ms: number | null | undefined): string => {
   if (ms < 1000) return `${ms}ms`
   return `${(ms / 1000).toFixed(2)}s`
 }
+
+const upstreamTimingPhaseFields = [
+  ['gateway_prepare_ms', 'admin.usage.upstreamTimingGatewayPrepare', 'text-gray-100'],
+  ['upstream_headers_ms', 'admin.usage.upstreamTimingHeaders', 'text-blue-300'],
+  ['upstream_first_sse_ms', 'admin.usage.upstreamTimingUpstreamFirstSSE', 'text-sky-300'],
+  ['gateway_first_output_ms', 'admin.usage.upstreamTimingGatewayFirstOutput', 'text-cyan-300'],
+  ['upstream_generation_ms', 'admin.usage.upstreamTimingGeneration', 'text-emerald-300'],
+  ['stream_tail_ms', 'admin.usage.upstreamTimingStreamTail', 'text-green-300'],
+  ['post_headers_ms', 'admin.usage.upstreamTimingPostHeaders', 'text-amber-300'],
+] as const
+
+const upstreamTimingEndToEndFields = [
+  ['ttft_ms', 'admin.usage.upstreamTimingTTFT', 'text-sky-300'],
+  ['client_ttft_ms', 'admin.usage.upstreamTimingClientTTFT', 'text-cyan-300'],
+  ['total_ms', 'admin.usage.upstreamTimingTotal', 'text-green-400'],
+] as const
+
+const numberTimingValue = (value: number | null | undefined): number | undefined => {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+const normalizeUpstreamTiming = (row: AdminUsageLog): UsageUpstreamTiming | null => {
+  const timing = row.upstream_timing
+  if (!timing) return null
+  const out: UsageUpstreamTiming = {}
+  const value = (key: keyof UsageUpstreamTiming) => numberTimingValue(timing[key])
+
+  out.gateway_prepare_ms = value('gateway_prepare_ms') ?? value('pre_upstream_ms')
+  out.upstream_headers_ms = value('upstream_headers_ms') ?? value('upstream_do_ms')
+  out.ttft_ms = value('ttft_ms') ?? value('first_sse_ms')
+  out.client_ttft_ms = value('client_ttft_ms') ?? value('first_client_output_ms')
+  out.total_ms = value('total_ms') ?? value('forward_ms')
+  out.upstream_first_sse_ms = value('upstream_first_sse_ms')
+  out.gateway_first_output_ms = value('gateway_first_output_ms')
+  out.upstream_generation_ms = value('upstream_generation_ms')
+  out.stream_tail_ms = value('stream_tail_ms')
+  out.post_headers_ms = value('post_headers_ms')
+
+  if (
+    out.upstream_first_sse_ms == null &&
+    out.ttft_ms != null &&
+    out.gateway_prepare_ms != null &&
+    out.upstream_headers_ms != null
+  ) {
+    out.upstream_first_sse_ms = Math.max(0, out.ttft_ms - out.gateway_prepare_ms - out.upstream_headers_ms)
+  }
+  if (out.gateway_first_output_ms == null && out.client_ttft_ms != null && out.ttft_ms != null) {
+    out.gateway_first_output_ms = Math.max(0, out.client_ttft_ms - out.ttft_ms)
+  }
+  const legacyTerminalMs = value('terminal_ms')
+  if (out.upstream_generation_ms == null && legacyTerminalMs != null && out.ttft_ms != null) {
+    out.upstream_generation_ms = Math.max(0, legacyTerminalMs - out.ttft_ms)
+  }
+  const legacyStreamEndMs = value('stream_end_ms')
+  if (out.stream_tail_ms == null && legacyStreamEndMs != null && legacyTerminalMs != null) {
+    out.stream_tail_ms = Math.max(0, legacyStreamEndMs - legacyTerminalMs)
+  }
+
+  return Object.keys(out).some((key) => typeof out[key] === 'number') ? out : null
+}
+
+const hasUpstreamTiming = (row: AdminUsageLog): boolean => {
+  return !!normalizeUpstreamTiming(row)
+}
+
+const primaryUpstreamTimingMs = (row: AdminUsageLog): number | null | undefined => {
+  const timing = normalizeUpstreamTiming(row)
+  return timing?.ttft_ms ?? row.first_token_ms ?? timing?.post_headers_ms ?? timing?.upstream_headers_ms ?? timing?.total_ms
+}
+
+const primaryUpstreamTimingLabel = (row: AdminUsageLog): string => {
+  const timing = normalizeUpstreamTiming(row)
+  if (timing?.ttft_ms != null || row.first_token_ms != null) {
+    return t('admin.usage.upstreamTimingTTFTShort')
+  }
+  if (timing?.post_headers_ms != null) {
+    return t('admin.usage.upstreamTimingPostHeadersShort')
+  }
+  if (timing?.upstream_headers_ms != null) {
+    return t('admin.usage.upstreamTimingHeadersShort')
+  }
+  return t('admin.usage.upstreamTimingTotalShort')
+}
+
+const totalUpstreamTimingMs = (row: AdminUsageLog): number | null | undefined => {
+  return normalizeUpstreamTiming(row)?.total_ms ?? row.duration_ms
+}
+
+type UpstreamTimingTooltipItem = {
+  key: string
+  label: string
+  value: number
+  valueClass: string
+}
+
+const upstreamTimingTooltipRows = computed<UpstreamTimingTooltipItem[]>(() => {
+  const data = upstreamTimingTooltipData.value
+  const timing = data ? normalizeUpstreamTiming(data) : null
+  if (!timing) return []
+  return upstreamTimingPhaseFields
+    .filter(([key]) => typeof timing[key] === 'number')
+    .map(([key, labelKey, valueClass]) => ({
+      key,
+      label: t(labelKey),
+      value: timing[key] as number,
+      valueClass,
+    }))
+})
+
+const upstreamTimingDerivedRows = computed<UpstreamTimingTooltipItem[]>(() => {
+  const data = upstreamTimingTooltipData.value
+  const timing = data ? normalizeUpstreamTiming(data) : null
+  if (!timing) return []
+  return upstreamTimingEndToEndFields
+    .filter(([key]) => typeof timing[key] === 'number')
+    .map(([key, labelKey, valueClass]) => ({
+      key,
+      label: t(labelKey),
+      value: timing[key] as number,
+      valueClass,
+    }))
+})
 
 // Cost tooltip functions
 const showTooltip = (event: MouseEvent, row: AdminUsageLog) => {
@@ -529,5 +717,20 @@ const showTokenTooltip = (event: MouseEvent, row: AdminUsageLog) => {
 const hideTokenTooltip = () => {
   tokenTooltipVisible.value = false
   tokenTooltipData.value = null
+}
+
+// Upstream timing tooltip functions
+const showUpstreamTimingTooltip = (event: MouseEvent, row: AdminUsageLog) => {
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  upstreamTimingTooltipData.value = row
+  upstreamTimingTooltipPosition.value.x = rect.right + 8
+  upstreamTimingTooltipPosition.value.y = rect.top + rect.height / 2
+  upstreamTimingTooltipVisible.value = true
+}
+
+const hideUpstreamTimingTooltip = () => {
+  upstreamTimingTooltipVisible.value = false
+  upstreamTimingTooltipData.value = null
 }
 </script>

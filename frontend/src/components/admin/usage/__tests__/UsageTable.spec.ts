@@ -43,6 +43,22 @@ const messages: Record<string, string> = {
   'admin.usage.billingModeToken': 'Token',
   'admin.usage.billingModePerRequest': 'Per request',
   'admin.usage.billingModeImage': 'Image',
+  'admin.usage.upstreamTimingDetails': 'Upstream Timing Details',
+  'admin.usage.upstreamTimingPhaseDetails': 'Phase timings',
+  'admin.usage.upstreamTimingEndToEndDetails': 'End-to-end timings',
+  'admin.usage.upstreamTimingForwardShort': 'Total',
+  'admin.usage.upstreamTimingTotalShort': 'Total',
+  'admin.usage.upstreamTimingTTFTShort': 'First SSE',
+  'admin.usage.upstreamTimingGatewayPrepare': 'Gateway prepare',
+  'admin.usage.upstreamTimingHeaders': 'Wait for headers',
+  'admin.usage.upstreamTimingUpstreamFirstSSE': 'Headers to first SSE',
+  'admin.usage.upstreamTimingGatewayFirstOutput': 'First SSE to output',
+  'admin.usage.upstreamTimingGeneration': 'First SSE to terminal',
+  'admin.usage.upstreamTimingStreamTail': 'Terminal to stream end',
+  'admin.usage.upstreamTimingPostHeaders': 'After headers',
+  'admin.usage.upstreamTimingTTFT': 'First SSE total',
+  'admin.usage.upstreamTimingClientTTFT': 'First output total',
+  'admin.usage.upstreamTimingTotal': 'Total raw',
 }
 
 vi.mock('vue-i18n', async () => {
@@ -64,6 +80,7 @@ const DataTableStub = {
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
         <slot name="cell-cost" :row="row" />
+        <slot name="cell-upstream_timing" :row="row" />
       </div>
     </div>
   `,
@@ -160,6 +177,69 @@ describe('admin UsageTable tooltip', () => {
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
     expect(text).toContain('$0.069568')
+  })
+
+  it('shows upstream timing details with corrected headers-to-first-SSE delta', async () => {
+    const row = {
+      request_id: 'req-admin-upstream-timing',
+      model: 'gpt-5',
+      actual_cost: 0,
+      total_cost: 0,
+      account_rate_multiplier: 1,
+      rate_multiplier: 1,
+      input_cost: 0,
+      output_cost: 0,
+      cache_creation_cost: 0,
+      cache_read_cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      first_token_ms: 1300,
+      duration_ms: 2200,
+      upstream_timing: {
+        gateway_prepare_ms: 100,
+        upstream_headers_ms: 400,
+        upstream_first_sse_ms: 800,
+        ttft_ms: 1300,
+        gateway_first_output_ms: 200,
+        client_ttft_ms: 1500,
+        upstream_generation_ms: 700,
+        stream_tail_ms: 100,
+        total_ms: 2200,
+      },
+    }
+
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [row],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    const tooltipTriggers = wrapper.findAll('.group.relative')
+    await tooltipTriggers[tooltipTriggers.length - 1].trigger('mouseenter')
+    await nextTick()
+
+    const text = wrapper.text()
+    expect(text).toContain('1.30s')
+    expect(text).toContain('Total 2.20s')
+    expect(text).toContain('Phase timings')
+    expect(text).toContain('End-to-end timings')
+    expect(text).toContain('Headers to first SSE')
+    expect(text).toContain('800ms')
+    expect(text).toContain('First SSE to output')
+    expect(text).toContain('200ms')
+    expect(text).toContain('First output total')
+    expect(text).toContain('1.50s')
+    expect(text).not.toContain('900ms')
   })
 
   it('shows requested and upstream models separately for admin rows', () => {

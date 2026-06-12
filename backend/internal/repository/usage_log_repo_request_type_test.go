@@ -90,6 +90,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			sqlmock.AnyArg(), // upstream_timing
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
@@ -173,6 +174,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			sqlmock.AnyArg(), // upstream_timing
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
@@ -266,6 +268,28 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 	breakdownJSON, ok := prepared.args[38].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
+}
+
+func TestPrepareUsageLogInsert_PersistsUpstreamTiming(t *testing.T) {
+	prepared := prepareUsageLogInsert(&service.UsageLog{
+		UserID:    1,
+		APIKeyID:  2,
+		AccountID: 3,
+		RequestID: "req-upstream-timing",
+		Model:     "gpt-5",
+		CreatedAt: time.Date(2025, 1, 7, 12, 0, 0, 0, time.UTC),
+		UpstreamTiming: service.UsageUpstreamTiming{
+			"gateway_prepare_ms":    12,
+			"upstream_headers_ms":   345,
+			"upstream_first_sse_ms": 321,
+			"ttft_ms":               678,
+		},
+	})
+
+	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
+	timingJSON, ok := prepared.args[49].(string)
+	require.True(t, ok)
+	require.JSONEq(t, `{"gateway_prepare_ms":12,"upstream_headers_ms":345,"upstream_first_sse_ms":321,"ttft_ms":678}`, timingJSON)
 }
 
 func TestCoalesceTrimmedString(t *testing.T) {
@@ -640,6 +664,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullFloat64{},
+			sql.NullString{Valid: true, String: `{"ttft_ms":678,"upstream_headers_ms":345}`},
 			now,
 		}})
 		require.NoError(t, err)
@@ -653,6 +678,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NotNil(t, log.ImageSizeSource)
 		require.Equal(t, "output", *log.ImageSizeSource)
 		require.Equal(t, map[string]int{"4K": 2}, log.ImageSizeBreakdown)
+		require.Equal(t, service.UsageUpstreamTiming{"ttft_ms": 678, "upstream_headers_ms": 345}, log.UpstreamTiming)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -708,6 +734,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // upstream_timing
 			now,
 		}})
 		require.NoError(t, err)
@@ -760,6 +787,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // upstream_timing
 			now,
 		}})
 		require.NoError(t, err)
@@ -812,6 +840,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // upstream_timing
 			now,
 		}})
 		require.NoError(t, err)

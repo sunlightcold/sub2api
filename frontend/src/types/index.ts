@@ -1281,8 +1281,31 @@ export interface UsageLogAccountSummary {
   name: string
 }
 
+export interface UsageUpstreamTiming {
+  gateway_prepare_ms?: number
+  upstream_headers_ms?: number
+  upstream_first_sse_ms?: number
+  ttft_ms?: number
+  gateway_first_output_ms?: number
+  client_ttft_ms?: number
+  upstream_generation_ms?: number
+  stream_tail_ms?: number
+  post_headers_ms?: number
+  total_ms?: number
+  // Legacy keys kept so older diagnostic rows can still be normalized in the UI.
+  pre_upstream_ms?: number
+  upstream_do_ms?: number
+  first_sse_ms?: number
+  first_client_output_ms?: number
+  terminal_ms?: number
+  stream_end_ms?: number
+  forward_ms?: number
+  [key: string]: number | undefined
+}
+
 export interface AdminUsageLog extends UsageLog {
   upstream_model?: string | null
+  upstream_timing?: UsageUpstreamTiming | null
   model_mapping_chain?: string | null
 
   // 账号计费倍率（仅管理员可见）

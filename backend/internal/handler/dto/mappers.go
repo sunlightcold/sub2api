@@ -651,6 +651,7 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 	return &AdminUsageLog{
 		UsageLog:              usageLogFromServiceUser(l),
 		UpstreamModel:         l.UpstreamModel,
+		UpstreamTiming:        usageUpstreamTimingFromService(l.UpstreamTiming),
 		ChannelID:             l.ChannelID,
 		ModelMappingChain:     l.ModelMappingChain,
 		BillingTier:           l.BillingTier,
@@ -659,6 +660,17 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 		IPAddress:             l.IPAddress,
 		Account:               AccountSummaryFromService(l.Account),
 	}
+}
+
+func usageUpstreamTimingFromService(in service.UsageUpstreamTiming) UsageUpstreamTiming {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(UsageUpstreamTiming, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
 }
 
 func UsageCleanupTaskFromService(task *service.UsageCleanupTask) *UsageCleanupTask {

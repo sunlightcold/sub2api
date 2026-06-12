@@ -1121,6 +1121,55 @@ func TestOpenAIGatewayService_OAuthPassthrough_StreamingSetsFirstTokenMs(t *test
 	require.Equal(t, "priority", *result.ServiceTier)
 }
 
+func TestOpenAIGatewayService_OAuthPassthrough_StreamingCountsPreambleAsFirstTokenMs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(nil))
+	c.Request.Header.Set("User-Agent", "codex_cli_rs/0.1.0")
+
+	originalBody := []byte(`{"model":"gpt-5.2","stream":true,"input":[{"type":"text","text":"hi"}]}`)
+
+	upstreamSSE := strings.Join([]string{
+		`data: {"type":"response.created","response":{"id":"resp_1"}}`,
+		"",
+		"data: [DONE]",
+		"",
+	}, "\n")
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "x-request-id": []string{"rid"}},
+		Body:       io.NopCloser(strings.NewReader(upstreamSSE)),
+	}
+	upstream := &httpUpstreamRecorder{resp: resp}
+
+	svc := &OpenAIGatewayService{
+		cfg:          &config.Config{Gateway: config.GatewayConfig{ForceCodexCLI: false}},
+		httpUpstream: upstream,
+	}
+
+	account := &Account{
+		ID:             123,
+		Name:           "acc",
+		Platform:       PlatformOpenAI,
+		Type:           AccountTypeOAuth,
+		Concurrency:    1,
+		Credentials:    map[string]any{"access_token": "oauth-token", "chatgpt_account_id": "chatgpt-acc"},
+		Extra:          map[string]any{"openai_passthrough": true},
+		Status:         StatusActive,
+		Schedulable:    true,
+		RateMultiplier: f64p(1),
+	}
+
+	result, err := svc.Forward(context.Background(), c, account, originalBody)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.Stream)
+	require.NotNil(t, result.FirstTokenMs)
+	require.Contains(t, rec.Body.String(), "response.created")
+}
+
 func TestOpenAIGatewayService_OAuthPassthrough_StreamClientDisconnectStillCollectsUsage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -1174,6 +1223,21 @@ func TestOpenAIGatewayService_OAuthPassthrough_StreamClientDisconnectStillCollec
 	require.Equal(t, 11, result.Usage.InputTokens)
 	require.Equal(t, 7, result.Usage.OutputTokens)
 	require.Equal(t, 3, result.Usage.CacheReadInputTokens)
+	for _, key := range []string{
+		usageTimingGatewayPrepareMs,
+		usageTimingUpstreamHeadersMs,
+		usageTimingUpstreamFirstSSEMs,
+		usageTimingTTFTMs,
+		usageTimingGatewayFirstOutputMs,
+		usageTimingClientTTFTMs,
+		usageTimingUpstreamGenerationMs,
+		usageTimingStreamTailMs,
+		usageTimingTotalMs,
+	} {
+		_, ok := result.UpstreamTiming[key]
+		require.Truef(t, ok, "missing upstream timing key %s", key)
+	}
+	require.Equal(t, int64(*result.FirstTokenMs), result.UpstreamTiming[usageTimingTTFTMs])
 }
 
 func TestOpenAIGatewayService_APIKeyPassthrough_PreservesBodyAndUsesResponsesEndpoint(t *testing.T) {
@@ -1222,6 +1286,17 @@ func TestOpenAIGatewayService_APIKeyPassthrough_PreservesBodyAndUsesResponsesEnd
 	require.Equal(t, "Bearer sk-api-key", upstream.lastReq.Header.Get("Authorization"))
 	require.Equal(t, "curl/8.0", upstream.lastReq.Header.Get("User-Agent"))
 	require.Empty(t, upstream.lastReq.Header.Get("X-Test"))
+	for _, key := range []string{
+		usageTimingGatewayPrepareMs,
+		usageTimingUpstreamHeadersMs,
+		usageTimingPostHeadersMs,
+		usageTimingTotalMs,
+	} {
+		_, ok := result.UpstreamTiming[key]
+		require.Truef(t, ok, "missing upstream timing key %s", key)
+	}
+	require.NotContains(t, result.UpstreamTiming, usageTimingTTFTMs)
+	require.NotContains(t, result.UpstreamTiming, usageTimingUpstreamFirstSSEMs)
 }
 
 func TestOpenAIGatewayService_OAuthPassthrough_WarnOnTimeoutHeadersForStream(t *testing.T) {

@@ -503,6 +503,9 @@ type AdminUsageLog struct {
 	// Omitted when no mapping was applied (requested model was used as-is).
 	UpstreamModel *string `json:"upstream_model,omitempty"`
 
+	// UpstreamTiming contains raw administrator-only timing diagnostics in milliseconds.
+	UpstreamTiming UsageUpstreamTiming `json:"upstream_timing,omitempty"`
+
 	// ChannelID 渠道 ID
 	ChannelID *int64 `json:"channel_id,omitempty"`
 	// ModelMappingChain 模型映射链，如 "a→b→c"
@@ -521,6 +524,8 @@ type AdminUsageLog struct {
 	// Account 最小账号信息（避免泄露敏感字段）
 	Account *AccountSummary `json:"account,omitempty"`
 }
+
+type UsageUpstreamTiming map[string]int64
 
 type UsageCleanupFilters struct {
 	StartTime   time.Time `json:"start_time"`
