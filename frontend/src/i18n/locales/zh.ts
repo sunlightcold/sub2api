@@ -3607,7 +3607,7 @@ export default {
         responsesStatusAutoSupported: '自动探测：Responses',
         responsesStatusAutoUnsupported: '自动探测：Chat Completions',
         responsesStatusAutoUnknown: '自动探测：未探测',
-        responsesStatusPreserveChatEndpoint: '保持 Chat 端点；Responses 跟随自动探测',
+        responsesStatusPreserveChatEndpoint: '保持 Chat 端点；Responses 保持 Responses',
         responsesStatusForcedResponses: '已强制 Responses',
         responsesStatusForcedChatCompletions: '已强制 Chat Completions',
         codexCLIOnly: '仅允许 Codex 官方客户端',
