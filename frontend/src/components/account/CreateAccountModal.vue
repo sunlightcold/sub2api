@@ -3544,7 +3544,6 @@ const openAICompactModeOptions = computed(() => [
 const openAIResponsesModeOptions = computed(() => [
   { value: 'auto', label: t('admin.accounts.openai.responsesModeAuto') },
   { value: 'preserve_chat_endpoint', label: t('admin.accounts.openai.responsesModePreserveChatEndpoint') },
-  { value: 'preserve_endpoint', label: t('admin.accounts.openai.responsesModePreserveEndpoint') },
   { value: 'force_responses', label: t('admin.accounts.openai.responsesModeForceResponses') },
   { value: 'force_chat_completions', label: t('admin.accounts.openai.responsesModeForceChatCompletions') }
 ])

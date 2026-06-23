@@ -48,10 +48,6 @@ const (
 	// ResponsesSupportModeForceChatCompletions 强制使用 /v1/chat/completions。
 	ResponsesSupportModeForceChatCompletions ResponsesSupportMode = "force_chat_completions"
 
-	// ResponsesSupportModePreserveEndpoint 保持客户端入站端点，不做
-	// Chat Completions <-> Responses 的跨协议自动转换。
-	ResponsesSupportModePreserveEndpoint ResponsesSupportMode = "preserve_endpoint"
-
 	// ResponsesSupportModePreserveChatEndpoint 仅保持入站 /v1/chat/completions
 	// 走上游 /v1/chat/completions；入站 /v1/responses 不被该模式反向降级为 Chat。
 	ResponsesSupportModePreserveChatEndpoint ResponsesSupportMode = "preserve_chat_endpoint"
@@ -60,7 +56,6 @@ const (
 // ExtraKeyResponsesMode 是 accounts.extra JSON 中存储手动覆盖模式的键名。
 // 值类型为 string：auto=跟随探测，force_responses=强制 Responses，
 // force_chat_completions=强制 Chat Completions，
-// preserve_endpoint=保持客户端入站端点，
 // preserve_chat_endpoint=仅保持 Chat Completions 入站端点。
 const ExtraKeyResponsesMode = "openai_responses_mode"
 
@@ -76,22 +71,11 @@ func NormalizeResponsesSupportMode(mode string) ResponsesSupportMode {
 		return ResponsesSupportModeForceResponses
 	case ResponsesSupportModeForceChatCompletions:
 		return ResponsesSupportModeForceChatCompletions
-	case ResponsesSupportModePreserveEndpoint:
-		return ResponsesSupportModePreserveEndpoint
 	case ResponsesSupportModePreserveChatEndpoint:
 		return ResponsesSupportModePreserveChatEndpoint
 	default:
 		return ResponsesSupportModeAuto
 	}
-}
-
-// IsPreserveEndpointMode 判断账号是否显式配置为保持客户端入站端点。
-func IsPreserveEndpointMode(extra map[string]any) bool {
-	if extra == nil {
-		return false
-	}
-	mode, ok := extra[ExtraKeyResponsesMode].(string)
-	return ok && NormalizeResponsesSupportMode(mode) == ResponsesSupportModePreserveEndpoint
 }
 
 // ResolveResponsesSupport 从账号的 extra map 中读取手动覆盖模式与探测标记。
@@ -108,9 +92,6 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 			return ResponsesSupportYes
 		case ResponsesSupportModeForceChatCompletions:
 			return ResponsesSupportNo
-		case ResponsesSupportModePreserveEndpoint:
-			// "保持入站端点"不是上游能力判断：Chat 入站走 Chat，
-			// Responses 入站走 Responses。继续读取探测标记以供状态展示。
 		case ResponsesSupportModePreserveChatEndpoint:
 			// "仅保持 Chat 端点"只覆盖 Chat 入站路由；Responses 能力状态
 			// 继续读取探测标记以供状态展示，但不用于反向降级 Responses 入站。
@@ -149,7 +130,7 @@ func ShouldRouteChatCompletionsViaResponses(extra map[string]any) bool {
 	if extra != nil {
 		if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
 			switch NormalizeResponsesSupportMode(mode) {
-			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceChatCompletions:
+			case ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceChatCompletions:
 				return false
 			case ResponsesSupportModeForceResponses:
 				return true
@@ -167,7 +148,7 @@ func ShouldRouteResponsesViaChatCompletions(extra map[string]any) bool {
 			switch NormalizeResponsesSupportMode(mode) {
 			case ResponsesSupportModeForceChatCompletions:
 				return true
-			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceResponses:
+			case ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceResponses:
 				return false
 			}
 		}

@@ -2766,7 +2766,6 @@ const openAICompactModeOptions = computed(() => [
 const openAIResponsesModeOptions = computed(() => [
   { value: 'auto', label: t('admin.accounts.openai.responsesModeAuto') },
   { value: 'preserve_chat_endpoint', label: t('admin.accounts.openai.responsesModePreserveChatEndpoint') },
-  { value: 'preserve_endpoint', label: t('admin.accounts.openai.responsesModePreserveEndpoint') },
   { value: 'force_responses', label: t('admin.accounts.openai.responsesModeForceResponses') },
   { value: 'force_chat_completions', label: t('admin.accounts.openai.responsesModeForceChatCompletions') }
 ])
@@ -2918,7 +2917,6 @@ const normalizeOpenAIResponsesMode = (mode: unknown): OpenAIResponsesMode => {
   if (
     mode === 'force_responses' ||
     mode === 'force_chat_completions' ||
-    mode === 'preserve_endpoint' ||
     mode === 'preserve_chat_endpoint'
   ) {
     return mode
@@ -2934,9 +2932,6 @@ const openAIResponsesStatusKey = computed(() => {
   }
   if (openAIResponsesMode.value === 'force_chat_completions') {
     return 'admin.accounts.openai.responsesStatusForcedChatCompletions'
-  }
-  if (openAIResponsesMode.value === 'preserve_endpoint') {
-    return 'admin.accounts.openai.responsesStatusPreserveEndpoint'
   }
   if (openAIResponsesMode.value === 'preserve_chat_endpoint') {
     return 'admin.accounts.openai.responsesStatusPreserveChatEndpoint'
