@@ -176,7 +176,7 @@ func TestForwardResponses_AutoSupportedAccountStillUsesResponsesEndpoint(t *test
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
-func TestForwardResponses_PreserveChatEndpointKeepsResponsesEndpoint(t *testing.T) {
+func TestForwardResponses_PreserveChatEndpointFollowsAutoUnsupportedProbe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	body := []byte(`{"model":"gpt-5.4","input":"hello","stream":false}`)
@@ -187,9 +187,9 @@ func TestForwardResponses_PreserveChatEndpointKeepsResponsesEndpoint(t *testing.
 
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,
-		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid_resp_preserve_chat_endpoint"}},
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid_resp_preserve_chat_endpoint_auto"}},
 		Body: io.NopCloser(strings.NewReader(
-			`{"id":"resp_preserve_chat","object":"response","model":"gpt-5.4","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"ok"}],"status":"completed"}],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7}}`,
+			`{"id":"chatcmpl_preserve_chat_auto","object":"chat.completion","model":"gpt-5.4","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}`,
 		)),
 	}}
 	svc := &OpenAIGatewayService{
@@ -205,10 +205,9 @@ func TestForwardResponses_PreserveChatEndpointKeepsResponsesEndpoint(t *testing.
 	result, err := svc.Forward(context.Background(), c, account, body)
 	require.NoError(t, err)
 	require.NotNil(t, result)
-	require.Equal(t, "http://upstream.example/v1/responses", upstream.lastReq.URL.String())
-	require.True(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
-	require.False(t, gjson.GetBytes(upstream.lastBody, "messages").Exists())
-	require.Equal(t, defaultCodexSynthInstructions("gpt-5.4"), gjson.GetBytes(upstream.lastBody, "instructions").String())
+	require.Equal(t, "http://upstream.example/v1/chat/completions", upstream.lastReq.URL.String())
+	require.True(t, gjson.GetBytes(upstream.lastBody, "messages").Exists())
+	require.False(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
