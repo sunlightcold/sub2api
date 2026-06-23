@@ -3451,7 +3451,7 @@ export default {
         responsesStatusAutoSupported: 'Auto probe: Responses',
         responsesStatusAutoUnsupported: 'Auto probe: Chat Completions',
         responsesStatusAutoUnknown: 'Auto probe: unknown',
-        responsesStatusPreserveChatEndpoint: 'Preserve Chat Endpoint; Responses stays Responses',
+        responsesStatusPreserveChatEndpoint: 'Preserve Chat Endpoint; Responses follows auto probe',
         responsesStatusForcedResponses: 'Forced Responses',
         responsesStatusForcedChatCompletions: 'Forced Chat Completions',
         codexCLIOnly: 'Codex official clients only',

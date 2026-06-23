@@ -176,7 +176,7 @@ func TestForwardResponses_AutoSupportedAccountStillUsesResponsesEndpoint(t *test
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
-func TestForwardResponses_PreserveChatEndpointDoesNotConvertResponses(t *testing.T) {
+func TestForwardResponses_PreserveChatEndpointFollowsAutoSupportedProbe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	body := []byte(`{"model":"gpt-5.4","input":"hello","stream":false}`)
@@ -199,7 +199,7 @@ func TestForwardResponses_PreserveChatEndpointDoesNotConvertResponses(t *testing
 	account := rawChatCompletionsTestAccount()
 	account.Extra = map[string]any{
 		openai_compat.ExtraKeyResponsesMode:      string(openai_compat.ResponsesSupportModePreserveChatEndpoint),
-		openai_compat.ExtraKeyResponsesSupported: false,
+		openai_compat.ExtraKeyResponsesSupported: true,
 	}
 
 	result, err := svc.Forward(context.Background(), c, account, body)
@@ -208,6 +208,41 @@ func TestForwardResponses_PreserveChatEndpointDoesNotConvertResponses(t *testing
 	require.Equal(t, "http://upstream.example/v1/responses", upstream.lastReq.URL.String())
 	require.True(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
 	require.False(t, gjson.GetBytes(upstream.lastBody, "messages").Exists())
+	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
+}
+
+func TestForwardResponses_PreserveChatEndpointFollowsAutoUnsupportedProbe(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	body := []byte(`{"model":"gpt-5.4","input":"hello","stream":false}`)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid_resp_preserve_chat_auto_chat"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"chatcmpl_preserve_chat_auto","object":"chat.completion","model":"gpt-5.4","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2,"total_tokens":5}}`,
+		)),
+	}}
+	svc := &OpenAIGatewayService{
+		cfg:          rawChatCompletionsTestConfig(),
+		httpUpstream: upstream,
+	}
+	account := rawChatCompletionsTestAccount()
+	account.Extra = map[string]any{
+		openai_compat.ExtraKeyResponsesMode:      string(openai_compat.ResponsesSupportModePreserveChatEndpoint),
+		openai_compat.ExtraKeyResponsesSupported: false,
+	}
+
+	result, err := svc.Forward(context.Background(), c, account, body)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, "http://upstream.example/v1/chat/completions", upstream.lastReq.URL.String())
+	require.True(t, gjson.GetBytes(upstream.lastBody, "messages").Exists())
+	require.False(t, gjson.GetBytes(upstream.lastBody, "input").Exists())
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
