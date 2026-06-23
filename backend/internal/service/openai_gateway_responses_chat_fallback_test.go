@@ -212,7 +212,7 @@ func TestForwardResponses_PreserveEndpointKeepsResponsesEndpoint(t *testing.T) {
 	require.Equal(t, "ok", gjson.Get(rec.Body.String(), "output.0.content.0.text").String())
 }
 
-func TestForwardResponses_PreserveChatEndpointKeepsAutoResponsesCompatibility(t *testing.T) {
+func TestForwardResponses_PreserveChatEndpointKeepsResponsesEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	body := []byte(`{"model":"gpt-5.4","input":"hello","stream":false}`)
@@ -235,7 +235,7 @@ func TestForwardResponses_PreserveChatEndpointKeepsAutoResponsesCompatibility(t 
 	account := rawChatCompletionsTestAccount()
 	account.Extra = map[string]any{
 		openai_compat.ExtraKeyResponsesMode:      string(openai_compat.ResponsesSupportModePreserveChatEndpoint),
-		openai_compat.ExtraKeyResponsesSupported: true,
+		openai_compat.ExtraKeyResponsesSupported: false,
 	}
 
 	result, err := svc.Forward(context.Background(), c, account, body)

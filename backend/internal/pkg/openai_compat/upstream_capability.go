@@ -53,7 +53,7 @@ const (
 	ResponsesSupportModePreserveEndpoint ResponsesSupportMode = "preserve_endpoint"
 
 	// ResponsesSupportModePreserveChatEndpoint 仅保持入站 /v1/chat/completions
-	// 走上游 /v1/chat/completions；入站 /v1/responses 仍跟随自动探测与兼容处理。
+	// 走上游 /v1/chat/completions；入站 /v1/responses 不被该模式反向降级为 Chat。
 	ResponsesSupportModePreserveChatEndpoint ResponsesSupportMode = "preserve_chat_endpoint"
 )
 
@@ -112,8 +112,8 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 			// "保持入站端点"不是上游能力判断：Chat 入站走 Chat，
 			// Responses 入站走 Responses。继续读取探测标记以供状态展示。
 		case ResponsesSupportModePreserveChatEndpoint:
-			// "仅保持 Chat 端点"只覆盖 Chat 入站路由，Responses 能力状态
-			// 继续读取探测标记，以便 Responses 入站保持 auto 兼容行为。
+			// "仅保持 Chat 端点"只覆盖 Chat 入站路由；Responses 能力状态
+			// 继续读取探测标记以供状态展示，但不用于反向降级 Responses 入站。
 		}
 	}
 	v, ok := extra[ExtraKeyResponsesSupported]
@@ -167,10 +167,8 @@ func ShouldRouteResponsesViaChatCompletions(extra map[string]any) bool {
 			switch NormalizeResponsesSupportMode(mode) {
 			case ResponsesSupportModeForceChatCompletions:
 				return true
-			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModeForceResponses:
+			case ResponsesSupportModePreserveEndpoint, ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceResponses:
 				return false
-			case ResponsesSupportModePreserveChatEndpoint:
-				// Responses 入站继续走 auto：支持则直达 Responses，不支持则回退 Chat。
 			}
 		}
 	}

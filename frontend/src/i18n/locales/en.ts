@@ -3452,7 +3452,7 @@ export default {
         responsesStatusAutoSupported: 'Auto probe: Responses',
         responsesStatusAutoUnsupported: 'Auto probe: Chat Completions',
         responsesStatusAutoUnknown: 'Auto probe: unknown',
-        responsesStatusPreserveChatEndpoint: 'Preserve Chat Endpoint; Responses stays auto-compatible',
+        responsesStatusPreserveChatEndpoint: 'Preserve Chat Endpoint; Responses stays Responses',
         responsesStatusPreserveEndpoint: 'Preserve Endpoint',
         responsesStatusForcedResponses: 'Forced Responses',
         responsesStatusForcedChatCompletions: 'Forced Chat Completions',

@@ -3608,7 +3608,7 @@ export default {
         responsesStatusAutoSupported: '自动探测：Responses',
         responsesStatusAutoUnsupported: '自动探测：Chat Completions',
         responsesStatusAutoUnknown: '自动探测：未探测',
-        responsesStatusPreserveChatEndpoint: '保持 Chat 端点；Responses 仍自动兼容',
+        responsesStatusPreserveChatEndpoint: '保持 Chat 端点；Responses 保持 Responses',
         responsesStatusPreserveEndpoint: '保持入站端点',
         responsesStatusForcedResponses: '已强制 Responses',
         responsesStatusForcedChatCompletions: '已强制 Chat Completions',

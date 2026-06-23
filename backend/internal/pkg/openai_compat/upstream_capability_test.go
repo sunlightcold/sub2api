@@ -131,8 +131,8 @@ func TestShouldRouteResponsesViaChatCompletions(t *testing.T) {
 		{"force chat completions", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceChatCompletions), ExtraKeyResponsesSupported: true}, true},
 		{"force responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModeForceResponses), ExtraKeyResponsesSupported: false}, false},
 		{"preserve endpoint keeps responses", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveEndpoint), ExtraKeyResponsesSupported: false}, false},
-		{"preserve chat endpoint follows unsupported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: false}, true},
-		{"preserve chat endpoint follows supported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: true}, false},
+		{"preserve chat endpoint keeps responses despite unsupported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: false}, false},
+		{"preserve chat endpoint keeps responses with supported probe", map[string]any{ExtraKeyResponsesMode: string(ResponsesSupportModePreserveChatEndpoint), ExtraKeyResponsesSupported: true}, false},
 	}
 
 	for _, tc := range tests {
