@@ -212,7 +212,8 @@ func (s *OpenAIGatewayService) prepareOpenAICacheReadCorrection(
 	if c != nil && c.Request != nil && strings.TrimSpace(c.Request.URL.Path) != "" {
 		endpoint = strings.TrimSpace(c.Request.URL.Path)
 	}
-	stateKey := fmt.Sprintf("openai_cache_read:v2:%d:%s:%s:%s", account.ID, strings.TrimSpace(model), endpoint, profile.RouteHash)
+	stateScope := openAICacheReadCorrectionStateScope(c, account)
+	stateKey := fmt.Sprintf("openai_cache_read:v3:%s:%s:%s:%s", stateScope, strings.TrimSpace(model), endpoint, profile.RouteHash)
 	var priorSeen int
 	var fraction float64
 	var matched *OpenAICacheReadPrefixState
@@ -248,6 +249,38 @@ func (s *OpenAIGatewayService) prepareOpenAICacheReadCorrection(
 		state:             priorState,
 		matchedPrefix:     matched,
 	}
+}
+
+func openAICacheReadCorrectionStateScope(c *gin.Context, account *Account) string {
+	if groupID := openAICacheReadCorrectionGroupID(c); groupID > 0 {
+		return fmt.Sprintf("group:%d", groupID)
+	}
+	if account != nil {
+		return fmt.Sprintf("account:%d", account.ID)
+	}
+	return "account:0"
+}
+
+func openAICacheReadCorrectionGroupID(c *gin.Context) int64 {
+	if c == nil {
+		return 0
+	}
+	if value, exists := c.Get("parsed_request"); exists {
+		switch parsed := value.(type) {
+		case *ParsedRequest:
+			if parsed != nil && parsed.GroupID != nil {
+				return *parsed.GroupID
+			}
+		case ParsedRequest:
+			if parsed.GroupID != nil {
+				return *parsed.GroupID
+			}
+		}
+	}
+	if apiKey := getAPIKeyFromContext(c); apiKey != nil && apiKey.GroupID != nil {
+		return *apiKey.GroupID
+	}
+	return 0
 }
 
 type openAICacheReadPromptProfile struct {

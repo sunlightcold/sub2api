@@ -70,6 +70,31 @@ func openAICacheReadTestInputBody(parts ...string) []byte {
 	return []byte(b.String())
 }
 
+func openAICacheReadTestContextWithGroup(groupID int64) *gin.Context {
+	c, _ := gin.CreateTestContext(nil)
+	parsed := &ParsedRequest{}
+	if groupID > 0 {
+		parsed.GroupID = &groupID
+	}
+	c.Set("parsed_request", parsed)
+	return c
+}
+
+func openAICacheReadEnabledAccount(id int64) *Account {
+	return &Account{
+		ID:       id,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Extra: map[string]any{
+			openAICacheReadCorrectionEnabledKey: true,
+			openAICacheReadRatioMinKey:          0.90,
+			openAICacheReadRatioMaxKey:          0.90,
+			openAICacheReadWarmingRatioMinKey:   0.90,
+			openAICacheReadWarmingRatioMaxKey:   0.90,
+		},
+	}
+}
+
 func TestOpenAICacheReadCorrection_DefaultDisabledDoesNothing(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cache := &openAICacheReadStateCacheStub{}
@@ -296,4 +321,65 @@ func TestOpenAICacheReadCorrection_ShortPromptDoesNotCreateCorrection(t *testing
 	require.Nil(t, correction)
 	require.Zero(t, cache.gets)
 	require.Zero(t, cache.sets)
+}
+
+func TestOpenAICacheReadCorrection_StateSharedByGroupForEnabledAccounts(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	firstAccount := openAICacheReadEnabledAccount(21)
+	secondAccount := openAICacheReadEnabledAccount(22)
+	c := openAICacheReadTestContextWithGroup(1001)
+	body := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("tail-", 200))
+
+	first := svc.prepareOpenAICacheReadCorrection(context.Background(), c, firstAccount, body, "gpt-5.4")
+	require.NotNil(t, first)
+	require.Contains(t, first.stateKey, "openai_cache_read:v3:group:1001:")
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), firstAccount, first, &OpenAIUsage{InputTokens: 10000, OutputTokens: 10}, "req_first")
+
+	second := svc.prepareOpenAICacheReadCorrection(context.Background(), c, secondAccount, body, "gpt-5.4")
+	require.NotNil(t, second)
+	require.Equal(t, first.stateKey, second.stateKey)
+	require.Equal(t, 1, second.priorSeenCount)
+
+	usage := &OpenAIUsage{InputTokens: 10000, OutputTokens: 10, CacheReadInputTokens: 100}
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), secondAccount, second, usage, "req_second")
+	require.Equal(t, 9000, usage.CacheReadInputTokens)
+}
+
+func TestOpenAICacheReadCorrection_StateSeparatedByGroup(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	firstAccount := openAICacheReadEnabledAccount(31)
+	secondAccount := openAICacheReadEnabledAccount(32)
+	body := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("tail-", 200))
+
+	first := svc.prepareOpenAICacheReadCorrection(context.Background(), openAICacheReadTestContextWithGroup(2001), firstAccount, body, "gpt-5.4")
+	require.NotNil(t, first)
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), firstAccount, first, &OpenAIUsage{InputTokens: 10000, OutputTokens: 10}, "req_first")
+
+	second := svc.prepareOpenAICacheReadCorrection(context.Background(), openAICacheReadTestContextWithGroup(2002), secondAccount, body, "gpt-5.4")
+	require.NotNil(t, second)
+	require.NotEqual(t, first.stateKey, second.stateKey)
+	require.Zero(t, second.priorSeenCount)
+}
+
+func TestOpenAICacheReadCorrection_DisabledAccountDoesNotUseGroupState(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cache := &openAICacheReadStateCacheStub{}
+	svc := &OpenAIGatewayService{cache: cache}
+	enabledAccount := openAICacheReadEnabledAccount(41)
+	disabledAccount := &Account{ID: 42, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Extra: map[string]any{}}
+	c := openAICacheReadTestContextWithGroup(3001)
+	body := openAICacheReadTestInputBody(strings.Repeat("stable-", 700), strings.Repeat("tail-", 200))
+
+	first := svc.prepareOpenAICacheReadCorrection(context.Background(), c, enabledAccount, body, "gpt-5.4")
+	require.NotNil(t, first)
+	svc.correctOpenAICacheReadUsageOnly(context.Background(), enabledAccount, first, &OpenAIUsage{InputTokens: 10000, OutputTokens: 10}, "req_first")
+	getsAfterWarm := cache.gets
+
+	second := svc.prepareOpenAICacheReadCorrection(context.Background(), c, disabledAccount, body, "gpt-5.4")
+	require.Nil(t, second)
+	require.Equal(t, getsAfterWarm, cache.gets)
 }
