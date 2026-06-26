@@ -353,7 +353,8 @@ const displayModelStats = computed(() => {
       : props.modelStats
   if (!sourceStats?.length) return []
 
-  return [...sourceStats].sort((a, b) => modelMetricValue(b) - modelMetricValue(a))
+  const metricKey = props.metric === 'actual_cost' ? 'actual_cost' : 'total_tokens'
+  return [...sourceStats].sort((a, b) => toFiniteNumber(b[metricKey]) - toFiniteNumber(a[metricKey]))
 })
 
 const chartData = computed(() => {
@@ -363,7 +364,7 @@ const chartData = computed(() => {
     labels: displayModelStats.value.map((m) => m.model),
     datasets: [
       {
-        data: displayModelStats.value.map(modelMetricValue),
+        data: displayModelStats.value.map((m) => toFiniteNumber(props.metric === 'actual_cost' ? m.actual_cost : m.total_tokens)),
         backgroundColor: chartColors.slice(0, displayModelStats.value.length),
         borderWidth: 0
       }
@@ -481,7 +482,7 @@ const formatTokens = (value: number): string => {
 }
 
 const formatNumber = (value: number): string => {
-  return value.toLocaleString()
+  return toFiniteNumber(value).toLocaleString()
 }
 
 const getRankingUserLabel = (item: UserSpendingRankingItem): string => {
@@ -494,23 +495,20 @@ const getRankingRowLabel = (item: RankingDisplayItem): string => {
   return getRankingUserLabel(item)
 }
 
-const toFiniteNumber = (value: number | null | undefined): number => {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
-}
-
-const modelMetricValue = (model: ModelStat): number => {
-  return toFiniteNumber(props.metric === 'actual_cost' ? model.actual_cost : model.total_tokens)
+const toFiniteNumber = (value: unknown): number => {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : 0
 }
 
 const formatCost = (value: number | null | undefined): string => {
-  const amount = toFiniteNumber(value)
-  if (amount >= 1000) {
-    return (amount / 1000).toFixed(2) + 'K'
-  } else if (amount >= 1) {
-    return amount.toFixed(2)
-  } else if (amount >= 0.01) {
-    return amount.toFixed(3)
+  const safeValue = toFiniteNumber(value)
+  if (safeValue >= 1000) {
+    return (safeValue / 1000).toFixed(2) + 'K'
+  } else if (safeValue >= 1) {
+    return safeValue.toFixed(2)
+  } else if (safeValue >= 0.01) {
+    return safeValue.toFixed(3)
   }
-  return amount.toFixed(4)
+  return safeValue.toFixed(4)
 }
 </script>
