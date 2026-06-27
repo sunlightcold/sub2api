@@ -263,6 +263,41 @@ func TestGatewayServiceRecordUsage_EmptyImageSizeDefaultsBeforeBillingAndPersist
 	require.InDelta(t, 0.19, usageRepo.lastLog.ActualCost, 1e-12)
 }
 
+func TestGatewayServiceRecordUsage_RequestedImageCountEnabledUsesRequestedCount(t *testing.T) {
+	imagePrice1K := 0.25
+	groupID := int64(902)
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID:           "gateway_image_requested_count",
+			Model:               "gemini-image",
+			ImageCount:          2,
+			RequestedImageCount: 1,
+			ImageSize:           "1K",
+			Duration:            time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      802,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:                            groupID,
+				RateMultiplier:                1.0,
+				ImageBillingUseRequestedCount: boolPtr(true),
+				ImagePrice1K:                  &imagePrice1K,
+			},
+		},
+		User:    &User{ID: 602},
+		Account: &Account{ID: 702},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
+	require.InDelta(t, 0.25, usageRepo.lastLog.TotalCost, 1e-12)
+}
+
 func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
 	userRepo := &openAIRecordUsageUserRepoStub{}

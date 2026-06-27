@@ -51,6 +51,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
 		SetAllowImageGeneration(groupIn.AllowImageGeneration).
 		SetImageRateIndependent(groupIn.ImageRateIndependent).
+		SetNillableImageBillingUseRequestedCount(groupIn.ImageBillingUseRequestedCount).
 		SetImageRateMultiplier(groupIn.ImageRateMultiplier).
 		SetNillableImagePrice1k(groupIn.ImagePrice1K).
 		SetNillableImagePrice2k(groupIn.ImagePrice2K).
@@ -62,6 +63,8 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+		SetNillableDisableResponsesAPI(groupIn.DisableResponsesAPI).
+		SetNillableDisableChatCompletionsAPI(groupIn.DisableChatCompletionsAPI).
 		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 		SetRequirePrivacySet(groupIn.RequirePrivacySet).
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).
@@ -129,6 +132,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetNillableMonthlyLimitUsd(groupIn.MonthlyLimitUSD).
 		SetAllowImageGeneration(groupIn.AllowImageGeneration).
 		SetImageRateIndependent(groupIn.ImageRateIndependent).
+		SetNillableImageBillingUseRequestedCount(groupIn.ImageBillingUseRequestedCount).
 		SetImageRateMultiplier(groupIn.ImageRateMultiplier).
 		SetNillableImagePrice1k(groupIn.ImagePrice1K).
 		SetNillableImagePrice2k(groupIn.ImagePrice2K).
@@ -138,6 +142,8 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
+		SetNillableDisableResponsesAPI(groupIn.DisableResponsesAPI).
+		SetNillableDisableChatCompletionsAPI(groupIn.DisableChatCompletionsAPI).
 		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 		SetRequirePrivacySet(groupIn.RequirePrivacySet).
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).
@@ -175,6 +181,11 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		builder = builder.SetImagePrice4k(*groupIn.ImagePrice4K)
 	} else {
 		builder = builder.ClearImagePrice4k()
+	}
+	if groupIn.ImageBillingUseRequestedCount != nil {
+		builder = builder.SetImageBillingUseRequestedCount(*groupIn.ImageBillingUseRequestedCount)
+	} else {
+		builder = builder.ClearImageBillingUseRequestedCount()
 	}
 
 	// 处理 FallbackGroupID：nil 时清除，否则设置

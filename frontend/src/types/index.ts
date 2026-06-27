@@ -514,6 +514,7 @@ export interface Group {
   // 图片生成计费配置
   allow_image_generation: boolean
   image_rate_independent: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier: number
   image_price_1k: number | null
   image_price_2k: number | null
@@ -552,6 +553,8 @@ export interface AdminGroup extends Group {
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   models_list_config?: ModelsListConfig
+  disable_responses_api?: boolean | null
+  disable_chat_completions_api?: boolean | null
 
   // 分组排序
   sort_order: number
@@ -632,6 +635,7 @@ export interface CreateGroupRequest {
   monthly_limit_usd?: number | null
   allow_image_generation?: boolean
   image_rate_independent?: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   image_price_1k?: number | null
   image_price_2k?: number | null
@@ -643,6 +647,8 @@ export interface CreateGroupRequest {
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
   allow_messages_dispatch?: boolean
+  disable_responses_api?: boolean | null
+  disable_chat_completions_api?: boolean | null
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   model_routing?: Record<string, number[]> | null
@@ -667,6 +673,7 @@ export interface UpdateGroupRequest {
   monthly_limit_usd?: number | null
   allow_image_generation?: boolean
   image_rate_independent?: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   image_price_1k?: number | null
   image_price_2k?: number | null
@@ -678,6 +685,8 @@ export interface UpdateGroupRequest {
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
   allow_messages_dispatch?: boolean
+  disable_responses_api?: boolean | null
+  disable_chat_completions_api?: boolean | null
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   model_routing?: Record<string, number[]> | null

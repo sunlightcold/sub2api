@@ -130,9 +130,24 @@ func AllowImageGeneration(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldAllowImageGeneration, v))
 }
 
+// DisableResponsesAPI applies equality check predicate on the "disable_responses_api" field. It's identical to DisableResponsesAPIEQ.
+func DisableResponsesAPI(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDisableResponsesAPI, v))
+}
+
+// DisableChatCompletionsAPI applies equality check predicate on the "disable_chat_completions_api" field. It's identical to DisableChatCompletionsAPIEQ.
+func DisableChatCompletionsAPI(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDisableChatCompletionsAPI, v))
+}
+
 // ImageRateIndependent applies equality check predicate on the "image_rate_independent" field. It's identical to ImageRateIndependentEQ.
 func ImageRateIndependent(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldImageRateIndependent, v))
+}
+
+// ImageBillingUseRequestedCount applies equality check predicate on the "image_billing_use_requested_count" field. It's identical to ImageBillingUseRequestedCountEQ.
+func ImageBillingUseRequestedCount(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldImageBillingUseRequestedCount, v))
 }
 
 // ImageRateMultiplier applies equality check predicate on the "image_rate_multiplier" field. It's identical to ImageRateMultiplierEQ.
@@ -925,6 +940,46 @@ func AllowImageGenerationNEQ(v bool) predicate.Group {
 	return predicate.Group(sql.FieldNEQ(FieldAllowImageGeneration, v))
 }
 
+// DisableResponsesAPIEQ applies the EQ predicate on the "disable_responses_api" field.
+func DisableResponsesAPIEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDisableResponsesAPI, v))
+}
+
+// DisableResponsesAPINEQ applies the NEQ predicate on the "disable_responses_api" field.
+func DisableResponsesAPINEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldDisableResponsesAPI, v))
+}
+
+// DisableResponsesAPIIsNil applies the IsNil predicate on the "disable_responses_api" field.
+func DisableResponsesAPIIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldDisableResponsesAPI))
+}
+
+// DisableResponsesAPINotNil applies the NotNil predicate on the "disable_responses_api" field.
+func DisableResponsesAPINotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldDisableResponsesAPI))
+}
+
+// DisableChatCompletionsAPIEQ applies the EQ predicate on the "disable_chat_completions_api" field.
+func DisableChatCompletionsAPIEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDisableChatCompletionsAPI, v))
+}
+
+// DisableChatCompletionsAPINEQ applies the NEQ predicate on the "disable_chat_completions_api" field.
+func DisableChatCompletionsAPINEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldDisableChatCompletionsAPI, v))
+}
+
+// DisableChatCompletionsAPIIsNil applies the IsNil predicate on the "disable_chat_completions_api" field.
+func DisableChatCompletionsAPIIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldDisableChatCompletionsAPI))
+}
+
+// DisableChatCompletionsAPINotNil applies the NotNil predicate on the "disable_chat_completions_api" field.
+func DisableChatCompletionsAPINotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldDisableChatCompletionsAPI))
+}
+
 // ImageRateIndependentEQ applies the EQ predicate on the "image_rate_independent" field.
 func ImageRateIndependentEQ(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldImageRateIndependent, v))
@@ -933,6 +988,26 @@ func ImageRateIndependentEQ(v bool) predicate.Group {
 // ImageRateIndependentNEQ applies the NEQ predicate on the "image_rate_independent" field.
 func ImageRateIndependentNEQ(v bool) predicate.Group {
 	return predicate.Group(sql.FieldNEQ(FieldImageRateIndependent, v))
+}
+
+// ImageBillingUseRequestedCountEQ applies the EQ predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldImageBillingUseRequestedCount, v))
+}
+
+// ImageBillingUseRequestedCountNEQ applies the NEQ predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldImageBillingUseRequestedCount, v))
+}
+
+// ImageBillingUseRequestedCountIsNil applies the IsNil predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldImageBillingUseRequestedCount))
+}
+
+// ImageBillingUseRequestedCountNotNil applies the NotNil predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldImageBillingUseRequestedCount))
 }
 
 // ImageRateMultiplierEQ applies the EQ predicate on the "image_rate_multiplier" field.

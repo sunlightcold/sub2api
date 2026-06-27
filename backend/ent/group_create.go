@@ -231,6 +231,34 @@ func (_c *GroupCreate) SetNillableAllowImageGeneration(v *bool) *GroupCreate {
 	return _c
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (_c *GroupCreate) SetDisableResponsesAPI(v bool) *GroupCreate {
+	_c.mutation.SetDisableResponsesAPI(v)
+	return _c
+}
+
+// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableDisableResponsesAPI(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetDisableResponsesAPI(*v)
+	}
+	return _c
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (_c *GroupCreate) SetDisableChatCompletionsAPI(v bool) *GroupCreate {
+	_c.mutation.SetDisableChatCompletionsAPI(v)
+	return _c
+}
+
+// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetDisableChatCompletionsAPI(*v)
+	}
+	return _c
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (_c *GroupCreate) SetImageRateIndependent(v bool) *GroupCreate {
 	_c.mutation.SetImageRateIndependent(v)
@@ -241,6 +269,20 @@ func (_c *GroupCreate) SetImageRateIndependent(v bool) *GroupCreate {
 func (_c *GroupCreate) SetNillableImageRateIndependent(v *bool) *GroupCreate {
 	if v != nil {
 		_c.SetImageRateIndependent(*v)
+	}
+	return _c
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (_c *GroupCreate) SetImageBillingUseRequestedCount(v bool) *GroupCreate {
+	_c.mutation.SetImageBillingUseRequestedCount(v)
+	return _c
+}
+
+// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableImageBillingUseRequestedCount(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetImageBillingUseRequestedCount(*v)
 	}
 	return _c
 }
@@ -909,9 +951,21 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldAllowImageGeneration, field.TypeBool, value)
 		_node.AllowImageGeneration = value
 	}
+	if value, ok := _c.mutation.DisableResponsesAPI(); ok {
+		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
+		_node.DisableResponsesAPI = &value
+	}
+	if value, ok := _c.mutation.DisableChatCompletionsAPI(); ok {
+		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
+		_node.DisableChatCompletionsAPI = &value
+	}
 	if value, ok := _c.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
 		_node.ImageRateIndependent = value
+	}
+	if value, ok := _c.mutation.ImageBillingUseRequestedCount(); ok {
+		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
+		_node.ImageBillingUseRequestedCount = &value
 	}
 	if value, ok := _c.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
@@ -1373,6 +1427,42 @@ func (u *GroupUpsert) UpdateAllowImageGeneration() *GroupUpsert {
 	return u
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (u *GroupUpsert) SetDisableResponsesAPI(v bool) *GroupUpsert {
+	u.Set(group.FieldDisableResponsesAPI, v)
+	return u
+}
+
+// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateDisableResponsesAPI() *GroupUpsert {
+	u.SetExcluded(group.FieldDisableResponsesAPI)
+	return u
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (u *GroupUpsert) ClearDisableResponsesAPI() *GroupUpsert {
+	u.SetNull(group.FieldDisableResponsesAPI)
+	return u
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (u *GroupUpsert) SetDisableChatCompletionsAPI(v bool) *GroupUpsert {
+	u.Set(group.FieldDisableChatCompletionsAPI, v)
+	return u
+}
+
+// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateDisableChatCompletionsAPI() *GroupUpsert {
+	u.SetExcluded(group.FieldDisableChatCompletionsAPI)
+	return u
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (u *GroupUpsert) ClearDisableChatCompletionsAPI() *GroupUpsert {
+	u.SetNull(group.FieldDisableChatCompletionsAPI)
+	return u
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (u *GroupUpsert) SetImageRateIndependent(v bool) *GroupUpsert {
 	u.Set(group.FieldImageRateIndependent, v)
@@ -1382,6 +1472,24 @@ func (u *GroupUpsert) SetImageRateIndependent(v bool) *GroupUpsert {
 // UpdateImageRateIndependent sets the "image_rate_independent" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateImageRateIndependent() *GroupUpsert {
 	u.SetExcluded(group.FieldImageRateIndependent)
+	return u
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsert) SetImageBillingUseRequestedCount(v bool) *GroupUpsert {
+	u.Set(group.FieldImageBillingUseRequestedCount, v)
+	return u
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateImageBillingUseRequestedCount() *GroupUpsert {
+	u.SetExcluded(group.FieldImageBillingUseRequestedCount)
+	return u
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsert) ClearImageBillingUseRequestedCount() *GroupUpsert {
+	u.SetNull(group.FieldImageBillingUseRequestedCount)
 	return u
 }
 
@@ -2008,6 +2116,48 @@ func (u *GroupUpsertOne) UpdateAllowImageGeneration() *GroupUpsertOne {
 	})
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (u *GroupUpsertOne) SetDisableResponsesAPI(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetDisableResponsesAPI(v)
+	})
+}
+
+// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateDisableResponsesAPI() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateDisableResponsesAPI()
+	})
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (u *GroupUpsertOne) ClearDisableResponsesAPI() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearDisableResponsesAPI()
+	})
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (u *GroupUpsertOne) SetDisableChatCompletionsAPI(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetDisableChatCompletionsAPI(v)
+	})
+}
+
+// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateDisableChatCompletionsAPI() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateDisableChatCompletionsAPI()
+	})
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (u *GroupUpsertOne) ClearDisableChatCompletionsAPI() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearDisableChatCompletionsAPI()
+	})
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (u *GroupUpsertOne) SetImageRateIndependent(v bool) *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
@@ -2019,6 +2169,27 @@ func (u *GroupUpsertOne) SetImageRateIndependent(v bool) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateImageRateIndependent() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateImageRateIndependent()
+	})
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsertOne) SetImageBillingUseRequestedCount(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetImageBillingUseRequestedCount(v)
+	})
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateImageBillingUseRequestedCount() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateImageBillingUseRequestedCount()
+	})
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsertOne) ClearImageBillingUseRequestedCount() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearImageBillingUseRequestedCount()
 	})
 }
 
@@ -2863,6 +3034,48 @@ func (u *GroupUpsertBulk) UpdateAllowImageGeneration() *GroupUpsertBulk {
 	})
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (u *GroupUpsertBulk) SetDisableResponsesAPI(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetDisableResponsesAPI(v)
+	})
+}
+
+// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateDisableResponsesAPI() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateDisableResponsesAPI()
+	})
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (u *GroupUpsertBulk) ClearDisableResponsesAPI() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearDisableResponsesAPI()
+	})
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (u *GroupUpsertBulk) SetDisableChatCompletionsAPI(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetDisableChatCompletionsAPI(v)
+	})
+}
+
+// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateDisableChatCompletionsAPI() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateDisableChatCompletionsAPI()
+	})
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (u *GroupUpsertBulk) ClearDisableChatCompletionsAPI() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearDisableChatCompletionsAPI()
+	})
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (u *GroupUpsertBulk) SetImageRateIndependent(v bool) *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
@@ -2874,6 +3087,27 @@ func (u *GroupUpsertBulk) SetImageRateIndependent(v bool) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateImageRateIndependent() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateImageRateIndependent()
+	})
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsertBulk) SetImageBillingUseRequestedCount(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetImageBillingUseRequestedCount(v)
+	})
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateImageBillingUseRequestedCount() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateImageBillingUseRequestedCount()
+	})
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsertBulk) ClearImageBillingUseRequestedCount() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearImageBillingUseRequestedCount()
 	})
 }
 

@@ -206,14 +206,15 @@ type CreateGroupInput struct {
 	WeeklyLimitUSD   *float64 // 周限额 (USD)
 	MonthlyLimitUSD  *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
-	AllowImageGeneration bool
-	ImageRateIndependent bool
-	ImageRateMultiplier  *float64
-	ImagePrice1K         *float64
-	ImagePrice2K         *float64
-	ImagePrice4K         *float64
-	ClaudeCodeOnly       bool   // 仅允许 Claude Code 客户端
-	FallbackGroupID      *int64 // 降级分组 ID
+	AllowImageGeneration          bool
+	ImageRateIndependent          bool
+	ImageBillingUseRequestedCount *bool
+	ImageRateMultiplier           *float64
+	ImagePrice1K                  *float64
+	ImagePrice2K                  *float64
+	ImagePrice4K                  *float64
+	ClaudeCodeOnly                bool   // 仅允许 Claude Code 客户端
+	FallbackGroupID               *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
@@ -224,6 +225,8 @@ type CreateGroupInput struct {
 	SupportedModelScopes []string
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool
+	DisableResponsesAPI         *bool
+	DisableChatCompletionsAPI   *bool
 	DefaultMappedModel          string
 	RequireOAuthOnly            bool
 	RequirePrivacySet           bool
@@ -247,14 +250,15 @@ type UpdateGroupInput struct {
 	WeeklyLimitUSD   *float64 // 周限额 (USD)
 	MonthlyLimitUSD  *float64 // 月限额 (USD)
 	// 图片生成计费配置（仅 antigravity 平台使用）
-	AllowImageGeneration *bool
-	ImageRateIndependent *bool
-	ImageRateMultiplier  *float64
-	ImagePrice1K         *float64
-	ImagePrice2K         *float64
-	ImagePrice4K         *float64
-	ClaudeCodeOnly       *bool  // 仅允许 Claude Code 客户端
-	FallbackGroupID      *int64 // 降级分组 ID
+	AllowImageGeneration          *bool
+	ImageRateIndependent          *bool
+	ImageBillingUseRequestedCount *bool
+	ImageRateMultiplier           *float64
+	ImagePrice1K                  *float64
+	ImagePrice2K                  *float64
+	ImagePrice4K                  *float64
+	ClaudeCodeOnly                *bool  // 仅允许 Claude Code 客户端
+	FallbackGroupID               *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
@@ -265,6 +269,8 @@ type UpdateGroupInput struct {
 	SupportedModelScopes *[]string
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       *bool
+	DisableResponsesAPI         *bool
+	DisableChatCompletionsAPI   *bool
 	DefaultMappedModel          *string
 	RequireOAuthOnly            *bool
 	RequirePrivacySet           *bool
@@ -1892,6 +1898,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		MonthlyLimitUSD:                 monthlyLimit,
 		AllowImageGeneration:            input.AllowImageGeneration,
 		ImageRateIndependent:            input.ImageRateIndependent,
+		ImageBillingUseRequestedCount:   input.ImageBillingUseRequestedCount,
 		ImageRateMultiplier:             imageRateMultiplier,
 		ImagePrice1K:                    imagePrice1K,
 		ImagePrice2K:                    imagePrice2K,
@@ -1903,6 +1910,8 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		MCPXMLInject:                    mcpXMLInject,
 		SupportedModelScopes:            input.SupportedModelScopes,
 		AllowMessagesDispatch:           input.AllowMessagesDispatch,
+		DisableResponsesAPI:             input.DisableResponsesAPI,
+		DisableChatCompletionsAPI:       input.DisableChatCompletionsAPI,
 		RequireOAuthOnly:                input.RequireOAuthOnly,
 		RequirePrivacySet:               input.RequirePrivacySet,
 		DefaultMappedModel:              input.DefaultMappedModel,
@@ -2076,6 +2085,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.ImageRateIndependent != nil {
 		group.ImageRateIndependent = *input.ImageRateIndependent
 	}
+	if input.ImageBillingUseRequestedCount != nil {
+		group.ImageBillingUseRequestedCount = input.ImageBillingUseRequestedCount
+	}
 	if input.ImageRateMultiplier != nil {
 		if *input.ImageRateMultiplier < 0 {
 			return nil, errors.New("image_rate_multiplier must be >= 0")
@@ -2142,6 +2154,12 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	// OpenAI Messages 调度配置
 	if input.AllowMessagesDispatch != nil {
 		group.AllowMessagesDispatch = *input.AllowMessagesDispatch
+	}
+	if input.DisableResponsesAPI != nil {
+		group.DisableResponsesAPI = input.DisableResponsesAPI
+	}
+	if input.DisableChatCompletionsAPI != nil {
+		group.DisableChatCompletionsAPI = input.DisableChatCompletionsAPI
 	}
 	if input.RequireOAuthOnly != nil {
 		group.RequireOAuthOnly = *input.RequireOAuthOnly

@@ -783,7 +783,18 @@
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                v-model="createForm.image_billing_use_requested_count"
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              {{ t("admin.groups.imagePricing.useRequestedCount") }}
+            </label>
           </div>
+          <p class="mb-4 text-xs text-amber-700 dark:text-amber-300">
+            {{ t("admin.groups.imagePricing.useRequestedCountHint") }}
+          </p>
           <div
             v-if="createForm.image_rate_independent"
             class="mb-4"
@@ -1100,6 +1111,70 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {{ t("admin.groups.openaiMessages.allowDispatchHint") }}
           </p>
+
+          <div class="mt-4 space-y-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  禁用 Responses API
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  开启后拒绝 /v1/responses、/responses、Codex Responses 以及 Responses WebSocket。
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="createForm.disable_responses_api = !createForm.disable_responses_api"
+                class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :class="
+                  createForm.disable_responses_api
+                    ? 'bg-amber-500'
+                    : 'bg-gray-300 dark:bg-dark-600'
+                "
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="
+                    createForm.disable_responses_api
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  "
+                />
+              </button>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  禁用 Chat Completions API
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  开启后拒绝 /v1/chat/completions 与 /chat/completions。
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="
+                  createForm.disable_chat_completions_api =
+                    !createForm.disable_chat_completions_api
+                "
+                class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :class="
+                  createForm.disable_chat_completions_api
+                    ? 'bg-amber-500'
+                    : 'bg-gray-300 dark:bg-dark-600'
+                "
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="
+                    createForm.disable_chat_completions_api
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  "
+                />
+              </button>
+            </div>
+          </div>
 
           <div v-if="createForm.allow_messages_dispatch" class="mt-3">
             <div
@@ -2071,7 +2146,18 @@
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                v-model="editForm.image_billing_use_requested_count"
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              {{ t("admin.groups.imagePricing.useRequestedCount") }}
+            </label>
           </div>
+          <p class="mb-4 text-xs text-amber-700 dark:text-amber-300">
+            {{ t("admin.groups.imagePricing.useRequestedCountHint") }}
+          </p>
           <div
             v-if="editForm.image_rate_independent"
             class="mb-4"
@@ -2384,6 +2470,70 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {{ t("admin.groups.openaiMessages.allowDispatchHint") }}
           </p>
+
+          <div class="mt-4 space-y-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  禁用 Responses API
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  开启后拒绝 /v1/responses、/responses、Codex Responses 以及 Responses WebSocket。
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="editForm.disable_responses_api = !editForm.disable_responses_api"
+                class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :class="
+                  editForm.disable_responses_api
+                    ? 'bg-amber-500'
+                    : 'bg-gray-300 dark:bg-dark-600'
+                "
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="
+                    editForm.disable_responses_api
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  "
+                />
+              </button>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  禁用 Chat Completions API
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  开启后拒绝 /v1/chat/completions 与 /chat/completions。
+                </p>
+              </div>
+              <button
+                type="button"
+                @click="
+                  editForm.disable_chat_completions_api =
+                    !editForm.disable_chat_completions_api
+                "
+                class="relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :class="
+                  editForm.disable_chat_completions_api
+                    ? 'bg-amber-500'
+                    : 'bg-gray-300 dark:bg-dark-600'
+                "
+              >
+                <span
+                  class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="
+                    editForm.disable_chat_completions_api
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  "
+                />
+              </button>
+            </div>
+          </div>
 
           <div v-if="editForm.allow_messages_dispatch" class="mt-3">
             <div
@@ -3338,6 +3488,7 @@ const createForm = reactive({
   // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
+  image_billing_use_requested_count: false as boolean | null,
   image_rate_multiplier: 1,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
@@ -3348,6 +3499,8 @@ const createForm = reactive({
   fallback_group_id_on_invalid_request: null as number | null,
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
+  disable_responses_api: false,
+  disable_chat_completions_api: false,
   opus_mapped_model: createMessagesDispatchDefaults.opus_mapped_model,
   sonnet_mapped_model: createMessagesDispatchDefaults.sonnet_mapped_model,
   haiku_mapped_model: createMessagesDispatchDefaults.haiku_mapped_model,
@@ -3669,6 +3822,7 @@ const editForm = reactive({
   // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
+  image_billing_use_requested_count: null as boolean | null,
   image_rate_multiplier: 1,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
@@ -3679,6 +3833,8 @@ const editForm = reactive({
   fallback_group_id_on_invalid_request: null as number | null,
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
+  disable_responses_api: false,
+  disable_chat_completions_api: false,
   default_mapped_model: '',
   opus_mapped_model: editMessagesDispatchDefaults.opus_mapped_model,
   sonnet_mapped_model: editMessagesDispatchDefaults.sonnet_mapped_model,
@@ -3702,6 +3858,7 @@ const editForm = reactive({
 type ImagePricingFormState = {
   rate_multiplier: number;
   image_rate_independent: boolean;
+  image_billing_use_requested_count?: boolean | null;
   image_rate_multiplier: number;
   image_price_1k: number | string | null;
   image_price_2k: number | string | null;
@@ -3920,6 +4077,7 @@ const closeCreateModal = () => {
   createForm.monthly_limit_usd = null;
   createForm.allow_image_generation = false;
   createForm.image_rate_independent = false;
+  createForm.image_billing_use_requested_count = false;
   createForm.image_rate_multiplier = 1;
   createForm.image_price_1k = null;
   createForm.image_price_2k = null;
@@ -3928,6 +4086,8 @@ const closeCreateModal = () => {
   createForm.fallback_group_id = null;
   createForm.fallback_group_id_on_invalid_request = null;
   resetMessagesDispatchFormState(createForm);
+  createForm.disable_responses_api = false;
+  createForm.disable_chat_completions_api = false;
   createForm.require_oauth_only = false;
   createForm.require_privacy_set = false;
   createForm.supported_model_scopes = ["claude", "gemini_text", "gemini_image"];
@@ -4046,6 +4206,8 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.monthly_limit_usd = group.monthly_limit_usd;
   editForm.allow_image_generation = group.allow_image_generation ?? false;
   editForm.image_rate_independent = group.image_rate_independent ?? false;
+  editForm.image_billing_use_requested_count =
+    group.image_billing_use_requested_count ?? null;
   editForm.image_rate_multiplier = group.image_rate_multiplier ?? 1;
   editForm.image_price_1k = group.image_price_1k;
   editForm.image_price_2k = group.image_price_2k;
@@ -4060,6 +4222,9 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.allow_messages_dispatch =
     group.allow_messages_dispatch ||
     messagesDispatchFormState.allow_messages_dispatch;
+  editForm.disable_responses_api = group.disable_responses_api === true;
+  editForm.disable_chat_completions_api =
+    group.disable_chat_completions_api === true;
   editForm.opus_mapped_model = messagesDispatchFormState.opus_mapped_model;
   editForm.sonnet_mapped_model = messagesDispatchFormState.sonnet_mapped_model;
   editForm.haiku_mapped_model = messagesDispatchFormState.haiku_mapped_model;
@@ -4095,6 +4260,9 @@ const closeEditModal = () => {
   editModelRoutingRules.value = [];
   editForm.copy_accounts_from_group_ids = [];
   resetMessagesDispatchFormState(editForm);
+  editForm.image_billing_use_requested_count = null;
+  editForm.disable_responses_api = false;
+  editForm.disable_chat_completions_api = false;
   resetModelsListState(editModelsListState);
 };
 
@@ -4241,6 +4409,8 @@ watch(
     }
     if (newVal !== "openai") {
       resetMessagesDispatchFormState(createForm);
+      createForm.disable_responses_api = false;
+      createForm.disable_chat_completions_api = false;
     }
     if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       createForm.require_oauth_only = false;
@@ -4259,6 +4429,8 @@ watch(
     }
     if (newVal !== "openai") {
       resetMessagesDispatchFormState(editForm);
+      editForm.disable_responses_api = false;
+      editForm.disable_chat_completions_api = false;
     }
     if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       editForm.require_oauth_only = false;
@@ -4279,6 +4451,8 @@ watch(
     }
     if (newVal !== 'openai') {
       editForm.allow_messages_dispatch = false
+      editForm.disable_responses_api = false
+      editForm.disable_chat_completions_api = false
       editForm.default_mapped_model = ''
     }
   }

@@ -239,21 +239,22 @@ type OpenAIForwardResult struct {
 	ServiceTier *string
 	// ReasoningEffort is extracted from request body (reasoning.effort) or derived from model suffix.
 	// Stored for usage records display; nil means not provided / not applicable.
-	ReasoningEffort    *string
-	Stream             bool
-	OpenAIWSMode       bool
-	ResponseHeaders    http.Header
-	Duration           time.Duration
-	FirstTokenMs       *int
-	UpstreamTiming     UsageUpstreamTiming
-	ClientDisconnect   bool
-	ImageCount         int
-	ImageSize          string
-	ImageInputSize     string
-	ImageOutputSize    string
-	ImageOutputSizes   []string
-	ImageSizeSource    string
-	ImageSizeBreakdown map[string]int
+	ReasoningEffort     *string
+	Stream              bool
+	OpenAIWSMode        bool
+	ResponseHeaders     http.Header
+	Duration            time.Duration
+	FirstTokenMs        *int
+	UpstreamTiming      UsageUpstreamTiming
+	ClientDisconnect    bool
+	ImageCount          int
+	RequestedImageCount int
+	ImageSize           string
+	ImageInputSize      string
+	ImageOutputSize     string
+	ImageOutputSizes    []string
+	ImageSizeSource     string
+	ImageSizeBreakdown  map[string]int
 
 	wsReplayInput       []json.RawMessage
 	wsReplayInputExists bool
@@ -2915,6 +2916,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	imageBillingModel := ""
 	imageSizeTier := ""
 	imageInputSize := ""
+	requestedImageCount := 0
 	if imageIntent {
 		var imageCfg OpenAIResponsesImageBillingConfig
 		var imageCfgErr error
@@ -2931,6 +2933,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		imageBillingModel = imageCfg.Model
 		imageSizeTier = imageCfg.SizeTier
 		imageInputSize = imageCfg.InputSize
+		requestedImageCount = imageCfg.RequestedImageCount
 	}
 
 	// Get access token
@@ -3313,6 +3316,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		}
 		if imageCount > 0 {
 			forwardResult.ImageCount = imageCount
+			forwardResult.RequestedImageCount = requestedImageCount
 			forwardResult.ImageSize = imageSizeTier
 			forwardResult.ImageInputSize = imageInputSize
 			forwardResult.ImageOutputSizes = imageOutputSizes
@@ -3411,6 +3415,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	imageBillingModel := ""
 	imageSizeTier := ""
 	imageInputSize := ""
+	requestedImageCount := 0
 	if IsImageGenerationIntent(openAIResponsesEndpoint, reqModel, body) {
 		var imageCfgErr error
 		imageCfg, imageCfgErr := resolveOpenAIResponsesImageBillingConfigDetailedFromBody(body, reqModel)
@@ -3428,6 +3433,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		imageBillingModel = imageCfg.Model
 		imageSizeTier = imageCfg.SizeTier
 		imageInputSize = imageCfg.InputSize
+		requestedImageCount = imageCfg.RequestedImageCount
 	}
 
 	logger.LegacyPrintf("service.openai_gateway",
@@ -3560,6 +3566,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	}
 	if imageCount > 0 {
 		forwardResult.ImageCount = imageCount
+		forwardResult.RequestedImageCount = requestedImageCount
 		forwardResult.ImageSize = imageSizeTier
 		forwardResult.ImageInputSize = imageInputSize
 		forwardResult.ImageOutputSizes = imageOutputSizes
@@ -4177,7 +4184,6 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			}
 			imageCounter.AddSSEData(dataBytes)
 			if sanitizedData, sanitized := sanitizeOpenAIResponseFailedEventForClient(dataBytes, eventType); sanitized {
-				dataBytes = sanitizedData
 				trimmedData = strings.TrimSpace(string(sanitizedData))
 				line = "data: " + string(sanitizedData)
 			}
@@ -5221,7 +5227,6 @@ func (s *OpenAIGatewayService) handleStreamingResponse(
 				eventType = strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			}
 			if sanitizedData, sanitized := sanitizeOpenAIResponseFailedEventForClient(dataBytes, eventType); sanitized {
-				dataBytes = sanitizedData
 				data = string(sanitizedData)
 				line = "data: " + data
 			}
@@ -6402,6 +6407,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	account := input.Account
 	subscription := input.Subscription
 	ApplyOpenAIImageBillingResolution(result)
+	result.ImageCount = resolveBillableImageCount(apiKeyGroup(apiKey), result.ImageCount, result.RequestedImageCount)
 
 	// 计算实际的新输入token（减去缓存读取的token）
 	// 因为 input_tokens 包含了 cache_read_tokens，而缓存读取的token不应按输入价格计费

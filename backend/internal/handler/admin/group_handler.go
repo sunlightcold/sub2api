@@ -94,6 +94,7 @@ type CreateGroupRequest struct {
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	AllowImageGeneration            bool     `json:"allow_image_generation"`
 	ImageRateIndependent            bool     `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount   *bool    `json:"image_billing_use_requested_count"`
 	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -109,6 +110,8 @@ type CreateGroupRequest struct {
 	SupportedModelScopes []string `json:"supported_model_scopes"`
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool                                      `json:"allow_messages_dispatch"`
+	DisableResponsesAPI         *bool                                     `json:"disable_responses_api"`
+	DisableChatCompletionsAPI   *bool                                     `json:"disable_chat_completions_api"`
 	RequireOAuthOnly            bool                                      `json:"require_oauth_only"`
 	RequirePrivacySet           bool                                      `json:"require_privacy_set"`
 	DefaultMappedModel          string                                    `json:"default_mapped_model"`
@@ -135,6 +138,7 @@ type UpdateGroupRequest struct {
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	AllowImageGeneration            *bool    `json:"allow_image_generation"`
 	ImageRateIndependent            *bool    `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount   *bool    `json:"image_billing_use_requested_count"`
 	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -150,6 +154,8 @@ type UpdateGroupRequest struct {
 	SupportedModelScopes *[]string `json:"supported_model_scopes"`
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       *bool                                      `json:"allow_messages_dispatch"`
+	DisableResponsesAPI         *bool                                      `json:"disable_responses_api"`
+	DisableChatCompletionsAPI   *bool                                      `json:"disable_chat_completions_api"`
 	RequireOAuthOnly            *bool                                      `json:"require_oauth_only"`
 	RequirePrivacySet           *bool                                      `json:"require_privacy_set"`
 	DefaultMappedModel          *string                                    `json:"default_mapped_model"`
@@ -289,6 +295,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
 		AllowImageGeneration:            req.AllowImageGeneration,
 		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageBillingUseRequestedCount:   req.ImageBillingUseRequestedCount,
 		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,
@@ -301,6 +308,8 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		MCPXMLInject:                    req.MCPXMLInject,
 		SupportedModelScopes:            req.SupportedModelScopes,
 		AllowMessagesDispatch:           req.AllowMessagesDispatch,
+		DisableResponsesAPI:             req.DisableResponsesAPI,
+		DisableChatCompletionsAPI:       req.DisableChatCompletionsAPI,
 		RequireOAuthOnly:                req.RequireOAuthOnly,
 		RequirePrivacySet:               req.RequirePrivacySet,
 		DefaultMappedModel:              req.DefaultMappedModel,
@@ -345,6 +354,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
 		AllowImageGeneration:            req.AllowImageGeneration,
 		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageBillingUseRequestedCount:   req.ImageBillingUseRequestedCount,
 		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,
@@ -357,6 +367,8 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		MCPXMLInject:                    req.MCPXMLInject,
 		SupportedModelScopes:            req.SupportedModelScopes,
 		AllowMessagesDispatch:           req.AllowMessagesDispatch,
+		DisableResponsesAPI:             req.DisableResponsesAPI,
+		DisableChatCompletionsAPI:       req.DisableChatCompletionsAPI,
 		RequireOAuthOnly:                req.RequireOAuthOnly,
 		RequirePrivacySet:               req.RequirePrivacySet,
 		DefaultMappedModel:              req.DefaultMappedModel,

@@ -49,8 +49,14 @@ type Group struct {
 	DefaultValidityDays int `json:"default_validity_days,omitempty"`
 	// 是否允许该分组使用图片生成能力
 	AllowImageGeneration bool `json:"allow_image_generation,omitempty"`
+	// 是否禁用该分组调用 Responses API；NULL/false 表示保持原行为
+	DisableResponsesAPI *bool `json:"disable_responses_api,omitempty"`
+	// 是否禁用该分组调用 Chat Completions API；NULL/false 表示保持原行为
+	DisableChatCompletionsAPI *bool `json:"disable_chat_completions_api,omitempty"`
 	// 图片生成是否使用独立倍率；false 表示共享分组有效倍率
 	ImageRateIndependent bool `json:"image_rate_independent,omitempty"`
+	// 图片生成是否按请求参数 n 计费；NULL/false 保持按上游返回图片数计费
+	ImageBillingUseRequestedCount *bool `json:"image_billing_use_requested_count,omitempty"`
 	// 图片生成独立倍率，仅 image_rate_independent=true 时生效
 	ImageRateMultiplier float64 `json:"image_rate_multiplier,omitempty"`
 	// ImagePrice1k holds the value of the "image_price_1k" field.
@@ -197,7 +203,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig:
 			values[i] = new([]byte)
-		case group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldImageRateIndependent, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
+		case group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldDisableResponsesAPI, group.FieldDisableChatCompletionsAPI, group.FieldImageRateIndependent, group.FieldImageBillingUseRequestedCount, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
 			values[i] = new(sql.NullBool)
 		case group.FieldRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k:
 			values[i] = new(sql.NullFloat64)
@@ -323,11 +329,32 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AllowImageGeneration = value.Bool
 			}
+		case group.FieldDisableResponsesAPI:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_responses_api", values[i])
+			} else if value.Valid {
+				_m.DisableResponsesAPI = new(bool)
+				*_m.DisableResponsesAPI = value.Bool
+			}
+		case group.FieldDisableChatCompletionsAPI:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_chat_completions_api", values[i])
+			} else if value.Valid {
+				_m.DisableChatCompletionsAPI = new(bool)
+				*_m.DisableChatCompletionsAPI = value.Bool
+			}
 		case group.FieldImageRateIndependent:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field image_rate_independent", values[i])
 			} else if value.Valid {
 				_m.ImageRateIndependent = value.Bool
+			}
+		case group.FieldImageBillingUseRequestedCount:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field image_billing_use_requested_count", values[i])
+			} else if value.Valid {
+				_m.ImageBillingUseRequestedCount = new(bool)
+				*_m.ImageBillingUseRequestedCount = value.Bool
 			}
 		case group.FieldImageRateMultiplier:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -587,8 +614,23 @@ func (_m *Group) String() string {
 	builder.WriteString("allow_image_generation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllowImageGeneration))
 	builder.WriteString(", ")
+	if v := _m.DisableResponsesAPI; v != nil {
+		builder.WriteString("disable_responses_api=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.DisableChatCompletionsAPI; v != nil {
+		builder.WriteString("disable_chat_completions_api=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("image_rate_independent=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ImageRateIndependent))
+	builder.WriteString(", ")
+	if v := _m.ImageBillingUseRequestedCount; v != nil {
+		builder.WriteString("image_billing_use_requested_count=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("image_rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ImageRateMultiplier))

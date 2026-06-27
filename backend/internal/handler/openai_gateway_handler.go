@@ -173,6 +173,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	if !h.ensureResponsesDependencies(c, reqLog) {
 		return
 	}
+	if service.GroupDisablesResponsesAPI(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", "Responses API is disabled for this group")
+		return
+	}
 
 	// Read request body
 	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
@@ -1189,6 +1193,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		zap.Bool("openai_ws_mode", true),
 	)
 	if !h.ensureResponsesDependencies(c, reqLog) {
+		return
+	}
+	if service.GroupDisablesResponsesAPI(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", "Responses API is disabled for this group")
 		return
 	}
 	reqLog.Info("openai.websocket_ingress_started")

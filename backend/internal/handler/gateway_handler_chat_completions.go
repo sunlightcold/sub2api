@@ -43,6 +43,10 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		zap.Int64("api_key_id", apiKey.ID),
 		zap.Any("group_id", apiKey.GroupID),
 	)
+	if service.GroupDisablesChatCompletionsAPI(apiKey.Group) {
+		h.chatCompletionsErrorResponse(c, http.StatusForbidden, "permission_error", "Chat Completions API is disabled for this group")
+		return
+	}
 
 	// Read request body
 	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)

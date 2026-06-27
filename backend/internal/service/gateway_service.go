@@ -564,13 +564,14 @@ type ForwardResult struct {
 	ReasoningEffort  *string
 
 	// 图片生成计费字段（图片生成模型使用）
-	ImageCount         int    // 生成的图片数量
-	ImageSize          string // 最终计费尺寸 "1K", "2K", "4K"
-	ImageInputSize     string // 请求中的原始图片尺寸
-	ImageOutputSize    string // 上游响应中的图片尺寸
-	ImageOutputSizes   []string
-	ImageSizeSource    string
-	ImageSizeBreakdown map[string]int
+	ImageCount          int    // 生成的图片数量；记录使用量时可能被分组配置修正为计费数量
+	RequestedImageCount int    // 请求侧声明的图片数量；0 表示未知
+	ImageSize           string // 最终计费尺寸 "1K", "2K", "4K"
+	ImageInputSize      string // 请求中的原始图片尺寸
+	ImageOutputSize     string // 上游响应中的图片尺寸
+	ImageOutputSizes    []string
+	ImageSizeSource     string
+	ImageSizeBreakdown  map[string]int
 }
 
 // UpstreamFailoverError indicates an upstream error that should trigger account failover.
@@ -9409,6 +9410,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	account := input.Account
 	subscription := input.Subscription
 	ApplyForwardImageBillingResolution(result)
+	result.ImageCount = resolveBillableImageCount(apiKeyGroup(apiKey), result.ImageCount, result.RequestedImageCount)
 
 	// 强制缓存计费：将 input_tokens 转为 cache_read_input_tokens
 	// 用于粘性会话切换时的特殊计费处理

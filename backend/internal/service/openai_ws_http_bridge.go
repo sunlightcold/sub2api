@@ -152,6 +152,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	imageBillingModel string,
 	imageSizeTier string,
 	imageInputSize string,
+	requestedImageCount int,
 	turn int,
 	writeClientMessage func([]byte) error,
 ) (*OpenAIForwardResult, error) {
@@ -254,6 +255,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		}
 		if imageCount > 0 {
 			result.ImageCount = imageCount
+			result.RequestedImageCount = requestedImageCount
 			result.ImageSize = imageSizeTier
 			result.ImageInputSize = imageInputSize
 			result.ImageOutputSizes = imageCounter.Sizes()

@@ -68,6 +68,7 @@ type APIKeyAuthGroupSnapshot struct {
 	MonthlyLimitUSD                 *float64 `json:"monthly_limit_usd,omitempty"`
 	AllowImageGeneration            bool     `json:"allow_image_generation"`
 	ImageRateIndependent            bool     `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount   *bool    `json:"image_billing_use_requested_count,omitempty"`
 	ImageRateMultiplier             float64  `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k,omitempty"`
 	ImagePrice2K                    *float64 `json:"image_price_2k,omitempty"`
@@ -87,6 +88,8 @@ type APIKeyAuthGroupSnapshot struct {
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool                              `json:"allow_messages_dispatch"`
+	DisableResponsesAPI         *bool                             `json:"disable_responses_api,omitempty"`
+	DisableChatCompletionsAPI   *bool                             `json:"disable_chat_completions_api,omitempty"`
 	DefaultMappedModel          string                            `json:"default_mapped_model,omitempty"`
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
 	ModelsListConfig            GroupModelsListConfig             `json:"models_list_config,omitempty"`

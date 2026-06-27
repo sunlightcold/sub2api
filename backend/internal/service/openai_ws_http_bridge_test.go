@@ -124,6 +124,7 @@ func TestOpenAIWSHTTPBridgeRelaysSSEFramesAsWebSocketMessages(t *testing.T) {
 			"",
 			"",
 			"",
+			0,
 			1,
 			writeClient,
 		)

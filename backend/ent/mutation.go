@@ -15069,7 +15069,10 @@ type GroupMutation struct {
 	default_validity_days                   *int
 	adddefault_validity_days                *int
 	allow_image_generation                  *bool
+	disable_responses_api                   *bool
+	disable_chat_completions_api            *bool
 	image_rate_independent                  *bool
+	image_billing_use_requested_count       *bool
 	image_rate_multiplier                   *float64
 	addimage_rate_multiplier                *float64
 	image_price_1k                          *float64
@@ -15928,6 +15931,104 @@ func (m *GroupMutation) ResetAllowImageGeneration() {
 	m.allow_image_generation = nil
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (m *GroupMutation) SetDisableResponsesAPI(b bool) {
+	m.disable_responses_api = &b
+}
+
+// DisableResponsesAPI returns the value of the "disable_responses_api" field in the mutation.
+func (m *GroupMutation) DisableResponsesAPI() (r bool, exists bool) {
+	v := m.disable_responses_api
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisableResponsesAPI returns the old "disable_responses_api" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldDisableResponsesAPI(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisableResponsesAPI is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisableResponsesAPI requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisableResponsesAPI: %w", err)
+	}
+	return oldValue.DisableResponsesAPI, nil
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (m *GroupMutation) ClearDisableResponsesAPI() {
+	m.disable_responses_api = nil
+	m.clearedFields[group.FieldDisableResponsesAPI] = struct{}{}
+}
+
+// DisableResponsesAPICleared returns if the "disable_responses_api" field was cleared in this mutation.
+func (m *GroupMutation) DisableResponsesAPICleared() bool {
+	_, ok := m.clearedFields[group.FieldDisableResponsesAPI]
+	return ok
+}
+
+// ResetDisableResponsesAPI resets all changes to the "disable_responses_api" field.
+func (m *GroupMutation) ResetDisableResponsesAPI() {
+	m.disable_responses_api = nil
+	delete(m.clearedFields, group.FieldDisableResponsesAPI)
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (m *GroupMutation) SetDisableChatCompletionsAPI(b bool) {
+	m.disable_chat_completions_api = &b
+}
+
+// DisableChatCompletionsAPI returns the value of the "disable_chat_completions_api" field in the mutation.
+func (m *GroupMutation) DisableChatCompletionsAPI() (r bool, exists bool) {
+	v := m.disable_chat_completions_api
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisableChatCompletionsAPI returns the old "disable_chat_completions_api" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldDisableChatCompletionsAPI(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisableChatCompletionsAPI is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisableChatCompletionsAPI requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisableChatCompletionsAPI: %w", err)
+	}
+	return oldValue.DisableChatCompletionsAPI, nil
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (m *GroupMutation) ClearDisableChatCompletionsAPI() {
+	m.disable_chat_completions_api = nil
+	m.clearedFields[group.FieldDisableChatCompletionsAPI] = struct{}{}
+}
+
+// DisableChatCompletionsAPICleared returns if the "disable_chat_completions_api" field was cleared in this mutation.
+func (m *GroupMutation) DisableChatCompletionsAPICleared() bool {
+	_, ok := m.clearedFields[group.FieldDisableChatCompletionsAPI]
+	return ok
+}
+
+// ResetDisableChatCompletionsAPI resets all changes to the "disable_chat_completions_api" field.
+func (m *GroupMutation) ResetDisableChatCompletionsAPI() {
+	m.disable_chat_completions_api = nil
+	delete(m.clearedFields, group.FieldDisableChatCompletionsAPI)
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (m *GroupMutation) SetImageRateIndependent(b bool) {
 	m.image_rate_independent = &b
@@ -15962,6 +16063,55 @@ func (m *GroupMutation) OldImageRateIndependent(ctx context.Context) (v bool, er
 // ResetImageRateIndependent resets all changes to the "image_rate_independent" field.
 func (m *GroupMutation) ResetImageRateIndependent() {
 	m.image_rate_independent = nil
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (m *GroupMutation) SetImageBillingUseRequestedCount(b bool) {
+	m.image_billing_use_requested_count = &b
+}
+
+// ImageBillingUseRequestedCount returns the value of the "image_billing_use_requested_count" field in the mutation.
+func (m *GroupMutation) ImageBillingUseRequestedCount() (r bool, exists bool) {
+	v := m.image_billing_use_requested_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageBillingUseRequestedCount returns the old "image_billing_use_requested_count" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldImageBillingUseRequestedCount(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageBillingUseRequestedCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageBillingUseRequestedCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageBillingUseRequestedCount: %w", err)
+	}
+	return oldValue.ImageBillingUseRequestedCount, nil
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (m *GroupMutation) ClearImageBillingUseRequestedCount() {
+	m.image_billing_use_requested_count = nil
+	m.clearedFields[group.FieldImageBillingUseRequestedCount] = struct{}{}
+}
+
+// ImageBillingUseRequestedCountCleared returns if the "image_billing_use_requested_count" field was cleared in this mutation.
+func (m *GroupMutation) ImageBillingUseRequestedCountCleared() bool {
+	_, ok := m.clearedFields[group.FieldImageBillingUseRequestedCount]
+	return ok
+}
+
+// ResetImageBillingUseRequestedCount resets all changes to the "image_billing_use_requested_count" field.
+func (m *GroupMutation) ResetImageBillingUseRequestedCount() {
+	m.image_billing_use_requested_count = nil
+	delete(m.clearedFields, group.FieldImageBillingUseRequestedCount)
 }
 
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
@@ -17264,7 +17414,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 35)
+	fields := make([]string, 0, 38)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -17310,8 +17460,17 @@ func (m *GroupMutation) Fields() []string {
 	if m.allow_image_generation != nil {
 		fields = append(fields, group.FieldAllowImageGeneration)
 	}
+	if m.disable_responses_api != nil {
+		fields = append(fields, group.FieldDisableResponsesAPI)
+	}
+	if m.disable_chat_completions_api != nil {
+		fields = append(fields, group.FieldDisableChatCompletionsAPI)
+	}
 	if m.image_rate_independent != nil {
 		fields = append(fields, group.FieldImageRateIndependent)
+	}
+	if m.image_billing_use_requested_count != nil {
+		fields = append(fields, group.FieldImageBillingUseRequestedCount)
 	}
 	if m.image_rate_multiplier != nil {
 		fields = append(fields, group.FieldImageRateMultiplier)
@@ -17408,8 +17567,14 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.DefaultValidityDays()
 	case group.FieldAllowImageGeneration:
 		return m.AllowImageGeneration()
+	case group.FieldDisableResponsesAPI:
+		return m.DisableResponsesAPI()
+	case group.FieldDisableChatCompletionsAPI:
+		return m.DisableChatCompletionsAPI()
 	case group.FieldImageRateIndependent:
 		return m.ImageRateIndependent()
+	case group.FieldImageBillingUseRequestedCount:
+		return m.ImageBillingUseRequestedCount()
 	case group.FieldImageRateMultiplier:
 		return m.ImageRateMultiplier()
 	case group.FieldImagePrice1k:
@@ -17487,8 +17652,14 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDefaultValidityDays(ctx)
 	case group.FieldAllowImageGeneration:
 		return m.OldAllowImageGeneration(ctx)
+	case group.FieldDisableResponsesAPI:
+		return m.OldDisableResponsesAPI(ctx)
+	case group.FieldDisableChatCompletionsAPI:
+		return m.OldDisableChatCompletionsAPI(ctx)
 	case group.FieldImageRateIndependent:
 		return m.OldImageRateIndependent(ctx)
+	case group.FieldImageBillingUseRequestedCount:
+		return m.OldImageBillingUseRequestedCount(ctx)
 	case group.FieldImageRateMultiplier:
 		return m.OldImageRateMultiplier(ctx)
 	case group.FieldImagePrice1k:
@@ -17641,12 +17812,33 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAllowImageGeneration(v)
 		return nil
+	case group.FieldDisableResponsesAPI:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisableResponsesAPI(v)
+		return nil
+	case group.FieldDisableChatCompletionsAPI:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisableChatCompletionsAPI(v)
+		return nil
 	case group.FieldImageRateIndependent:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetImageRateIndependent(v)
+		return nil
+	case group.FieldImageBillingUseRequestedCount:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageBillingUseRequestedCount(v)
 		return nil
 	case group.FieldImageRateMultiplier:
 		v, ok := value.(float64)
@@ -17985,6 +18177,15 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldMonthlyLimitUsd) {
 		fields = append(fields, group.FieldMonthlyLimitUsd)
 	}
+	if m.FieldCleared(group.FieldDisableResponsesAPI) {
+		fields = append(fields, group.FieldDisableResponsesAPI)
+	}
+	if m.FieldCleared(group.FieldDisableChatCompletionsAPI) {
+		fields = append(fields, group.FieldDisableChatCompletionsAPI)
+	}
+	if m.FieldCleared(group.FieldImageBillingUseRequestedCount) {
+		fields = append(fields, group.FieldImageBillingUseRequestedCount)
+	}
 	if m.FieldCleared(group.FieldImagePrice1k) {
 		fields = append(fields, group.FieldImagePrice1k)
 	}
@@ -18031,6 +18232,15 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldMonthlyLimitUsd:
 		m.ClearMonthlyLimitUsd()
+		return nil
+	case group.FieldDisableResponsesAPI:
+		m.ClearDisableResponsesAPI()
+		return nil
+	case group.FieldDisableChatCompletionsAPI:
+		m.ClearDisableChatCompletionsAPI()
+		return nil
+	case group.FieldImageBillingUseRequestedCount:
+		m.ClearImageBillingUseRequestedCount()
 		return nil
 	case group.FieldImagePrice1k:
 		m.ClearImagePrice1k()
@@ -18103,8 +18313,17 @@ func (m *GroupMutation) ResetField(name string) error {
 	case group.FieldAllowImageGeneration:
 		m.ResetAllowImageGeneration()
 		return nil
+	case group.FieldDisableResponsesAPI:
+		m.ResetDisableResponsesAPI()
+		return nil
+	case group.FieldDisableChatCompletionsAPI:
+		m.ResetDisableChatCompletionsAPI()
+		return nil
 	case group.FieldImageRateIndependent:
 		m.ResetImageRateIndependent()
+		return nil
+	case group.FieldImageBillingUseRequestedCount:
+		m.ResetImageBillingUseRequestedCount()
 		return nil
 	case group.FieldImageRateMultiplier:
 		m.ResetImageRateMultiplier()

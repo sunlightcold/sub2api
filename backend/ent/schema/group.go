@@ -77,9 +77,21 @@ func (Group) Fields() []ent.Field {
 		field.Bool("allow_image_generation").
 			Default(false).
 			Comment("是否允许该分组使用图片生成能力"),
+		field.Bool("disable_responses_api").
+			Optional().
+			Nillable().
+			Comment("是否禁用该分组调用 Responses API；NULL/false 表示保持原行为"),
+		field.Bool("disable_chat_completions_api").
+			Optional().
+			Nillable().
+			Comment("是否禁用该分组调用 Chat Completions API；NULL/false 表示保持原行为"),
 		field.Bool("image_rate_independent").
 			Default(false).
 			Comment("图片生成是否使用独立倍率；false 表示共享分组有效倍率"),
+		field.Bool("image_billing_use_requested_count").
+			Optional().
+			Nillable().
+			Comment("图片生成是否按请求参数 n 计费；NULL/false 保持按上游返回图片数计费"),
 		field.Float("image_rate_multiplier").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(1.0).
