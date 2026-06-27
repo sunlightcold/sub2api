@@ -273,6 +273,20 @@ func (_c *GroupCreate) SetNillableImageRateIndependent(v *bool) *GroupCreate {
 	return _c
 }
 
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (_c *GroupCreate) SetImageBillingUseRequestedCount(v bool) *GroupCreate {
+	_c.mutation.SetImageBillingUseRequestedCount(v)
+	return _c
+}
+
+// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableImageBillingUseRequestedCount(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetImageBillingUseRequestedCount(*v)
+	}
+	return _c
+}
+
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (_c *GroupCreate) SetImageRateMultiplier(v float64) *GroupCreate {
 	_c.mutation.SetImageRateMultiplier(v)
@@ -949,6 +963,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
 		_node.ImageRateIndependent = value
 	}
+	if value, ok := _c.mutation.ImageBillingUseRequestedCount(); ok {
+		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
+		_node.ImageBillingUseRequestedCount = &value
+	}
 	if value, ok := _c.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
 		_node.ImageRateMultiplier = value
@@ -1454,6 +1472,24 @@ func (u *GroupUpsert) SetImageRateIndependent(v bool) *GroupUpsert {
 // UpdateImageRateIndependent sets the "image_rate_independent" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateImageRateIndependent() *GroupUpsert {
 	u.SetExcluded(group.FieldImageRateIndependent)
+	return u
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsert) SetImageBillingUseRequestedCount(v bool) *GroupUpsert {
+	u.Set(group.FieldImageBillingUseRequestedCount, v)
+	return u
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateImageBillingUseRequestedCount() *GroupUpsert {
+	u.SetExcluded(group.FieldImageBillingUseRequestedCount)
+	return u
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsert) ClearImageBillingUseRequestedCount() *GroupUpsert {
+	u.SetNull(group.FieldImageBillingUseRequestedCount)
 	return u
 }
 
@@ -2133,6 +2169,27 @@ func (u *GroupUpsertOne) SetImageRateIndependent(v bool) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateImageRateIndependent() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateImageRateIndependent()
+	})
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsertOne) SetImageBillingUseRequestedCount(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetImageBillingUseRequestedCount(v)
+	})
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateImageBillingUseRequestedCount() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateImageBillingUseRequestedCount()
+	})
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsertOne) ClearImageBillingUseRequestedCount() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearImageBillingUseRequestedCount()
 	})
 }
 
@@ -3030,6 +3087,27 @@ func (u *GroupUpsertBulk) SetImageRateIndependent(v bool) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateImageRateIndependent() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateImageRateIndependent()
+	})
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (u *GroupUpsertBulk) SetImageBillingUseRequestedCount(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetImageBillingUseRequestedCount(v)
+	})
+}
+
+// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateImageBillingUseRequestedCount() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateImageBillingUseRequestedCount()
+	})
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (u *GroupUpsertBulk) ClearImageBillingUseRequestedCount() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearImageBillingUseRequestedCount()
 	})
 }
 

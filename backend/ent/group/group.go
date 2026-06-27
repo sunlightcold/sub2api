@@ -52,6 +52,8 @@ const (
 	FieldDisableChatCompletionsAPI = "disable_chat_completions_api"
 	// FieldImageRateIndependent holds the string denoting the image_rate_independent field in the database.
 	FieldImageRateIndependent = "image_rate_independent"
+	// FieldImageBillingUseRequestedCount holds the string denoting the image_billing_use_requested_count field in the database.
+	FieldImageBillingUseRequestedCount = "image_billing_use_requested_count"
 	// FieldImageRateMultiplier holds the string denoting the image_rate_multiplier field in the database.
 	FieldImageRateMultiplier = "image_rate_multiplier"
 	// FieldImagePrice1k holds the string denoting the image_price_1k field in the database.
@@ -183,6 +185,7 @@ var Columns = []string{
 	FieldDisableResponsesAPI,
 	FieldDisableChatCompletionsAPI,
 	FieldImageRateIndependent,
+	FieldImageBillingUseRequestedCount,
 	FieldImageRateMultiplier,
 	FieldImagePrice1k,
 	FieldImagePrice2k,
@@ -387,6 +390,11 @@ func ByDisableChatCompletionsAPI(opts ...sql.OrderTermOption) OrderOption {
 // ByImageRateIndependent orders the results by the image_rate_independent field.
 func ByImageRateIndependent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldImageRateIndependent, opts...).ToFunc()
+}
+
+// ByImageBillingUseRequestedCount orders the results by the image_billing_use_requested_count field.
+func ByImageBillingUseRequestedCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldImageBillingUseRequestedCount, opts...).ToFunc()
 }
 
 // ByImageRateMultiplier orders the results by the image_rate_multiplier field.

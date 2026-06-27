@@ -514,6 +514,7 @@ export interface Group {
   // 图片生成计费配置
   allow_image_generation: boolean
   image_rate_independent: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier: number
   image_price_1k: number | null
   image_price_2k: number | null
@@ -634,6 +635,7 @@ export interface CreateGroupRequest {
   monthly_limit_usd?: number | null
   allow_image_generation?: boolean
   image_rate_independent?: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   image_price_1k?: number | null
   image_price_2k?: number | null
@@ -671,6 +673,7 @@ export interface UpdateGroupRequest {
   monthly_limit_usd?: number | null
   allow_image_generation?: boolean
   image_rate_independent?: boolean
+  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   image_price_1k?: number | null
   image_price_2k?: number | null

@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 13 // v13: include group OpenAI endpoint disable flags
+const apiKeyAuthSnapshotVersion = 14 // v14: include group requested image billing count flag
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -260,6 +260,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			MonthlyLimitUSD:                 apiKey.Group.MonthlyLimitUSD,
 			AllowImageGeneration:            apiKey.Group.AllowImageGeneration,
 			ImageRateIndependent:            apiKey.Group.ImageRateIndependent,
+			ImageBillingUseRequestedCount:   apiKey.Group.ImageBillingUseRequestedCount,
 			ImageRateMultiplier:             apiKey.Group.ImageRateMultiplier,
 			ImagePrice1K:                    apiKey.Group.ImagePrice1K,
 			ImagePrice2K:                    apiKey.Group.ImagePrice2K,
@@ -335,6 +336,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			MonthlyLimitUSD:                 snapshot.Group.MonthlyLimitUSD,
 			AllowImageGeneration:            snapshot.Group.AllowImageGeneration,
 			ImageRateIndependent:            snapshot.Group.ImageRateIndependent,
+			ImageBillingUseRequestedCount:   snapshot.Group.ImageBillingUseRequestedCount,
 			ImageRateMultiplier:             snapshot.Group.ImageRateMultiplier,
 			ImagePrice1K:                    snapshot.Group.ImagePrice1K,
 			ImagePrice2K:                    snapshot.Group.ImagePrice2K,

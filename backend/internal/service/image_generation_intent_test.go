@@ -95,6 +95,27 @@ func TestResolveOpenAIResponsesImageBillingConfigFromBodyIgnoresUnrelatedLargeIn
 	require.Equal(t, "2048x1152", cfg.InputSize)
 }
 
+func TestResolveOpenAIResponsesImageBillingConfigCapturesRequestedCount(t *testing.T) {
+	cfg, err := resolveOpenAIResponsesImageBillingConfigDetailedFromBody(
+		[]byte(`{"model":"gpt-5.4","tools":[{"type":"image_generation","model":"gpt-image-2","size":"1024x1024","n":1}]}`),
+		"fallback",
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, cfg.RequestedImageCount)
+
+	cfg, err = resolveOpenAIResponsesImageBillingConfigDetailed(
+		map[string]any{
+			"model": "gpt-5.4",
+			"tools": []any{
+				map[string]any{"type": "image_generation", "model": "gpt-image-2", "n": float64(2)},
+			},
+		},
+		"fallback",
+	)
+	require.NoError(t, err)
+	require.Equal(t, 2, cfg.RequestedImageCount)
+}
+
 func TestResolveOpenAIResponsesImageBillingConfigSupportsOfficialAndCustomSizes(t *testing.T) {
 	tests := []struct {
 		name     string

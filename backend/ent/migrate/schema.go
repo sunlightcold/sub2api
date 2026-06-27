@@ -656,6 +656,7 @@ var (
 		{Name: "disable_responses_api", Type: field.TypeBool, Nullable: true},
 		{Name: "disable_chat_completions_api", Type: field.TypeBool, Nullable: true},
 		{Name: "image_rate_independent", Type: field.TypeBool, Default: false},
+		{Name: "image_billing_use_requested_count", Type: field.TypeBool, Nullable: true},
 		{Name: "image_rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
 		{Name: "image_price_1k", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "image_price_2k", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
@@ -710,7 +711,7 @@ var (
 			{
 				Name:    "group_sort_order",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[30]},
+				Columns: []*schema.Column{GroupsColumns[31]},
 			},
 		},
 	}

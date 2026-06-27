@@ -29,10 +29,13 @@ type Group struct {
 	// 图片生成计费配置（antigravity 和 gemini 平台使用）
 	AllowImageGeneration bool
 	ImageRateIndependent bool
-	ImageRateMultiplier  float64
-	ImagePrice1K         *float64
-	ImagePrice2K         *float64
-	ImagePrice4K         *float64
+	// ImageBillingUseRequestedCount enables the safer image billing count source.
+	// nil/false preserves the legacy behavior of billing by upstream output count.
+	ImageBillingUseRequestedCount *bool
+	ImageRateMultiplier           float64
+	ImagePrice1K                  *float64
+	ImagePrice2K                  *float64
+	ImagePrice4K                  *float64
 
 	// Claude Code 客户端限制
 	ClaudeCodeOnly  bool
@@ -138,6 +141,10 @@ func GroupDisablesResponsesAPI(group *Group) bool {
 
 func GroupDisablesChatCompletionsAPI(group *Group) bool {
 	return group != nil && group.DisableChatCompletionsAPI != nil && *group.DisableChatCompletionsAPI
+}
+
+func GroupUsesRequestedImageBillingCount(group *Group) bool {
+	return group != nil && group.ImageBillingUseRequestedCount != nil && *group.ImageBillingUseRequestedCount
 }
 
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表

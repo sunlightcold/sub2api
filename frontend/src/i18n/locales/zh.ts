@@ -2327,6 +2327,8 @@ export default {
         description: '配置图片生成能力和图片基础单价，留空则使用默认价格',
         allowImageGeneration: '允许当前分组生图',
         independentMultiplier: '生图倍率独立',
+        useRequestedCount: '按请求 n 计费',
+        useRequestedCountHint: '默认关闭：继续按上游实际返回图片数计费。开启后按用户请求参数 n 计费，可避免上游异常多返回图片导致双倍扣费。',
         imageMultiplier: '生图独立倍率',
         modeHint: '默认关闭独立倍率时，图片费用 = 图片价格 × 当前分组有效倍率；开启独立倍率后，图片费用 = 图片价格 × 生图独立倍率。',
         finalPricePreview: '最终单张价格预览',

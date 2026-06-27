@@ -94,6 +94,7 @@ type CreateGroupRequest struct {
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	AllowImageGeneration            bool     `json:"allow_image_generation"`
 	ImageRateIndependent            bool     `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount   *bool    `json:"image_billing_use_requested_count"`
 	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -137,6 +138,7 @@ type UpdateGroupRequest struct {
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
 	AllowImageGeneration            *bool    `json:"allow_image_generation"`
 	ImageRateIndependent            *bool    `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount   *bool    `json:"image_billing_use_requested_count"`
 	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64 `json:"image_price_1k"`
 	ImagePrice2K                    *float64 `json:"image_price_2k"`
@@ -293,6 +295,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
 		AllowImageGeneration:            req.AllowImageGeneration,
 		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageBillingUseRequestedCount:   req.ImageBillingUseRequestedCount,
 		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,
@@ -351,6 +354,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		MonthlyLimitUSD:                 req.MonthlyLimitUSD.ToServiceInput(),
 		AllowImageGeneration:            req.AllowImageGeneration,
 		ImageRateIndependent:            req.ImageRateIndependent,
+		ImageBillingUseRequestedCount:   req.ImageBillingUseRequestedCount,
 		ImageRateMultiplier:             req.ImageRateMultiplier,
 		ImagePrice1K:                    req.ImagePrice1K,
 		ImagePrice2K:                    req.ImagePrice2K,

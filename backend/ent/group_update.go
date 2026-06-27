@@ -343,6 +343,26 @@ func (_u *GroupUpdate) SetNillableImageRateIndependent(v *bool) *GroupUpdate {
 	return _u
 }
 
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (_u *GroupUpdate) SetImageBillingUseRequestedCount(v bool) *GroupUpdate {
+	_u.mutation.SetImageBillingUseRequestedCount(v)
+	return _u
+}
+
+// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableImageBillingUseRequestedCount(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetImageBillingUseRequestedCount(*v)
+	}
+	return _u
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (_u *GroupUpdate) ClearImageBillingUseRequestedCount() *GroupUpdate {
+	_u.mutation.ClearImageBillingUseRequestedCount()
+	return _u
+}
+
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (_u *GroupUpdate) SetImageRateMultiplier(v float64) *GroupUpdate {
 	_u.mutation.ResetImageRateMultiplier()
@@ -1083,6 +1103,12 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.ImageBillingUseRequestedCount(); ok {
+		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
+	}
+	if _u.mutation.ImageBillingUseRequestedCountCleared() {
+		_spec.ClearField(group.FieldImageBillingUseRequestedCount, field.TypeBool)
+	}
 	if value, ok := _u.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
 	}
@@ -1805,6 +1831,26 @@ func (_u *GroupUpdateOne) SetNillableImageRateIndependent(v *bool) *GroupUpdateO
 	if v != nil {
 		_u.SetImageRateIndependent(*v)
 	}
+	return _u
+}
+
+// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
+func (_u *GroupUpdateOne) SetImageBillingUseRequestedCount(v bool) *GroupUpdateOne {
+	_u.mutation.SetImageBillingUseRequestedCount(v)
+	return _u
+}
+
+// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableImageBillingUseRequestedCount(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetImageBillingUseRequestedCount(*v)
+	}
+	return _u
+}
+
+// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
+func (_u *GroupUpdateOne) ClearImageBillingUseRequestedCount() *GroupUpdateOne {
+	_u.mutation.ClearImageBillingUseRequestedCount()
 	return _u
 }
 
@@ -2577,6 +2623,12 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ImageBillingUseRequestedCount(); ok {
+		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
+	}
+	if _u.mutation.ImageBillingUseRequestedCountCleared() {
+		_spec.ClearField(group.FieldImageBillingUseRequestedCount, field.TypeBool)
 	}
 	if value, ok := _u.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)

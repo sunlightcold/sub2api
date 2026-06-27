@@ -1588,6 +1588,75 @@ func TestOpenAIGatewayServiceRecordUsage_ImageUsesPerImageBillingEvenWithUsageTo
 	require.InDelta(t, 0.0, usageRepo.lastLog.ImageOutputCost, 1e-12)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_RequestedImageCountDisabledKeepsOutputCount(t *testing.T) {
+	imagePrice := 0.02
+	groupID := int64(1203)
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{}, nil)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:           "resp_image_output_count_legacy",
+			Model:               "gpt-image-2",
+			ImageCount:          2,
+			RequestedImageCount: 1,
+			ImageSize:           "1K",
+			Duration:            time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      11203,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:             groupID,
+				RateMultiplier: 1.0,
+				ImagePrice1K:   &imagePrice,
+			},
+		},
+		User:    &User{ID: 21203},
+		Account: &Account{ID: 31203},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, 2, usageRepo.lastLog.ImageCount)
+	require.InDelta(t, 0.04, usageRepo.lastLog.TotalCost, 1e-12)
+}
+
+func TestOpenAIGatewayServiceRecordUsage_RequestedImageCountEnabledUsesRequestedCount(t *testing.T) {
+	imagePrice := 0.02
+	groupID := int64(1204)
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{}, nil)
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID:           "resp_image_requested_count",
+			Model:               "gpt-image-2",
+			ImageCount:          2,
+			RequestedImageCount: 1,
+			ImageSize:           "1K",
+			Duration:            time.Second,
+		},
+		APIKey: &APIKey{
+			ID:      11204,
+			GroupID: i64p(groupID),
+			Group: &Group{
+				ID:                            groupID,
+				RateMultiplier:                1.0,
+				ImageBillingUseRequestedCount: boolPtr(true),
+				ImagePrice1K:                  &imagePrice,
+			},
+		},
+		User:    &User{ID: 21204},
+		Account: &Account{ID: 31204},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
+	require.InDelta(t, 0.02, usageRepo.lastLog.TotalCost, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_ImageSharedMultiplierPreservesExistingBehavior(t *testing.T) {
 	imagePrice := 0.2
 	groupID := int64(121)

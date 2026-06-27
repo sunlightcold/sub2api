@@ -783,7 +783,18 @@
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                v-model="createForm.image_billing_use_requested_count"
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              {{ t("admin.groups.imagePricing.useRequestedCount") }}
+            </label>
           </div>
+          <p class="mb-4 text-xs text-amber-700 dark:text-amber-300">
+            {{ t("admin.groups.imagePricing.useRequestedCountHint") }}
+          </p>
           <div
             v-if="createForm.image_rate_independent"
             class="mb-4"
@@ -2135,7 +2146,18 @@
               />
               {{ t("admin.groups.imagePricing.independentMultiplier") }}
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <input
+                v-model="editForm.image_billing_use_requested_count"
+                type="checkbox"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              {{ t("admin.groups.imagePricing.useRequestedCount") }}
+            </label>
           </div>
+          <p class="mb-4 text-xs text-amber-700 dark:text-amber-300">
+            {{ t("admin.groups.imagePricing.useRequestedCountHint") }}
+          </p>
           <div
             v-if="editForm.image_rate_independent"
             class="mb-4"
@@ -3466,6 +3488,7 @@ const createForm = reactive({
   // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
+  image_billing_use_requested_count: false as boolean | null,
   image_rate_multiplier: 1,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
@@ -3799,6 +3822,7 @@ const editForm = reactive({
   // 图片生成计费配置
   allow_image_generation: false,
   image_rate_independent: false,
+  image_billing_use_requested_count: null as boolean | null,
   image_rate_multiplier: 1,
   image_price_1k: null as number | null,
   image_price_2k: null as number | null,
@@ -3834,6 +3858,7 @@ const editForm = reactive({
 type ImagePricingFormState = {
   rate_multiplier: number;
   image_rate_independent: boolean;
+  image_billing_use_requested_count?: boolean | null;
   image_rate_multiplier: number;
   image_price_1k: number | string | null;
   image_price_2k: number | string | null;
@@ -4052,6 +4077,7 @@ const closeCreateModal = () => {
   createForm.monthly_limit_usd = null;
   createForm.allow_image_generation = false;
   createForm.image_rate_independent = false;
+  createForm.image_billing_use_requested_count = false;
   createForm.image_rate_multiplier = 1;
   createForm.image_price_1k = null;
   createForm.image_price_2k = null;
@@ -4180,6 +4206,8 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.monthly_limit_usd = group.monthly_limit_usd;
   editForm.allow_image_generation = group.allow_image_generation ?? false;
   editForm.image_rate_independent = group.image_rate_independent ?? false;
+  editForm.image_billing_use_requested_count =
+    group.image_billing_use_requested_count ?? null;
   editForm.image_rate_multiplier = group.image_rate_multiplier ?? 1;
   editForm.image_price_1k = group.image_price_1k;
   editForm.image_price_2k = group.image_price_2k;
@@ -4232,6 +4260,7 @@ const closeEditModal = () => {
   editModelRoutingRules.value = [];
   editForm.copy_accounts_from_group_ids = [];
   resetMessagesDispatchFormState(editForm);
+  editForm.image_billing_use_requested_count = null;
   editForm.disable_responses_api = false;
   editForm.disable_chat_completions_api = false;
   resetModelsListState(editModelsListState);

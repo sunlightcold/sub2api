@@ -145,6 +145,11 @@ func ImageRateIndependent(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldImageRateIndependent, v))
 }
 
+// ImageBillingUseRequestedCount applies equality check predicate on the "image_billing_use_requested_count" field. It's identical to ImageBillingUseRequestedCountEQ.
+func ImageBillingUseRequestedCount(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldImageBillingUseRequestedCount, v))
+}
+
 // ImageRateMultiplier applies equality check predicate on the "image_rate_multiplier" field. It's identical to ImageRateMultiplierEQ.
 func ImageRateMultiplier(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldImageRateMultiplier, v))
@@ -983,6 +988,26 @@ func ImageRateIndependentEQ(v bool) predicate.Group {
 // ImageRateIndependentNEQ applies the NEQ predicate on the "image_rate_independent" field.
 func ImageRateIndependentNEQ(v bool) predicate.Group {
 	return predicate.Group(sql.FieldNEQ(FieldImageRateIndependent, v))
+}
+
+// ImageBillingUseRequestedCountEQ applies the EQ predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldImageBillingUseRequestedCount, v))
+}
+
+// ImageBillingUseRequestedCountNEQ applies the NEQ predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldImageBillingUseRequestedCount, v))
+}
+
+// ImageBillingUseRequestedCountIsNil applies the IsNil predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldImageBillingUseRequestedCount))
+}
+
+// ImageBillingUseRequestedCountNotNil applies the NotNil predicate on the "image_billing_use_requested_count" field.
+func ImageBillingUseRequestedCountNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldImageBillingUseRequestedCount))
 }
 
 // ImageRateMultiplierEQ applies the EQ predicate on the "image_rate_multiplier" field.

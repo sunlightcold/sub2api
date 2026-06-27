@@ -2245,6 +2245,8 @@ export default {
         description: 'Configure image generation access and base image prices. Leave empty to use default prices.',
         allowImageGeneration: 'Allow image generation for this group',
         independentMultiplier: 'Use independent image multiplier',
+        useRequestedCount: 'Bill by requested n',
+        useRequestedCountHint: 'Off by default: keep billing by upstream output image count. When enabled, bill by the user requested n to avoid overcharging if upstream returns extra images.',
         imageMultiplier: 'Image multiplier',
         modeHint: 'By default, image billing uses image price × current effective group multiplier. Independent mode uses image price × image multiplier.',
         finalPricePreview: 'Final per-image price preview',
