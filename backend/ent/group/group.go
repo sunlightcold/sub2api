@@ -46,6 +46,10 @@ const (
 	FieldDefaultValidityDays = "default_validity_days"
 	// FieldAllowImageGeneration holds the string denoting the allow_image_generation field in the database.
 	FieldAllowImageGeneration = "allow_image_generation"
+	// FieldDisableResponsesAPI holds the string denoting the disable_responses_api field in the database.
+	FieldDisableResponsesAPI = "disable_responses_api"
+	// FieldDisableChatCompletionsAPI holds the string denoting the disable_chat_completions_api field in the database.
+	FieldDisableChatCompletionsAPI = "disable_chat_completions_api"
 	// FieldImageRateIndependent holds the string denoting the image_rate_independent field in the database.
 	FieldImageRateIndependent = "image_rate_independent"
 	// FieldImageRateMultiplier holds the string denoting the image_rate_multiplier field in the database.
@@ -176,6 +180,8 @@ var Columns = []string{
 	FieldMonthlyLimitUsd,
 	FieldDefaultValidityDays,
 	FieldAllowImageGeneration,
+	FieldDisableResponsesAPI,
+	FieldDisableChatCompletionsAPI,
 	FieldImageRateIndependent,
 	FieldImageRateMultiplier,
 	FieldImagePrice1k,
@@ -366,6 +372,16 @@ func ByDefaultValidityDays(opts ...sql.OrderTermOption) OrderOption {
 // ByAllowImageGeneration orders the results by the allow_image_generation field.
 func ByAllowImageGeneration(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAllowImageGeneration, opts...).ToFunc()
+}
+
+// ByDisableResponsesAPI orders the results by the disable_responses_api field.
+func ByDisableResponsesAPI(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableResponsesAPI, opts...).ToFunc()
+}
+
+// ByDisableChatCompletionsAPI orders the results by the disable_chat_completions_api field.
+func ByDisableChatCompletionsAPI(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableChatCompletionsAPI, opts...).ToFunc()
 }
 
 // ByImageRateIndependent orders the results by the image_rate_independent field.

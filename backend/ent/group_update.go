@@ -289,6 +289,46 @@ func (_u *GroupUpdate) SetNillableAllowImageGeneration(v *bool) *GroupUpdate {
 	return _u
 }
 
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (_u *GroupUpdate) SetDisableResponsesAPI(v bool) *GroupUpdate {
+	_u.mutation.SetDisableResponsesAPI(v)
+	return _u
+}
+
+// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDisableResponsesAPI(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetDisableResponsesAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (_u *GroupUpdate) ClearDisableResponsesAPI() *GroupUpdate {
+	_u.mutation.ClearDisableResponsesAPI()
+	return _u
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (_u *GroupUpdate) SetDisableChatCompletionsAPI(v bool) *GroupUpdate {
+	_u.mutation.SetDisableChatCompletionsAPI(v)
+	return _u
+}
+
+// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetDisableChatCompletionsAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (_u *GroupUpdate) ClearDisableChatCompletionsAPI() *GroupUpdate {
+	_u.mutation.ClearDisableChatCompletionsAPI()
+	return _u
+}
+
 // SetImageRateIndependent sets the "image_rate_independent" field.
 func (_u *GroupUpdate) SetImageRateIndependent(v bool) *GroupUpdate {
 	_u.mutation.SetImageRateIndependent(v)
@@ -1028,6 +1068,18 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AllowImageGeneration(); ok {
 		_spec.SetField(group.FieldAllowImageGeneration, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
+		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableResponsesAPICleared() {
+		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
+	}
+	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
+		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableChatCompletionsAPICleared() {
+		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
+	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
 	}
@@ -1699,6 +1751,46 @@ func (_u *GroupUpdateOne) SetNillableAllowImageGeneration(v *bool) *GroupUpdateO
 	if v != nil {
 		_u.SetAllowImageGeneration(*v)
 	}
+	return _u
+}
+
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (_u *GroupUpdateOne) SetDisableResponsesAPI(v bool) *GroupUpdateOne {
+	_u.mutation.SetDisableResponsesAPI(v)
+	return _u
+}
+
+// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDisableResponsesAPI(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDisableResponsesAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (_u *GroupUpdateOne) ClearDisableResponsesAPI() *GroupUpdateOne {
+	_u.mutation.ClearDisableResponsesAPI()
+	return _u
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (_u *GroupUpdateOne) SetDisableChatCompletionsAPI(v bool) *GroupUpdateOne {
+	_u.mutation.SetDisableChatCompletionsAPI(v)
+	return _u
+}
+
+// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDisableChatCompletionsAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (_u *GroupUpdateOne) ClearDisableChatCompletionsAPI() *GroupUpdateOne {
+	_u.mutation.ClearDisableChatCompletionsAPI()
 	return _u
 }
 
@@ -2470,6 +2562,18 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AllowImageGeneration(); ok {
 		_spec.SetField(group.FieldAllowImageGeneration, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
+		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableResponsesAPICleared() {
+		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
+	}
+	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
+		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableChatCompletionsAPICleared() {
+		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)

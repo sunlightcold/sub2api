@@ -48,6 +48,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 	if !h.ensureResponsesDependencies(c, reqLog) {
 		return
 	}
+	if service.GroupDisablesChatCompletionsAPI(apiKey.Group) {
+		h.errorResponse(c, http.StatusForbidden, "permission_error", "Chat Completions API is disabled for this group")
+		return
+	}
 
 	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
 	if err != nil {
