@@ -37,32 +37,7 @@ openai_responses_mode = preserve_chat_endpoint
 
 也就是说，该模式只阻止 Chat Completions 自动转换为 Responses。客户端本身发 `/v1/responses` 时，仍保留 auto 模式下的兼容处理，例如在缺少 `instructions` 时补默认值。
 
-同时保留严格模式：
-
-```text
-openai_responses_mode = preserve_endpoint
-```
-
-页面显示为：
-
-```text
-保持入站端点
-```
-
-语义：
-
-| 入站端点 | preserve_endpoint 下发给上游 |
-| --- | --- |
-| `/v1/chat/completions` | `/v1/chat/completions` |
-| `/v1/responses` | `/v1/responses` |
-
-严格模式会阻止 Chat Completions 与 Responses 之间的双向自动转换。
-
 ### 2. instructions 处理差异
-
-在 `preserve_endpoint` 严格模式下，不会因为 `/v1/responses` 请求缺少 `instructions` 而自动补默认 Codex instructions。
-
-这点是本次修改的核心约束：不通过注入默认提示词来规避上游报错。
 
 在 `preserve_chat_endpoint` 推荐模式下，`/v1/responses` 仍走 auto 兼容处理，因此会保留原有的默认 `instructions` 补齐行为；`/v1/chat/completions` 则不会被转换为 `/v1/responses`。
 
@@ -76,7 +51,6 @@ openai_responses_mode = preserve_endpoint
 | `force_responses` | 强制走 `/v1/responses` |
 | `force_chat_completions` | 强制走 `/v1/chat/completions` |
 | `preserve_chat_endpoint` | Chat 入站保持 `/v1/chat/completions`；Responses 入站保持 auto 兼容处理 |
-| `preserve_endpoint` | 保持客户端入站端点，不做 Chat/Responses 跨协议转换 |
 
 ### 4. 构建与 CI 修复
 
@@ -97,9 +71,9 @@ ghcr.io/sunlightcold/sub2api:main
 
 ## 重要边界
 
-`preserve_chat_endpoint` 和 `preserve_endpoint` 都不是字节级透明代理。
+`preserve_chat_endpoint` 不是字节级透明代理。
 
-`preserve_chat_endpoint` 保证 `/v1/chat/completions` 不被转换为 `/v1/responses`，但 `/v1/responses` 仍保留 auto 兼容处理。`preserve_endpoint` 保证不做 Chat Completions 与 Responses 的跨协议转换，也不注入默认 `instructions`。两种模式下，请求仍会经过 sub2api 的正常网关逻辑，例如：
+`preserve_chat_endpoint` 保证 `/v1/chat/completions` 不被转换为 `/v1/responses`，但 `/v1/responses` 仍保留 auto 兼容处理。请求仍会经过 sub2api 的正常网关逻辑，例如：
 
 - 使用账号配置的上游 API key 发往上游
 - 按账号模型映射改写 `model`，如果配置了模型映射
@@ -233,8 +207,6 @@ docker compose up -d sub2api
   "openai_responses_mode": "preserve_chat_endpoint"
 }
 ```
-
-如果明确需要严格保持 `/v1/chat/completions` 和 `/v1/responses` 两个入站端点都不做跨协议转换，可以选择 `保持入站端点`，对应值为 `preserve_endpoint`。
 
 ## 验证方式
 
