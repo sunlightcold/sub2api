@@ -97,10 +97,10 @@ type Group struct {
 	MonthlyLimitUSD  *float64 `json:"monthly_limit_usd"`
 
 	// 图片生成计费配置（仅 antigravity 平台使用）
-	AllowImageGeneration          bool     `json:"allow_image_generation"`
-	ImageRateIndependent          bool     `json:"image_rate_independent"`
-	ImageBillingUseRequestedCount *bool    `json:"image_billing_use_requested_count,omitempty"`
-	ImageRateMultiplier           float64  `json:"image_rate_multiplier"`
+	AllowImageGeneration          bool    `json:"allow_image_generation"`
+	ImageRateIndependent          bool    `json:"image_rate_independent"`
+	ImageBillingUseRequestedCount *bool   `json:"image_billing_use_requested_count,omitempty"`
+	ImageRateMultiplier           float64 `json:"image_rate_multiplier"`
 	// 高峰时段倍率配置
 	PeakRateEnabled    bool     `json:"peak_rate_enabled"`
 	PeakStart          string   `json:"peak_start"`
