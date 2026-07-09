@@ -59,6 +59,40 @@ func TestParseOpsDuration(t *testing.T) {
 	require.False(t, ok)
 }
 
+func TestSanitizeOpenAIFirstTokenMetricMode(t *testing.T) {
+	extra := map[string]any{
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstOutput,
+	}
+	sanitizeOpenAIFirstTokenMetricMode(extra)
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstOutput, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+
+	extra = map[string]any{
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstResponse,
+	}
+	sanitizeOpenAIFirstTokenMetricMode(extra)
+	require.NotContains(t, extra, service.OpenAIFirstTokenMetricModeExtraKey)
+
+	extra = map[string]any{
+		service.OpenAIFirstTokenMetricModeExtraKey: "invalid",
+	}
+	sanitizeOpenAIFirstTokenMetricMode(extra)
+	require.NotContains(t, extra, service.OpenAIFirstTokenMetricModeExtraKey)
+}
+
+func TestSanitizeOpenAIFirstTokenMetricModeForMergeKeepsExplicitDefault(t *testing.T) {
+	extra := map[string]any{
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstResponse,
+	}
+	sanitizeOpenAIFirstTokenMetricModeForMerge(extra)
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstResponse, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+
+	extra = map[string]any{
+		service.OpenAIFirstTokenMetricModeExtraKey: "invalid",
+	}
+	sanitizeOpenAIFirstTokenMetricModeForMerge(extra)
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstResponse, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+}
+
 func TestParseOpsOpenAITokenStatsDuration(t *testing.T) {
 	tests := []struct {
 		input string

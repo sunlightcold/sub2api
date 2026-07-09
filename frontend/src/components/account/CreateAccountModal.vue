@@ -2727,6 +2727,28 @@
         </div>
       </div>
 
+      <!-- OpenAI first token metric mode -->
+      <div
+        v-if="form.platform === 'openai' && (accountCategory === 'oauth-based' || accountCategory === 'apikey')"
+        class="border-t border-gray-200 pt-4 dark:border-dark-600"
+      >
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <label class="input-label mb-0">{{ t('admin.accounts.openai.firstTokenMetricMode') }}</label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('admin.accounts.openai.firstTokenMetricModeDesc') }}
+            </p>
+          </div>
+          <div class="w-64">
+            <Select
+              v-model="openAIFirstTokenMetricMode"
+              :options="openAIFirstTokenMetricModeOptions"
+              data-testid="openai-first-token-metric-mode-select"
+            />
+          </div>
+        </div>
+      </div>
+
       <!-- Anthropic API Key 自动透传开关 -->
       <div
         v-if="form.platform === 'anthropic' && accountCategory === 'apikey'"
@@ -3477,6 +3499,7 @@ import type {
   CodexSessionImportMessage,
   OpenAICompactMode,
   OpenAIResponsesMode,
+  OpenAIFirstTokenMetricMode,
   OpenAIEndpointCapability
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -3709,6 +3732,7 @@ const autoPauseOnExpired = ref(true)
 const openaiPassthroughEnabled = ref(false)
 const openAICompactMode = ref<OpenAICompactMode>('auto')
 const openAIResponsesMode = ref<OpenAIResponsesMode>('auto')
+const openAIFirstTokenMetricMode = ref<OpenAIFirstTokenMetricMode>('first_response')
 const openAIEndpointCapabilities = ref<OpenAIEndpointCapability[]>(['chat_completions', 'embeddings'])
 const openAICacheReadCorrectionEnabled = ref(false)
 const openAICacheReadRatioMin = ref(0.88)
@@ -3784,6 +3808,10 @@ const openAIResponsesModeOptions = computed(() => [
   { value: 'preserve_chat_endpoint', label: t('admin.accounts.openai.responsesModePreserveChatEndpoint') },
   { value: 'force_responses', label: t('admin.accounts.openai.responsesModeForceResponses') },
   { value: 'force_chat_completions', label: t('admin.accounts.openai.responsesModeForceChatCompletions') }
+])
+const openAIFirstTokenMetricModeOptions = computed(() => [
+  { value: 'first_response', label: t('admin.accounts.openai.firstTokenMetricModeFirstResponse') },
+  { value: 'first_output', label: t('admin.accounts.openai.firstTokenMetricModeFirstOutput') }
 ])
 const openAITextEndpointCapabilityLabel = computed(() => {
   if (openAIResponsesMode.value === 'force_responses') {
@@ -4612,6 +4640,7 @@ const resetForm = () => {
   openaiPassthroughEnabled.value = false
   openAICompactMode.value = 'auto'
   openAIResponsesMode.value = 'auto'
+  openAIFirstTokenMetricMode.value = 'first_response'
   openAIEndpointCapabilities.value = ['chat_completions', 'embeddings']
   resetOpenAICacheReadCorrectionState()
   openaiOAuthResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_OFF
@@ -4713,6 +4742,12 @@ const buildOpenAIExtra = (base?: Record<string, unknown>): Record<string, unknow
     extra.openai_compact_mode = openAICompactMode.value
   } else {
     delete extra.openai_compact_mode
+  }
+
+  if (openAIFirstTokenMetricMode.value === 'first_output') {
+    extra.openai_first_token_metric_mode = 'first_output'
+  } else {
+    delete extra.openai_first_token_metric_mode
   }
 
   if (

@@ -791,6 +791,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 	sanitizeUsageLatencyOffset(req.Extra)
+	sanitizeOpenAIFirstTokenMetricMode(req.Extra)
 
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
@@ -876,6 +877,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 	sanitizeUsageLatencyOffset(req.Extra)
+	sanitizeOpenAIFirstTokenMetricMode(req.Extra)
 
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
@@ -1616,6 +1618,8 @@ func (h *AccountHandler) BatchCreate(c *gin.Context) {
 
 			// base_rpm 输入校验：负值归零，超过 10000 截断
 			sanitizeExtraBaseRPM(item.Extra)
+			sanitizeUsageLatencyOffset(item.Extra)
+			sanitizeOpenAIFirstTokenMetricMode(item.Extra)
 
 			skipCheck := item.ConfirmMixedChannelRisk != nil && *item.ConfirmMixedChannelRisk
 
@@ -1809,6 +1813,7 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
+	sanitizeOpenAIFirstTokenMetricModeForMerge(req.Extra)
 
 	// 确定是否跳过混合渠道检查
 	skipCheck := req.ConfirmMixedChannelRisk != nil && *req.ConfirmMixedChannelRisk
@@ -2766,4 +2771,32 @@ func sanitizeUsageLatencyOffset(extra map[string]any) {
 		return
 	}
 	extra["usage_latency_offset_ms"] = offsetMs
+}
+
+func sanitizeOpenAIFirstTokenMetricMode(extra map[string]any) {
+	sanitizeOpenAIFirstTokenMetricModeValue(extra, true)
+}
+
+func sanitizeOpenAIFirstTokenMetricModeForMerge(extra map[string]any) {
+	sanitizeOpenAIFirstTokenMetricModeValue(extra, false)
+}
+
+func sanitizeOpenAIFirstTokenMetricModeValue(extra map[string]any, deleteDefault bool) {
+	if extra == nil {
+		return
+	}
+	raw, ok := extra[service.OpenAIFirstTokenMetricModeExtraKey]
+	if !ok {
+		return
+	}
+	mode := service.NormalizeOpenAIFirstTokenMetricMode(raw)
+	if mode == service.OpenAIFirstTokenMetricModeFirstResponse {
+		if deleteDefault {
+			delete(extra, service.OpenAIFirstTokenMetricModeExtraKey)
+		} else {
+			extra[service.OpenAIFirstTokenMetricModeExtraKey] = mode
+		}
+		return
+	}
+	extra[service.OpenAIFirstTokenMetricModeExtraKey] = mode
 }

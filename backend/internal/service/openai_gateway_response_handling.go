@@ -84,6 +84,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(
 	var firstTokenMs *int
 	streamTiming := UsageUpstreamTiming{}
 	responseID := ""
+	useFirstResponseTTFT := account.UseOpenAIFirstResponseTTFT()
 	scanner := bufio.NewScanner(resp.Body)
 	maxLineSize := defaultMaxLineSize
 	if s.cfg != nil && s.cfg.Gateway.MaxLineSize > 0 {
@@ -271,14 +272,22 @@ func (s *OpenAIGatewayService) handleStreamingResponse(
 				}
 			}
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
-			if firstTokenMs == nil && openAIStreamDataStartsFirstResponse(data) {
-				now := time.Now()
-				firstSSEAt = now
-				ms := int(now.Sub(startTime).Milliseconds())
-				firstTokenMs = &ms
-				setUsageTimingMs(streamTiming, usageTimingTTFTMs, int64(ms))
-				if !upstreamHeadersAt.IsZero() {
-					setUsageTimingMs(streamTiming, usageTimingUpstreamFirstSSEMs, firstSSEAt.Sub(upstreamHeadersAt).Milliseconds())
+			if openAIStreamDataStartsFirstResponse(data) {
+				var now time.Time
+				if firstSSEAt.IsZero() {
+					now = time.Now()
+					firstSSEAt = now
+					if !upstreamHeadersAt.IsZero() {
+						setUsageTimingMs(streamTiming, usageTimingUpstreamFirstSSEMs, firstSSEAt.Sub(upstreamHeadersAt).Milliseconds())
+					}
+				}
+				if firstTokenMs == nil && useFirstResponseTTFT {
+					if now.IsZero() {
+						now = time.Now()
+					}
+					ms := int(now.Sub(startTime).Milliseconds())
+					firstTokenMs = &ms
+					setUsageTimingMs(streamTiming, usageTimingTTFTMs, int64(ms))
 				}
 			}
 			if responseID == "" {

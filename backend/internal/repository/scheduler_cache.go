@@ -550,6 +550,7 @@ func filterSchedulerExtra(extra map[string]any) map[string]any {
 		"openai_ws_force_http",
 		"openai_responses_mode",
 		"openai_responses_supported",
+		service.OpenAIFirstTokenMetricModeExtraKey,
 		"openai_cache_read_correction_enabled",
 		"openai_cache_read_ratio_min",
 		"openai_cache_read_ratio_max",

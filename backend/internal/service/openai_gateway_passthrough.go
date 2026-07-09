@@ -780,6 +780,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	clientOutputStarted := false
 	firstSSEAt := time.Time{}
 	terminalAt := time.Time{}
+	useFirstResponseTTFT := account.UseOpenAIFirstResponseTTFT()
 	upstreamRequestID := strings.TrimSpace(resp.Header.Get("x-request-id"))
 	pendingLines := make([]string, 0, 8)
 	writePendingLines := func() bool {
@@ -850,14 +851,22 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				line = "data: " + string(normalizedData)
 			}
 			eventType := strings.TrimSpace(gjson.Get(trimmedData, "type").String())
-			if firstTokenMs == nil && openAIStreamDataStartsFirstResponse(trimmedData) {
-				now := time.Now()
-				firstSSEAt = now
-				ms := int(now.Sub(startTime).Milliseconds())
-				firstTokenMs = &ms
-				setUsageTimingMs(streamTiming, usageTimingTTFTMs, int64(ms))
-				if !upstreamHeadersAt.IsZero() {
-					setUsageTimingMs(streamTiming, usageTimingUpstreamFirstSSEMs, firstSSEAt.Sub(upstreamHeadersAt).Milliseconds())
+			if openAIStreamDataStartsFirstResponse(trimmedData) {
+				var now time.Time
+				if firstSSEAt.IsZero() {
+					now = time.Now()
+					firstSSEAt = now
+					if !upstreamHeadersAt.IsZero() {
+						setUsageTimingMs(streamTiming, usageTimingUpstreamFirstSSEMs, firstSSEAt.Sub(upstreamHeadersAt).Milliseconds())
+					}
+				}
+				if firstTokenMs == nil && useFirstResponseTTFT {
+					if now.IsZero() {
+						now = time.Now()
+					}
+					ms := int(now.Sub(startTime).Milliseconds())
+					firstTokenMs = &ms
+					setUsageTimingMs(streamTiming, usageTimingTTFTMs, int64(ms))
 				}
 			}
 			if eventType == "response.failed" {

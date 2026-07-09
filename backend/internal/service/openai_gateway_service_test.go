@@ -1534,6 +1534,119 @@ func TestOpenAIStreamingPreambleKeepaliveUsesDownstreamIdle(t *testing.T) {
 	require.Contains(t, rec.Body.String(), "response.completed")
 }
 
+func newOpenAIDelayedFirstOutputSSE(t *testing.T, delay time.Duration) io.ReadCloser {
+	t.Helper()
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer func() { _ = pw.Close() }()
+		_, _ = pw.Write([]byte("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\"}}\n\n"))
+		time.Sleep(delay)
+		_, _ = pw.Write([]byte("data: {\"type\":\"response.output_text.delta\",\"delta\":\"h\"}\n\n"))
+		_, _ = pw.Write([]byte("data: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n"))
+	}()
+	t.Cleanup(func() { _ = pr.Close() })
+	return pr
+}
+
+func TestOpenAIStreamingFirstTokenMetricModeFirstOutputWaitsForActualOutput(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg := &config.Config{
+		Gateway: config.GatewayConfig{
+			MaxLineSize: defaultMaxLineSize,
+		},
+	}
+	svc := &OpenAIGatewayService{cfg: cfg}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	delay := 75 * time.Millisecond
+	start := time.Now()
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       newOpenAIDelayedFirstOutputSSE(t, delay),
+		Header:     http.Header{},
+	}
+
+	result, err := svc.handleStreamingResponse(
+		c.Request.Context(),
+		resp,
+		c,
+		&Account{
+			ID:       1,
+			Platform: PlatformOpenAI,
+			Name:     "acc",
+			Extra: map[string]any{
+				OpenAIFirstTokenMetricModeExtraKey: OpenAIFirstTokenMetricModeFirstOutput,
+			},
+		},
+		start,
+		start,
+		"model",
+		"model",
+		nil,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.firstTokenMs)
+	require.GreaterOrEqual(t, *result.firstTokenMs, 50)
+	require.Equal(t, int64(*result.firstTokenMs), result.upstreamTiming[usageTimingTTFTMs])
+	require.Contains(t, rec.Body.String(), "response.created")
+	require.Contains(t, rec.Body.String(), "response.output_text.delta")
+}
+
+func TestOpenAIStreamingPassthroughFirstTokenMetricModeFirstOutputWaitsForActualOutput(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg := &config.Config{
+		Gateway: config.GatewayConfig{
+			MaxLineSize: defaultMaxLineSize,
+		},
+	}
+	svc := &OpenAIGatewayService{cfg: cfg}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	delay := 75 * time.Millisecond
+	start := time.Now()
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       newOpenAIDelayedFirstOutputSSE(t, delay),
+		Header:     http.Header{},
+	}
+
+	result, err := svc.handleStreamingResponsePassthrough(
+		c.Request.Context(),
+		resp,
+		c,
+		&Account{
+			ID:       1,
+			Platform: PlatformOpenAI,
+			Name:     "acc",
+			Extra: map[string]any{
+				OpenAIFirstTokenMetricModeExtraKey: OpenAIFirstTokenMetricModeFirstOutput,
+			},
+		},
+		start,
+		start,
+		"",
+		"",
+		nil,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.firstTokenMs)
+	require.GreaterOrEqual(t, *result.firstTokenMs, 50)
+	require.Equal(t, int64(*result.firstTokenMs), result.upstreamTiming[usageTimingTTFTMs])
+	require.Contains(t, rec.Body.String(), "response.created")
+	require.Contains(t, rec.Body.String(), "response.output_text.delta")
+}
+
 func TestOpenAIStreamingNormalizesTerminalOutputFromDeltas(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cfg := &config.Config{

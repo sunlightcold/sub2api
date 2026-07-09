@@ -1954,6 +1954,33 @@ func (a *Account) UsageLatencyOffsetMs() int {
 	return NormalizeUsageLatencyOffsetMs(a.Extra["usage_latency_offset_ms"])
 }
 
+const (
+	OpenAIFirstTokenMetricModeFirstResponse = "first_response"
+	OpenAIFirstTokenMetricModeFirstOutput   = "first_output"
+	OpenAIFirstTokenMetricModeExtraKey      = "openai_first_token_metric_mode"
+)
+
+func NormalizeOpenAIFirstTokenMetricMode(value any) string {
+	mode, _ := value.(string)
+	switch strings.TrimSpace(mode) {
+	case OpenAIFirstTokenMetricModeFirstOutput:
+		return OpenAIFirstTokenMetricModeFirstOutput
+	default:
+		return OpenAIFirstTokenMetricModeFirstResponse
+	}
+}
+
+func (a *Account) OpenAIFirstTokenMetricMode() string {
+	if a == nil || a.Extra == nil {
+		return OpenAIFirstTokenMetricModeFirstResponse
+	}
+	return NormalizeOpenAIFirstTokenMetricMode(a.Extra[OpenAIFirstTokenMetricModeExtraKey])
+}
+
+func (a *Account) UseOpenAIFirstResponseTTFT() bool {
+	return a.OpenAIFirstTokenMetricMode() == OpenAIFirstTokenMetricModeFirstResponse
+}
+
 // getExtraFloat64 从 Extra 中读取指定 key 的 float64 值
 func (a *Account) getExtraFloat64(key string) float64 {
 	if a.Extra == nil {

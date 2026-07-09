@@ -433,6 +433,11 @@ export default {
         responsesModeForceChatCompletions: 'Force Chat Completions',
         responsesModeTextDisabledHint:
           'Not applicable when the Responses / Chat Completions endpoint is not enabled.',
+        firstTokenMetricMode: 'First token metric mode',
+        firstTokenMetricModeDesc:
+          'Only affects first-token latency metrics. Current mode counts the first upstream response event; legacy mode waits for the first actual output event.',
+        firstTokenMetricModeFirstResponse: 'Current: first upstream response event',
+        firstTokenMetricModeFirstOutput: 'Legacy: first actual output',
         endpointCapabilities: 'Endpoint capabilities',
         endpointCapabilitiesDesc:
           'Used by account routing. The text endpoint follows the Responses API support setting above and is shown as Responses, Chat Completions, or auto mode; Embeddings independently controls /v1/embeddings.',

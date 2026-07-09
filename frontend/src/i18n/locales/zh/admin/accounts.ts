@@ -533,6 +533,11 @@ export default {
         responsesModeForceResponses: '强制 Responses',
         responsesModeForceChatCompletions: '强制 Chat Completions',
         responsesModeTextDisabledHint: '未启用 Responses / Chat Completions 端点时，此设置不适用。',
+        firstTokenMetricMode: '首 Token 统计口径',
+        firstTokenMetricModeDesc:
+          '仅影响首 Token 延迟统计。当前口径会把首个上游响应事件计为首 Token；原仓库口径会等到首个实际输出事件。',
+        firstTokenMetricModeFirstResponse: '当前口径：首个上游响应事件',
+        firstTokenMetricModeFirstOutput: '原仓库口径：首个实际输出',
         endpointCapabilities: '端点能力',
         endpointCapabilitiesDesc:
           '用于调度筛选。文本端点会跟随上方 Responses API 支持显示为 Responses、Chat Completions 或自动模式；Embeddings 独立控制 /v1/embeddings。',

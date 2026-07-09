@@ -1107,6 +1107,7 @@ export type OpenAIResponsesMode =
   | 'preserve_chat_endpoint'
   | 'force_responses'
   | 'force_chat_completions'
+export type OpenAIFirstTokenMetricMode = 'first_response' | 'first_output'
 export type OpenAIEndpointCapability = 'chat_completions' | 'embeddings'
 
 export interface OpenAICompactState {
