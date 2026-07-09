@@ -54,10 +54,8 @@ const (
 	FieldDefaultValidityDays = "default_validity_days"
 	// FieldAllowImageGeneration holds the string denoting the allow_image_generation field in the database.
 	FieldAllowImageGeneration = "allow_image_generation"
-	// FieldDisableResponsesAPI holds the string denoting the disable_responses_api field in the database.
-	FieldDisableResponsesAPI = "disable_responses_api"
-	// FieldDisableChatCompletionsAPI holds the string denoting the disable_chat_completions_api field in the database.
-	FieldDisableChatCompletionsAPI = "disable_chat_completions_api"
+	// FieldAllowBatchImageGeneration holds the string denoting the allow_batch_image_generation field in the database.
+	FieldAllowBatchImageGeneration = "allow_batch_image_generation"
 	// FieldImageRateIndependent holds the string denoting the image_rate_independent field in the database.
 	FieldImageRateIndependent = "image_rate_independent"
 	// FieldImageBillingUseRequestedCount holds the string denoting the image_billing_use_requested_count field in the database.
@@ -70,6 +68,20 @@ const (
 	FieldImagePrice2k = "image_price_2k"
 	// FieldImagePrice4k holds the string denoting the image_price_4k field in the database.
 	FieldImagePrice4k = "image_price_4k"
+	// FieldBatchImageDiscountMultiplier holds the string denoting the batch_image_discount_multiplier field in the database.
+	FieldBatchImageDiscountMultiplier = "batch_image_discount_multiplier"
+	// FieldBatchImageHoldMultiplier holds the string denoting the batch_image_hold_multiplier field in the database.
+	FieldBatchImageHoldMultiplier = "batch_image_hold_multiplier"
+	// FieldVideoRateIndependent holds the string denoting the video_rate_independent field in the database.
+	FieldVideoRateIndependent = "video_rate_independent"
+	// FieldVideoRateMultiplier holds the string denoting the video_rate_multiplier field in the database.
+	FieldVideoRateMultiplier = "video_rate_multiplier"
+	// FieldVideoPrice480p holds the string denoting the video_price_480p field in the database.
+	FieldVideoPrice480p = "video_price_480p"
+	// FieldVideoPrice720p holds the string denoting the video_price_720p field in the database.
+	FieldVideoPrice720p = "video_price_720p"
+	// FieldVideoPrice1080p holds the string denoting the video_price_1080p field in the database.
+	FieldVideoPrice1080p = "video_price_1080p"
 	// FieldClaudeCodeOnly holds the string denoting the claude_code_only field in the database.
 	FieldClaudeCodeOnly = "claude_code_only"
 	// FieldFallbackGroupID holds the string denoting the fallback_group_id field in the database.
@@ -88,6 +100,10 @@ const (
 	FieldSortOrder = "sort_order"
 	// FieldAllowMessagesDispatch holds the string denoting the allow_messages_dispatch field in the database.
 	FieldAllowMessagesDispatch = "allow_messages_dispatch"
+	// FieldDisableResponsesAPI holds the string denoting the disable_responses_api field in the database.
+	FieldDisableResponsesAPI = "disable_responses_api"
+	// FieldDisableChatCompletionsAPI holds the string denoting the disable_chat_completions_api field in the database.
+	FieldDisableChatCompletionsAPI = "disable_chat_completions_api"
 	// FieldRequireOauthOnly holds the string denoting the require_oauth_only field in the database.
 	FieldRequireOauthOnly = "require_oauth_only"
 	// FieldRequirePrivacySet holds the string denoting the require_privacy_set field in the database.
@@ -194,14 +210,20 @@ var Columns = []string{
 	FieldMonthlyLimitUsd,
 	FieldDefaultValidityDays,
 	FieldAllowImageGeneration,
-	FieldDisableResponsesAPI,
-	FieldDisableChatCompletionsAPI,
+	FieldAllowBatchImageGeneration,
 	FieldImageRateIndependent,
 	FieldImageBillingUseRequestedCount,
 	FieldImageRateMultiplier,
 	FieldImagePrice1k,
 	FieldImagePrice2k,
 	FieldImagePrice4k,
+	FieldBatchImageDiscountMultiplier,
+	FieldBatchImageHoldMultiplier,
+	FieldVideoRateIndependent,
+	FieldVideoRateMultiplier,
+	FieldVideoPrice480p,
+	FieldVideoPrice720p,
+	FieldVideoPrice1080p,
 	FieldClaudeCodeOnly,
 	FieldFallbackGroupID,
 	FieldFallbackGroupIDOnInvalidRequest,
@@ -211,6 +233,8 @@ var Columns = []string{
 	FieldSupportedModelScopes,
 	FieldSortOrder,
 	FieldAllowMessagesDispatch,
+	FieldDisableResponsesAPI,
+	FieldDisableChatCompletionsAPI,
 	FieldRequireOauthOnly,
 	FieldRequirePrivacySet,
 	FieldDefaultMappedModel,
@@ -286,10 +310,20 @@ var (
 	DefaultDefaultValidityDays int
 	// DefaultAllowImageGeneration holds the default value on creation for the "allow_image_generation" field.
 	DefaultAllowImageGeneration bool
+	// DefaultAllowBatchImageGeneration holds the default value on creation for the "allow_batch_image_generation" field.
+	DefaultAllowBatchImageGeneration bool
 	// DefaultImageRateIndependent holds the default value on creation for the "image_rate_independent" field.
 	DefaultImageRateIndependent bool
 	// DefaultImageRateMultiplier holds the default value on creation for the "image_rate_multiplier" field.
 	DefaultImageRateMultiplier float64
+	// DefaultBatchImageDiscountMultiplier holds the default value on creation for the "batch_image_discount_multiplier" field.
+	DefaultBatchImageDiscountMultiplier float64
+	// DefaultBatchImageHoldMultiplier holds the default value on creation for the "batch_image_hold_multiplier" field.
+	DefaultBatchImageHoldMultiplier float64
+	// DefaultVideoRateIndependent holds the default value on creation for the "video_rate_independent" field.
+	DefaultVideoRateIndependent bool
+	// DefaultVideoRateMultiplier holds the default value on creation for the "video_rate_multiplier" field.
+	DefaultVideoRateMultiplier float64
 	// DefaultClaudeCodeOnly holds the default value on creation for the "claude_code_only" field.
 	DefaultClaudeCodeOnly bool
 	// DefaultModelRoutingEnabled holds the default value on creation for the "model_routing_enabled" field.
@@ -421,14 +455,9 @@ func ByAllowImageGeneration(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAllowImageGeneration, opts...).ToFunc()
 }
 
-// ByDisableResponsesAPI orders the results by the disable_responses_api field.
-func ByDisableResponsesAPI(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDisableResponsesAPI, opts...).ToFunc()
-}
-
-// ByDisableChatCompletionsAPI orders the results by the disable_chat_completions_api field.
-func ByDisableChatCompletionsAPI(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDisableChatCompletionsAPI, opts...).ToFunc()
+// ByAllowBatchImageGeneration orders the results by the allow_batch_image_generation field.
+func ByAllowBatchImageGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAllowBatchImageGeneration, opts...).ToFunc()
 }
 
 // ByImageRateIndependent orders the results by the image_rate_independent field.
@@ -459,6 +488,41 @@ func ByImagePrice2k(opts ...sql.OrderTermOption) OrderOption {
 // ByImagePrice4k orders the results by the image_price_4k field.
 func ByImagePrice4k(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldImagePrice4k, opts...).ToFunc()
+}
+
+// ByBatchImageDiscountMultiplier orders the results by the batch_image_discount_multiplier field.
+func ByBatchImageDiscountMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBatchImageDiscountMultiplier, opts...).ToFunc()
+}
+
+// ByBatchImageHoldMultiplier orders the results by the batch_image_hold_multiplier field.
+func ByBatchImageHoldMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBatchImageHoldMultiplier, opts...).ToFunc()
+}
+
+// ByVideoRateIndependent orders the results by the video_rate_independent field.
+func ByVideoRateIndependent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideoRateIndependent, opts...).ToFunc()
+}
+
+// ByVideoRateMultiplier orders the results by the video_rate_multiplier field.
+func ByVideoRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideoRateMultiplier, opts...).ToFunc()
+}
+
+// ByVideoPrice480p orders the results by the video_price_480p field.
+func ByVideoPrice480p(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideoPrice480p, opts...).ToFunc()
+}
+
+// ByVideoPrice720p orders the results by the video_price_720p field.
+func ByVideoPrice720p(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideoPrice720p, opts...).ToFunc()
+}
+
+// ByVideoPrice1080p orders the results by the video_price_1080p field.
+func ByVideoPrice1080p(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVideoPrice1080p, opts...).ToFunc()
 }
 
 // ByClaudeCodeOnly orders the results by the claude_code_only field.
@@ -494,6 +558,16 @@ func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
 // ByAllowMessagesDispatch orders the results by the allow_messages_dispatch field.
 func ByAllowMessagesDispatch(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAllowMessagesDispatch, opts...).ToFunc()
+}
+
+// ByDisableResponsesAPI orders the results by the disable_responses_api field.
+func ByDisableResponsesAPI(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableResponsesAPI, opts...).ToFunc()
+}
+
+// ByDisableChatCompletionsAPI orders the results by the disable_chat_completions_api field.
+func ByDisableChatCompletionsAPI(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableChatCompletionsAPI, opts...).ToFunc()
 }
 
 // ByRequireOauthOnly orders the results by the require_oauth_only field.

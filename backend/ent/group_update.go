@@ -352,43 +352,17 @@ func (_u *GroupUpdate) SetNillableAllowImageGeneration(v *bool) *GroupUpdate {
 	return _u
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (_u *GroupUpdate) SetDisableResponsesAPI(v bool) *GroupUpdate {
-	_u.mutation.SetDisableResponsesAPI(v)
+// SetAllowBatchImageGeneration sets the "allow_batch_image_generation" field.
+func (_u *GroupUpdate) SetAllowBatchImageGeneration(v bool) *GroupUpdate {
+	_u.mutation.SetAllowBatchImageGeneration(v)
 	return _u
 }
 
-// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
-func (_u *GroupUpdate) SetNillableDisableResponsesAPI(v *bool) *GroupUpdate {
+// SetNillableAllowBatchImageGeneration sets the "allow_batch_image_generation" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableAllowBatchImageGeneration(v *bool) *GroupUpdate {
 	if v != nil {
-		_u.SetDisableResponsesAPI(*v)
+		_u.SetAllowBatchImageGeneration(*v)
 	}
-	return _u
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (_u *GroupUpdate) ClearDisableResponsesAPI() *GroupUpdate {
-	_u.mutation.ClearDisableResponsesAPI()
-	return _u
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (_u *GroupUpdate) SetDisableChatCompletionsAPI(v bool) *GroupUpdate {
-	_u.mutation.SetDisableChatCompletionsAPI(v)
-	return _u
-}
-
-// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
-func (_u *GroupUpdate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdate {
-	if v != nil {
-		_u.SetDisableChatCompletionsAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (_u *GroupUpdate) ClearDisableChatCompletionsAPI() *GroupUpdate {
-	_u.mutation.ClearDisableChatCompletionsAPI()
 	return _u
 }
 
@@ -525,6 +499,164 @@ func (_u *GroupUpdate) AddImagePrice4k(v float64) *GroupUpdate {
 // ClearImagePrice4k clears the value of the "image_price_4k" field.
 func (_u *GroupUpdate) ClearImagePrice4k() *GroupUpdate {
 	_u.mutation.ClearImagePrice4k()
+	return _u
+}
+
+// SetBatchImageDiscountMultiplier sets the "batch_image_discount_multiplier" field.
+func (_u *GroupUpdate) SetBatchImageDiscountMultiplier(v float64) *GroupUpdate {
+	_u.mutation.ResetBatchImageDiscountMultiplier()
+	_u.mutation.SetBatchImageDiscountMultiplier(v)
+	return _u
+}
+
+// SetNillableBatchImageDiscountMultiplier sets the "batch_image_discount_multiplier" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableBatchImageDiscountMultiplier(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetBatchImageDiscountMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBatchImageDiscountMultiplier adds value to the "batch_image_discount_multiplier" field.
+func (_u *GroupUpdate) AddBatchImageDiscountMultiplier(v float64) *GroupUpdate {
+	_u.mutation.AddBatchImageDiscountMultiplier(v)
+	return _u
+}
+
+// SetBatchImageHoldMultiplier sets the "batch_image_hold_multiplier" field.
+func (_u *GroupUpdate) SetBatchImageHoldMultiplier(v float64) *GroupUpdate {
+	_u.mutation.ResetBatchImageHoldMultiplier()
+	_u.mutation.SetBatchImageHoldMultiplier(v)
+	return _u
+}
+
+// SetNillableBatchImageHoldMultiplier sets the "batch_image_hold_multiplier" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableBatchImageHoldMultiplier(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetBatchImageHoldMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBatchImageHoldMultiplier adds value to the "batch_image_hold_multiplier" field.
+func (_u *GroupUpdate) AddBatchImageHoldMultiplier(v float64) *GroupUpdate {
+	_u.mutation.AddBatchImageHoldMultiplier(v)
+	return _u
+}
+
+// SetVideoRateIndependent sets the "video_rate_independent" field.
+func (_u *GroupUpdate) SetVideoRateIndependent(v bool) *GroupUpdate {
+	_u.mutation.SetVideoRateIndependent(v)
+	return _u
+}
+
+// SetNillableVideoRateIndependent sets the "video_rate_independent" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableVideoRateIndependent(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetVideoRateIndependent(*v)
+	}
+	return _u
+}
+
+// SetVideoRateMultiplier sets the "video_rate_multiplier" field.
+func (_u *GroupUpdate) SetVideoRateMultiplier(v float64) *GroupUpdate {
+	_u.mutation.ResetVideoRateMultiplier()
+	_u.mutation.SetVideoRateMultiplier(v)
+	return _u
+}
+
+// SetNillableVideoRateMultiplier sets the "video_rate_multiplier" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableVideoRateMultiplier(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetVideoRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddVideoRateMultiplier adds value to the "video_rate_multiplier" field.
+func (_u *GroupUpdate) AddVideoRateMultiplier(v float64) *GroupUpdate {
+	_u.mutation.AddVideoRateMultiplier(v)
+	return _u
+}
+
+// SetVideoPrice480p sets the "video_price_480p" field.
+func (_u *GroupUpdate) SetVideoPrice480p(v float64) *GroupUpdate {
+	_u.mutation.ResetVideoPrice480p()
+	_u.mutation.SetVideoPrice480p(v)
+	return _u
+}
+
+// SetNillableVideoPrice480p sets the "video_price_480p" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableVideoPrice480p(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetVideoPrice480p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice480p adds value to the "video_price_480p" field.
+func (_u *GroupUpdate) AddVideoPrice480p(v float64) *GroupUpdate {
+	_u.mutation.AddVideoPrice480p(v)
+	return _u
+}
+
+// ClearVideoPrice480p clears the value of the "video_price_480p" field.
+func (_u *GroupUpdate) ClearVideoPrice480p() *GroupUpdate {
+	_u.mutation.ClearVideoPrice480p()
+	return _u
+}
+
+// SetVideoPrice720p sets the "video_price_720p" field.
+func (_u *GroupUpdate) SetVideoPrice720p(v float64) *GroupUpdate {
+	_u.mutation.ResetVideoPrice720p()
+	_u.mutation.SetVideoPrice720p(v)
+	return _u
+}
+
+// SetNillableVideoPrice720p sets the "video_price_720p" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableVideoPrice720p(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetVideoPrice720p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice720p adds value to the "video_price_720p" field.
+func (_u *GroupUpdate) AddVideoPrice720p(v float64) *GroupUpdate {
+	_u.mutation.AddVideoPrice720p(v)
+	return _u
+}
+
+// ClearVideoPrice720p clears the value of the "video_price_720p" field.
+func (_u *GroupUpdate) ClearVideoPrice720p() *GroupUpdate {
+	_u.mutation.ClearVideoPrice720p()
+	return _u
+}
+
+// SetVideoPrice1080p sets the "video_price_1080p" field.
+func (_u *GroupUpdate) SetVideoPrice1080p(v float64) *GroupUpdate {
+	_u.mutation.ResetVideoPrice1080p()
+	_u.mutation.SetVideoPrice1080p(v)
+	return _u
+}
+
+// SetNillableVideoPrice1080p sets the "video_price_1080p" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableVideoPrice1080p(v *float64) *GroupUpdate {
+	if v != nil {
+		_u.SetVideoPrice1080p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice1080p adds value to the "video_price_1080p" field.
+func (_u *GroupUpdate) AddVideoPrice1080p(v float64) *GroupUpdate {
+	_u.mutation.AddVideoPrice1080p(v)
+	return _u
+}
+
+// ClearVideoPrice1080p clears the value of the "video_price_1080p" field.
+func (_u *GroupUpdate) ClearVideoPrice1080p() *GroupUpdate {
+	_u.mutation.ClearVideoPrice1080p()
 	return _u
 }
 
@@ -680,6 +812,46 @@ func (_u *GroupUpdate) SetNillableAllowMessagesDispatch(v *bool) *GroupUpdate {
 	if v != nil {
 		_u.SetAllowMessagesDispatch(*v)
 	}
+	return _u
+}
+
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (_u *GroupUpdate) SetDisableResponsesAPI(v bool) *GroupUpdate {
+	_u.mutation.SetDisableResponsesAPI(v)
+	return _u
+}
+
+// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDisableResponsesAPI(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetDisableResponsesAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (_u *GroupUpdate) ClearDisableResponsesAPI() *GroupUpdate {
+	_u.mutation.ClearDisableResponsesAPI()
+	return _u
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (_u *GroupUpdate) SetDisableChatCompletionsAPI(v bool) *GroupUpdate {
+	_u.mutation.SetDisableChatCompletionsAPI(v)
+	return _u
+}
+
+// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetDisableChatCompletionsAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (_u *GroupUpdate) ClearDisableChatCompletionsAPI() *GroupUpdate {
+	_u.mutation.ClearDisableChatCompletionsAPI()
 	return _u
 }
 
@@ -1176,17 +1348,8 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AllowImageGeneration(); ok {
 		_spec.SetField(group.FieldAllowImageGeneration, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
-		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableResponsesAPICleared() {
-		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
-	}
-	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
-		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableChatCompletionsAPICleared() {
-		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
+	if value, ok := _u.mutation.AllowBatchImageGeneration(); ok {
+		_spec.SetField(group.FieldAllowBatchImageGeneration, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
@@ -1229,6 +1392,54 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ImagePrice4kCleared() {
 		_spec.ClearField(group.FieldImagePrice4k, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.BatchImageDiscountMultiplier(); ok {
+		_spec.SetField(group.FieldBatchImageDiscountMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBatchImageDiscountMultiplier(); ok {
+		_spec.AddField(group.FieldBatchImageDiscountMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BatchImageHoldMultiplier(); ok {
+		_spec.SetField(group.FieldBatchImageHoldMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBatchImageHoldMultiplier(); ok {
+		_spec.AddField(group.FieldBatchImageHoldMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.VideoRateIndependent(); ok {
+		_spec.SetField(group.FieldVideoRateIndependent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.VideoRateMultiplier(); ok {
+		_spec.SetField(group.FieldVideoRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoRateMultiplier(); ok {
+		_spec.AddField(group.FieldVideoRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.VideoPrice480p(); ok {
+		_spec.SetField(group.FieldVideoPrice480p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice480p(); ok {
+		_spec.AddField(group.FieldVideoPrice480p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice480pCleared() {
+		_spec.ClearField(group.FieldVideoPrice480p, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.VideoPrice720p(); ok {
+		_spec.SetField(group.FieldVideoPrice720p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice720p(); ok {
+		_spec.AddField(group.FieldVideoPrice720p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice720pCleared() {
+		_spec.ClearField(group.FieldVideoPrice720p, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.VideoPrice1080p(); ok {
+		_spec.SetField(group.FieldVideoPrice1080p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice1080p(); ok {
+		_spec.AddField(group.FieldVideoPrice1080p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice1080pCleared() {
+		_spec.ClearField(group.FieldVideoPrice1080p, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.ClaudeCodeOnly(); ok {
 		_spec.SetField(group.FieldClaudeCodeOnly, field.TypeBool, value)
@@ -1279,6 +1490,18 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AllowMessagesDispatch(); ok {
 		_spec.SetField(group.FieldAllowMessagesDispatch, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
+		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableResponsesAPICleared() {
+		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
+	}
+	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
+		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableChatCompletionsAPICleared() {
+		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
 	}
 	if value, ok := _u.mutation.RequireOauthOnly(); ok {
 		_spec.SetField(group.FieldRequireOauthOnly, field.TypeBool, value)
@@ -1931,43 +2154,17 @@ func (_u *GroupUpdateOne) SetNillableAllowImageGeneration(v *bool) *GroupUpdateO
 	return _u
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (_u *GroupUpdateOne) SetDisableResponsesAPI(v bool) *GroupUpdateOne {
-	_u.mutation.SetDisableResponsesAPI(v)
+// SetAllowBatchImageGeneration sets the "allow_batch_image_generation" field.
+func (_u *GroupUpdateOne) SetAllowBatchImageGeneration(v bool) *GroupUpdateOne {
+	_u.mutation.SetAllowBatchImageGeneration(v)
 	return _u
 }
 
-// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
-func (_u *GroupUpdateOne) SetNillableDisableResponsesAPI(v *bool) *GroupUpdateOne {
+// SetNillableAllowBatchImageGeneration sets the "allow_batch_image_generation" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableAllowBatchImageGeneration(v *bool) *GroupUpdateOne {
 	if v != nil {
-		_u.SetDisableResponsesAPI(*v)
+		_u.SetAllowBatchImageGeneration(*v)
 	}
-	return _u
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (_u *GroupUpdateOne) ClearDisableResponsesAPI() *GroupUpdateOne {
-	_u.mutation.ClearDisableResponsesAPI()
-	return _u
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (_u *GroupUpdateOne) SetDisableChatCompletionsAPI(v bool) *GroupUpdateOne {
-	_u.mutation.SetDisableChatCompletionsAPI(v)
-	return _u
-}
-
-// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
-func (_u *GroupUpdateOne) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdateOne {
-	if v != nil {
-		_u.SetDisableChatCompletionsAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (_u *GroupUpdateOne) ClearDisableChatCompletionsAPI() *GroupUpdateOne {
-	_u.mutation.ClearDisableChatCompletionsAPI()
 	return _u
 }
 
@@ -2104,6 +2301,164 @@ func (_u *GroupUpdateOne) AddImagePrice4k(v float64) *GroupUpdateOne {
 // ClearImagePrice4k clears the value of the "image_price_4k" field.
 func (_u *GroupUpdateOne) ClearImagePrice4k() *GroupUpdateOne {
 	_u.mutation.ClearImagePrice4k()
+	return _u
+}
+
+// SetBatchImageDiscountMultiplier sets the "batch_image_discount_multiplier" field.
+func (_u *GroupUpdateOne) SetBatchImageDiscountMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.ResetBatchImageDiscountMultiplier()
+	_u.mutation.SetBatchImageDiscountMultiplier(v)
+	return _u
+}
+
+// SetNillableBatchImageDiscountMultiplier sets the "batch_image_discount_multiplier" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableBatchImageDiscountMultiplier(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetBatchImageDiscountMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBatchImageDiscountMultiplier adds value to the "batch_image_discount_multiplier" field.
+func (_u *GroupUpdateOne) AddBatchImageDiscountMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.AddBatchImageDiscountMultiplier(v)
+	return _u
+}
+
+// SetBatchImageHoldMultiplier sets the "batch_image_hold_multiplier" field.
+func (_u *GroupUpdateOne) SetBatchImageHoldMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.ResetBatchImageHoldMultiplier()
+	_u.mutation.SetBatchImageHoldMultiplier(v)
+	return _u
+}
+
+// SetNillableBatchImageHoldMultiplier sets the "batch_image_hold_multiplier" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableBatchImageHoldMultiplier(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetBatchImageHoldMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBatchImageHoldMultiplier adds value to the "batch_image_hold_multiplier" field.
+func (_u *GroupUpdateOne) AddBatchImageHoldMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.AddBatchImageHoldMultiplier(v)
+	return _u
+}
+
+// SetVideoRateIndependent sets the "video_rate_independent" field.
+func (_u *GroupUpdateOne) SetVideoRateIndependent(v bool) *GroupUpdateOne {
+	_u.mutation.SetVideoRateIndependent(v)
+	return _u
+}
+
+// SetNillableVideoRateIndependent sets the "video_rate_independent" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableVideoRateIndependent(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetVideoRateIndependent(*v)
+	}
+	return _u
+}
+
+// SetVideoRateMultiplier sets the "video_rate_multiplier" field.
+func (_u *GroupUpdateOne) SetVideoRateMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.ResetVideoRateMultiplier()
+	_u.mutation.SetVideoRateMultiplier(v)
+	return _u
+}
+
+// SetNillableVideoRateMultiplier sets the "video_rate_multiplier" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableVideoRateMultiplier(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetVideoRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddVideoRateMultiplier adds value to the "video_rate_multiplier" field.
+func (_u *GroupUpdateOne) AddVideoRateMultiplier(v float64) *GroupUpdateOne {
+	_u.mutation.AddVideoRateMultiplier(v)
+	return _u
+}
+
+// SetVideoPrice480p sets the "video_price_480p" field.
+func (_u *GroupUpdateOne) SetVideoPrice480p(v float64) *GroupUpdateOne {
+	_u.mutation.ResetVideoPrice480p()
+	_u.mutation.SetVideoPrice480p(v)
+	return _u
+}
+
+// SetNillableVideoPrice480p sets the "video_price_480p" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableVideoPrice480p(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetVideoPrice480p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice480p adds value to the "video_price_480p" field.
+func (_u *GroupUpdateOne) AddVideoPrice480p(v float64) *GroupUpdateOne {
+	_u.mutation.AddVideoPrice480p(v)
+	return _u
+}
+
+// ClearVideoPrice480p clears the value of the "video_price_480p" field.
+func (_u *GroupUpdateOne) ClearVideoPrice480p() *GroupUpdateOne {
+	_u.mutation.ClearVideoPrice480p()
+	return _u
+}
+
+// SetVideoPrice720p sets the "video_price_720p" field.
+func (_u *GroupUpdateOne) SetVideoPrice720p(v float64) *GroupUpdateOne {
+	_u.mutation.ResetVideoPrice720p()
+	_u.mutation.SetVideoPrice720p(v)
+	return _u
+}
+
+// SetNillableVideoPrice720p sets the "video_price_720p" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableVideoPrice720p(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetVideoPrice720p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice720p adds value to the "video_price_720p" field.
+func (_u *GroupUpdateOne) AddVideoPrice720p(v float64) *GroupUpdateOne {
+	_u.mutation.AddVideoPrice720p(v)
+	return _u
+}
+
+// ClearVideoPrice720p clears the value of the "video_price_720p" field.
+func (_u *GroupUpdateOne) ClearVideoPrice720p() *GroupUpdateOne {
+	_u.mutation.ClearVideoPrice720p()
+	return _u
+}
+
+// SetVideoPrice1080p sets the "video_price_1080p" field.
+func (_u *GroupUpdateOne) SetVideoPrice1080p(v float64) *GroupUpdateOne {
+	_u.mutation.ResetVideoPrice1080p()
+	_u.mutation.SetVideoPrice1080p(v)
+	return _u
+}
+
+// SetNillableVideoPrice1080p sets the "video_price_1080p" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableVideoPrice1080p(v *float64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetVideoPrice1080p(*v)
+	}
+	return _u
+}
+
+// AddVideoPrice1080p adds value to the "video_price_1080p" field.
+func (_u *GroupUpdateOne) AddVideoPrice1080p(v float64) *GroupUpdateOne {
+	_u.mutation.AddVideoPrice1080p(v)
+	return _u
+}
+
+// ClearVideoPrice1080p clears the value of the "video_price_1080p" field.
+func (_u *GroupUpdateOne) ClearVideoPrice1080p() *GroupUpdateOne {
+	_u.mutation.ClearVideoPrice1080p()
 	return _u
 }
 
@@ -2259,6 +2614,46 @@ func (_u *GroupUpdateOne) SetNillableAllowMessagesDispatch(v *bool) *GroupUpdate
 	if v != nil {
 		_u.SetAllowMessagesDispatch(*v)
 	}
+	return _u
+}
+
+// SetDisableResponsesAPI sets the "disable_responses_api" field.
+func (_u *GroupUpdateOne) SetDisableResponsesAPI(v bool) *GroupUpdateOne {
+	_u.mutation.SetDisableResponsesAPI(v)
+	return _u
+}
+
+// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDisableResponsesAPI(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDisableResponsesAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
+func (_u *GroupUpdateOne) ClearDisableResponsesAPI() *GroupUpdateOne {
+	_u.mutation.ClearDisableResponsesAPI()
+	return _u
+}
+
+// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
+func (_u *GroupUpdateOne) SetDisableChatCompletionsAPI(v bool) *GroupUpdateOne {
+	_u.mutation.SetDisableChatCompletionsAPI(v)
+	return _u
+}
+
+// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDisableChatCompletionsAPI(*v)
+	}
+	return _u
+}
+
+// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
+func (_u *GroupUpdateOne) ClearDisableChatCompletionsAPI() *GroupUpdateOne {
+	_u.mutation.ClearDisableChatCompletionsAPI()
 	return _u
 }
 
@@ -2785,17 +3180,8 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	if value, ok := _u.mutation.AllowImageGeneration(); ok {
 		_spec.SetField(group.FieldAllowImageGeneration, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
-		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableResponsesAPICleared() {
-		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
-	}
-	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
-		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableChatCompletionsAPICleared() {
-		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
+	if value, ok := _u.mutation.AllowBatchImageGeneration(); ok {
+		_spec.SetField(group.FieldAllowBatchImageGeneration, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
@@ -2838,6 +3224,54 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if _u.mutation.ImagePrice4kCleared() {
 		_spec.ClearField(group.FieldImagePrice4k, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.BatchImageDiscountMultiplier(); ok {
+		_spec.SetField(group.FieldBatchImageDiscountMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBatchImageDiscountMultiplier(); ok {
+		_spec.AddField(group.FieldBatchImageDiscountMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BatchImageHoldMultiplier(); ok {
+		_spec.SetField(group.FieldBatchImageHoldMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBatchImageHoldMultiplier(); ok {
+		_spec.AddField(group.FieldBatchImageHoldMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.VideoRateIndependent(); ok {
+		_spec.SetField(group.FieldVideoRateIndependent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.VideoRateMultiplier(); ok {
+		_spec.SetField(group.FieldVideoRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoRateMultiplier(); ok {
+		_spec.AddField(group.FieldVideoRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.VideoPrice480p(); ok {
+		_spec.SetField(group.FieldVideoPrice480p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice480p(); ok {
+		_spec.AddField(group.FieldVideoPrice480p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice480pCleared() {
+		_spec.ClearField(group.FieldVideoPrice480p, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.VideoPrice720p(); ok {
+		_spec.SetField(group.FieldVideoPrice720p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice720p(); ok {
+		_spec.AddField(group.FieldVideoPrice720p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice720pCleared() {
+		_spec.ClearField(group.FieldVideoPrice720p, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.VideoPrice1080p(); ok {
+		_spec.SetField(group.FieldVideoPrice1080p, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedVideoPrice1080p(); ok {
+		_spec.AddField(group.FieldVideoPrice1080p, field.TypeFloat64, value)
+	}
+	if _u.mutation.VideoPrice1080pCleared() {
+		_spec.ClearField(group.FieldVideoPrice1080p, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.ClaudeCodeOnly(); ok {
 		_spec.SetField(group.FieldClaudeCodeOnly, field.TypeBool, value)
@@ -2888,6 +3322,18 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AllowMessagesDispatch(); ok {
 		_spec.SetField(group.FieldAllowMessagesDispatch, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
+		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableResponsesAPICleared() {
+		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
+	}
+	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
+		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
+	}
+	if _u.mutation.DisableChatCompletionsAPICleared() {
+		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
 	}
 	if value, ok := _u.mutation.RequireOauthOnly(); ok {
 		_spec.SetField(group.FieldRequireOauthOnly, field.TypeBool, value)

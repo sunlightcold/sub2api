@@ -57,10 +57,8 @@ type Group struct {
 	DefaultValidityDays int `json:"default_validity_days,omitempty"`
 	// 是否允许该分组使用图片生成能力
 	AllowImageGeneration bool `json:"allow_image_generation,omitempty"`
-	// 是否禁用该分组调用 Responses API；NULL/false 表示保持原行为
-	DisableResponsesAPI *bool `json:"disable_responses_api,omitempty"`
-	// 是否禁用该分组调用 Chat Completions API；NULL/false 表示保持原行为
-	DisableChatCompletionsAPI *bool `json:"disable_chat_completions_api,omitempty"`
+	// 是否允许该分组使用批量图片生成能力
+	AllowBatchImageGeneration bool `json:"allow_batch_image_generation,omitempty"`
 	// 图片生成是否使用独立倍率；false 表示共享分组有效倍率
 	ImageRateIndependent bool `json:"image_rate_independent,omitempty"`
 	// 图片生成是否按请求参数 n 计费；NULL/false 保持按上游返回图片数计费
@@ -73,6 +71,20 @@ type Group struct {
 	ImagePrice2k *float64 `json:"image_price_2k,omitempty"`
 	// ImagePrice4k holds the value of the "image_price_4k" field.
 	ImagePrice4k *float64 `json:"image_price_4k,omitempty"`
+	// 批量图片生成折扣倍率，最终单价会乘以该值；0 表示免费
+	BatchImageDiscountMultiplier float64 `json:"batch_image_discount_multiplier,omitempty"`
+	// 批量图片生成冻结价格比例，按普通生图原价乘以该比例冻结，结算后释放差额
+	BatchImageHoldMultiplier float64 `json:"batch_image_hold_multiplier,omitempty"`
+	// 视频生成是否使用独立倍率；false 表示共享分组有效倍率
+	VideoRateIndependent bool `json:"video_rate_independent,omitempty"`
+	// 视频生成独立倍率，仅 video_rate_independent=true 时生效
+	VideoRateMultiplier float64 `json:"video_rate_multiplier,omitempty"`
+	// VideoPrice480p holds the value of the "video_price_480p" field.
+	VideoPrice480p *float64 `json:"video_price_480p,omitempty"`
+	// VideoPrice720p holds the value of the "video_price_720p" field.
+	VideoPrice720p *float64 `json:"video_price_720p,omitempty"`
+	// VideoPrice1080p holds the value of the "video_price_1080p" field.
+	VideoPrice1080p *float64 `json:"video_price_1080p,omitempty"`
 	// 是否仅允许 Claude Code 客户端
 	ClaudeCodeOnly bool `json:"claude_code_only,omitempty"`
 	// 非 Claude Code 请求降级使用的分组 ID
@@ -91,6 +103,10 @@ type Group struct {
 	SortOrder int `json:"sort_order,omitempty"`
 	// 是否允许 /v1/messages 调度到此 OpenAI 分组
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch,omitempty"`
+	// 是否禁用该分组的 Responses API；NULL/false 保持现有行为
+	DisableResponsesAPI *bool `json:"disable_responses_api,omitempty"`
+	// 是否禁用该分组的 Chat Completions API；NULL/false 保持现有行为
+	DisableChatCompletionsAPI *bool `json:"disable_chat_completions_api,omitempty"`
 	// 仅允许非 apikey 类型账号关联到此分组
 	RequireOauthOnly bool `json:"require_oauth_only,omitempty"`
 	// 调度时仅允许 privacy 已成功设置的账号
@@ -211,9 +227,9 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig:
 			values[i] = new([]byte)
-		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldDisableResponsesAPI, group.FieldDisableChatCompletionsAPI, group.FieldImageRateIndependent, group.FieldImageBillingUseRequestedCount, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
+		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldImageBillingUseRequestedCount, group.FieldVideoRateIndependent, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldDisableResponsesAPI, group.FieldDisableChatCompletionsAPI, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
 			values[i] = new(sql.NullBool)
-		case group.FieldRateMultiplier, group.FieldPeakRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k:
+		case group.FieldRateMultiplier, group.FieldPeakRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldBatchImageDiscountMultiplier, group.FieldBatchImageHoldMultiplier, group.FieldVideoRateMultiplier, group.FieldVideoPrice480p, group.FieldVideoPrice720p, group.FieldVideoPrice1080p:
 			values[i] = new(sql.NullFloat64)
 		case group.FieldID, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder, group.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
@@ -361,19 +377,11 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AllowImageGeneration = value.Bool
 			}
-		case group.FieldDisableResponsesAPI:
+		case group.FieldAllowBatchImageGeneration:
 			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field disable_responses_api", values[i])
+				return fmt.Errorf("unexpected type %T for field allow_batch_image_generation", values[i])
 			} else if value.Valid {
-				_m.DisableResponsesAPI = new(bool)
-				*_m.DisableResponsesAPI = value.Bool
-			}
-		case group.FieldDisableChatCompletionsAPI:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field disable_chat_completions_api", values[i])
-			} else if value.Valid {
-				_m.DisableChatCompletionsAPI = new(bool)
-				*_m.DisableChatCompletionsAPI = value.Bool
+				_m.AllowBatchImageGeneration = value.Bool
 			}
 		case group.FieldImageRateIndependent:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -414,6 +422,51 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ImagePrice4k = new(float64)
 				*_m.ImagePrice4k = value.Float64
+			}
+		case group.FieldBatchImageDiscountMultiplier:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field batch_image_discount_multiplier", values[i])
+			} else if value.Valid {
+				_m.BatchImageDiscountMultiplier = value.Float64
+			}
+		case group.FieldBatchImageHoldMultiplier:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field batch_image_hold_multiplier", values[i])
+			} else if value.Valid {
+				_m.BatchImageHoldMultiplier = value.Float64
+			}
+		case group.FieldVideoRateIndependent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field video_rate_independent", values[i])
+			} else if value.Valid {
+				_m.VideoRateIndependent = value.Bool
+			}
+		case group.FieldVideoRateMultiplier:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field video_rate_multiplier", values[i])
+			} else if value.Valid {
+				_m.VideoRateMultiplier = value.Float64
+			}
+		case group.FieldVideoPrice480p:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field video_price_480p", values[i])
+			} else if value.Valid {
+				_m.VideoPrice480p = new(float64)
+				*_m.VideoPrice480p = value.Float64
+			}
+		case group.FieldVideoPrice720p:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field video_price_720p", values[i])
+			} else if value.Valid {
+				_m.VideoPrice720p = new(float64)
+				*_m.VideoPrice720p = value.Float64
+			}
+		case group.FieldVideoPrice1080p:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field video_price_1080p", values[i])
+			} else if value.Valid {
+				_m.VideoPrice1080p = new(float64)
+				*_m.VideoPrice1080p = value.Float64
 			}
 		case group.FieldClaudeCodeOnly:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -474,6 +527,20 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field allow_messages_dispatch", values[i])
 			} else if value.Valid {
 				_m.AllowMessagesDispatch = value.Bool
+			}
+		case group.FieldDisableResponsesAPI:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_responses_api", values[i])
+			} else if value.Valid {
+				_m.DisableResponsesAPI = new(bool)
+				*_m.DisableResponsesAPI = value.Bool
+			}
+		case group.FieldDisableChatCompletionsAPI:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_chat_completions_api", values[i])
+			} else if value.Valid {
+				_m.DisableChatCompletionsAPI = new(bool)
+				*_m.DisableChatCompletionsAPI = value.Bool
 			}
 		case group.FieldRequireOauthOnly:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -658,15 +725,8 @@ func (_m *Group) String() string {
 	builder.WriteString("allow_image_generation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllowImageGeneration))
 	builder.WriteString(", ")
-	if v := _m.DisableResponsesAPI; v != nil {
-		builder.WriteString("disable_responses_api=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
-	if v := _m.DisableChatCompletionsAPI; v != nil {
-		builder.WriteString("disable_chat_completions_api=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
+	builder.WriteString("allow_batch_image_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AllowBatchImageGeneration))
 	builder.WriteString(", ")
 	builder.WriteString("image_rate_independent=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ImageRateIndependent))
@@ -691,6 +751,33 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	if v := _m.ImagePrice4k; v != nil {
 		builder.WriteString("image_price_4k=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("batch_image_discount_multiplier=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BatchImageDiscountMultiplier))
+	builder.WriteString(", ")
+	builder.WriteString("batch_image_hold_multiplier=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BatchImageHoldMultiplier))
+	builder.WriteString(", ")
+	builder.WriteString("video_rate_independent=")
+	builder.WriteString(fmt.Sprintf("%v", _m.VideoRateIndependent))
+	builder.WriteString(", ")
+	builder.WriteString("video_rate_multiplier=")
+	builder.WriteString(fmt.Sprintf("%v", _m.VideoRateMultiplier))
+	builder.WriteString(", ")
+	if v := _m.VideoPrice480p; v != nil {
+		builder.WriteString("video_price_480p=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.VideoPrice720p; v != nil {
+		builder.WriteString("video_price_720p=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.VideoPrice1080p; v != nil {
+		builder.WriteString("video_price_1080p=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
@@ -724,6 +811,16 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("allow_messages_dispatch=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllowMessagesDispatch))
+	builder.WriteString(", ")
+	if v := _m.DisableResponsesAPI; v != nil {
+		builder.WriteString("disable_responses_api=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.DisableChatCompletionsAPI; v != nil {
+		builder.WriteString("disable_chat_completions_api=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("require_oauth_only=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RequireOauthOnly))
