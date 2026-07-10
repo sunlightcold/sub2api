@@ -40,6 +40,13 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	clientStream := responsesReq.Stream
 	serviceTier := extractOpenAIServiceTierFromBody(body)
 	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, body, originalModel)
+	// custom 工具（如 codex 的 exec）降级为 function 工具转发，回程需按名字还原为
+	// custom_tool_call 项，先记下名字集合；tool_search 工具同理，回程还原为
+	// tool_search_call 项；namespace 子工具（如 MCP 工具）摊平转发，回程按映射还原
+	// 为带 namespace 字段的 function_call 项。
+	customTools := apicompat.CustomToolNames(responsesReq.Tools)
+	toolSearch := apicompat.HasToolSearchTool(responsesReq.Tools)
+	namespaceTools := apicompat.NamespaceToolNames(responsesReq.Tools)
 
 	chatReq, err := apicompat.ResponsesToChatCompletionsRequest(&responsesReq)
 	if err != nil {
@@ -101,9 +108,9 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	}
 
 	if clientStream {
-		return s.streamChatCompletionsAsResponses(ctx, c, account, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
+		return s.streamChatCompletionsAsResponses(ctx, c, account, resp, originalModel, customTools, toolSearch, namespaceTools, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
 	}
-	return s.bufferChatCompletionsAsResponses(ctx, c, account, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
+	return s.bufferChatCompletionsAsResponses(ctx, c, account, resp, originalModel, customTools, toolSearch, namespaceTools, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
 }
 
 func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
@@ -112,6 +119,9 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 	account *Account,
 	resp *http.Response,
 	originalModel string,
+	customTools map[string]bool,
+	toolSearch bool,
+	namespaceTools map[string]apicompat.NamespacedToolName,
 	billingModel string,
 	upstreamModel string,
 	reasoningEffort *string,
@@ -124,7 +134,7 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 	if err != nil {
 		return nil, err
 	}
-	responsesResp := apicompat.ChatCompletionsResponseToResponses(ccResp, originalModel)
+	responsesResp := apicompat.ChatCompletionsResponseToResponses(ccResp, originalModel, customTools, toolSearch, namespaceTools)
 	s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, &usage, requestID)
 	responsesResp.Usage = applyOpenAIUsageToResponsesUsage(responsesResp.Usage, usage)
 
@@ -152,6 +162,9 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 	account *Account,
 	resp *http.Response,
 	originalModel string,
+	customTools map[string]bool,
+	toolSearch bool,
+	namespaceTools map[string]apicompat.NamespacedToolName,
 	billingModel string,
 	upstreamModel string,
 	reasoningEffort *string,
@@ -163,6 +176,9 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 	writeStreamHeaders := s.newStreamHeaderWriter(c, resp.Header)
 
 	state := apicompat.NewChatCompletionsToResponsesStreamState(originalModel)
+	state.CustomTools = customTools
+	state.ToolSearchDeclared = toolSearch
+	state.NamespaceTools = namespaceTools
 	clientDisconnected := false
 
 	writeEvents := func(events []apicompat.ResponsesStreamEvent) {
