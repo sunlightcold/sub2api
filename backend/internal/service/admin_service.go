@@ -210,6 +210,7 @@ type CreateGroupInput struct {
 	BatchImageHoldMultiplier      *float64
 	VideoRateIndependent          bool
 	VideoRateMultiplier           *float64
+	LongContextPricingEnabled     bool
 	// 高峰时段倍率配置（PeakRateMultiplier 为 nil 时按 1.0 处理）
 	PeakRateEnabled    bool
 	PeakStart          string
@@ -269,6 +270,7 @@ type UpdateGroupInput struct {
 	BatchImageHoldMultiplier      *float64
 	VideoRateIndependent          *bool
 	VideoRateMultiplier           *float64
+	LongContextPricingEnabled     *bool
 	// 高峰时段倍率配置（nil 表示不修改）
 	PeakRateEnabled    *bool
 	PeakStart          *string

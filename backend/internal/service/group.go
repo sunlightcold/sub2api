@@ -19,6 +19,8 @@ type Group struct {
 	Description    string
 	Platform       string
 	RateMultiplier float64
+	// LongContextPricingEnabled 控制是否应用模型价格中的长上下文阶梯倍率。
+	LongContextPricingEnabled bool
 	// 高峰时段倍率：peak_rate_enabled 为 true 且当前时刻处于 [PeakStart, PeakEnd) 时，
 	// token 计费倍率额外乘以 PeakRateMultiplier。详见 PeakMultiplierAt。
 	PeakRateEnabled    bool
@@ -180,6 +182,10 @@ func GroupDisablesChatCompletionsAPI(group *Group) bool {
 
 func GroupUsesRequestedImageBillingCount(group *Group) bool {
 	return group != nil && group.ImageBillingUseRequestedCount != nil && *group.ImageBillingUseRequestedCount
+}
+
+func shouldApplyGroupLongContextPricing(apiKey *APIKey) bool {
+	return apiKey == nil || apiKey.Group == nil || apiKey.Group.LongContextPricingEnabled
 }
 
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表

@@ -1676,7 +1676,7 @@ func TestOpenAIWSHTTPBridgeGrok429PersistsRateLimit(t *testing.T) {
 	result, err := svc.proxyOpenAIWSHTTPBridgeTurn(
 		context.Background(), nil, account, "token",
 		[]byte(`{"type":"response.create","model":"grok-4.3","input":"hi"}`),
-		64, "grok-4.3", "", "", "", "cache-id", 1,
+		64, "grok-4.3", "", "", "", 0, "cache-id", 1,
 		func([]byte) error { return nil },
 	)
 
@@ -1702,7 +1702,7 @@ func TestOpenAIWSHTTPBridgeGrokExhaustedSuccessPersistsRateLimit(t *testing.T) {
 	result, err := svc.proxyOpenAIWSHTTPBridgeTurn(
 		context.Background(), nil, account, "token",
 		[]byte(`{"type":"response.create","model":"grok-4.3","input":"hi"}`),
-		64, "grok-4.3", "", "", "", "cache-id", 1,
+		64, "grok-4.3", "", "", "", 0, "cache-id", 1,
 		func([]byte) error { return nil },
 	)
 

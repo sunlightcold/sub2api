@@ -704,6 +704,8 @@ export default {
       priorityHint: 'Lower value accounts are used first',
       billingRateMultiplier: 'Billing Rate Multiplier',
       billingRateMultiplierHint: '0 = free, affects account billing only',
+      usageLatencyOffsetMs: 'Usage timestamp offset (ms)',
+      usageLatencyOffsetMsHint: 'Shift usage timestamps backward by this many milliseconds; leave empty or set to 0 to disable.',
       expiresAt: 'Expires At',
       expiresAtHint: 'Leave empty for no expiration',
       higherPriorityFirst: 'Lower value means higher priority',

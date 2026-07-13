@@ -60,6 +60,37 @@ func TestCalculateCostUnified_TokenMode(t *testing.T) {
 	require.Equal(t, string(BillingModeToken), cost.BillingMode)
 }
 
+func TestCalculateCostUnified_LongContextPricingCanBeDisabled(t *testing.T) {
+	bs := NewBillingService(&config.Config{}, nil)
+	resolver := NewModelPricingResolver(nil, bs)
+	tokens := UsageTokens{InputTokens: 7016, OutputTokens: 270, CacheReadTokens: 268032}
+
+	disabled, err := bs.CalculateCostUnified(CostInput{
+		Ctx:                       context.Background(),
+		Model:                     "gpt-5.6-sol",
+		Tokens:                    tokens,
+		RateMultiplier:            1,
+		DisableLongContextPricing: true,
+		Resolver:                  resolver,
+	})
+	require.NoError(t, err)
+	require.InDelta(t, float64(tokens.InputTokens)*5e-6, disabled.InputCost, 1e-12)
+	require.InDelta(t, float64(tokens.OutputTokens)*30e-6, disabled.OutputCost, 1e-12)
+	require.InDelta(t, float64(tokens.CacheReadTokens)*0.5e-6, disabled.CacheReadCost, 1e-12)
+
+	enabled, err := bs.CalculateCostUnified(CostInput{
+		Ctx:            context.Background(),
+		Model:          "gpt-5.6-sol",
+		Tokens:         tokens,
+		RateMultiplier: 1,
+		Resolver:       resolver,
+	})
+	require.NoError(t, err)
+	require.InDelta(t, float64(tokens.InputTokens)*10e-6, enabled.InputCost, 1e-12)
+	require.InDelta(t, float64(tokens.OutputTokens)*45e-6, enabled.OutputCost, 1e-12)
+	require.InDelta(t, float64(tokens.CacheReadTokens)*1e-6, enabled.CacheReadCost, 1e-12)
+}
+
 func TestCalculateCostUnified_TokenModeAppliesRateMultiplierToImageTokens(t *testing.T) {
 	bs := newTestBillingService()
 	resolver := NewModelPricingResolver(nil, bs)

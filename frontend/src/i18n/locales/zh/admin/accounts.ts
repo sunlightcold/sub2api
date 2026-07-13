@@ -796,6 +796,8 @@ export default {
       priorityHint: '优先级越小的账号优先使用',
       billingRateMultiplier: '账号计费倍率',
       billingRateMultiplierHint: '0 表示不计费，仅影响账号计费',
+      usageLatencyOffsetMs: '用量时间延迟补偿（毫秒）',
+      usageLatencyOffsetMsHint: '将用量记录时间向前补偿指定毫秒数；留空或 0 表示不补偿。',
       expiresAt: '过期时间',
       expiresAtHint: '留空表示不过期',
       higherPriorityFirst: '数值越小优先级越高',
