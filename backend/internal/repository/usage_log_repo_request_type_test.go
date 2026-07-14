@@ -39,7 +39,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 		CreatedAt:      createdAt,
 	}
 
-	mock.ExpectQuery("INSERT INTO usage_logs").
+	mock.ExpectQuery(`(?s)INSERT INTO usage_logs.*\$55`).
 		WithArgs(
 			log.UserID,
 			log.APIKeyID,
@@ -91,10 +91,10 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			log.LongContextBillingApplied,
 			sqlmock.AnyArg(), // channel_id
 			sqlmock.AnyArg(), // model_mapping_chain
+			sqlmock.AnyArg(), // upstream_timing
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
-			sqlmock.AnyArg(), // upstream_timing
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
@@ -127,7 +127,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 		CreatedAt:      createdAt,
 	}
 
-	mock.ExpectQuery("INSERT INTO usage_logs").
+	mock.ExpectQuery(`(?s)INSERT INTO usage_logs.*\$55`).
 		WithArgs(
 			log.UserID,
 			log.APIKeyID,
@@ -179,10 +179,10 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			log.LongContextBillingApplied,
 			sqlmock.AnyArg(), // channel_id
 			sqlmock.AnyArg(), // model_mapping_chain
+			sqlmock.AnyArg(), // upstream_timing
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
-			sqlmock.AnyArg(), // upstream_timing
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
@@ -225,7 +225,7 @@ func TestExecUsageLogInsertNoResult_PersistsRequestedModel(t *testing.T) {
 		CreatedAt:      time.Date(2025, 1, 4, 12, 0, 0, 0, time.UTC),
 	})
 
-	mock.ExpectExec("INSERT INTO usage_logs").
+	mock.ExpectExec(`(?s)INSERT INTO usage_logs.*\$55`).
 		WithArgs(anySliceToDriverValues(prepared.args)...).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
