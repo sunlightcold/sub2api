@@ -658,30 +658,6 @@ func TestAdminService_UpdateGroup_InvalidatesAuthCacheOnRPMLimitChange(t *testin
 	require.Equal(t, []int64{1}, invalidator.groupIDs, "分组 RPMLimit 写入 auth snapshot，变更后必须失效 API Key 认证缓存")
 }
 
-func TestAdminService_UpdateGroup_LongContextPricingInvalidatesAuthCache(t *testing.T) {
-	existingGroup := &Group{
-		ID:       1,
-		Name:     "existing-group",
-		Platform: PlatformOpenAI,
-		Status:   StatusActive,
-	}
-	repo := &groupRepoStubForAdmin{getByID: existingGroup}
-	invalidator := &authCacheInvalidatorStub{}
-	svc := &adminServiceImpl{
-		groupRepo:            repo,
-		authCacheInvalidator: invalidator,
-	}
-	enabled := true
-
-	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
-		LongContextPricingEnabled: &enabled,
-	})
-	require.NoError(t, err)
-	require.True(t, group.LongContextPricingEnabled)
-	require.True(t, repo.updated.LongContextPricingEnabled)
-	require.Equal(t, []int64{1}, invalidator.groupIDs)
-}
-
 func TestAdminService_UpdateGroup_ClearsPeakRateWhenChangingToStandard(t *testing.T) {
 	existingGroup := &Group{
 		ID:                 1,

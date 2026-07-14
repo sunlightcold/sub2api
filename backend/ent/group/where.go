@@ -85,11 +85,6 @@ func RateMultiplier(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
-// LongContextPricingEnabled applies equality check predicate on the "long_context_pricing_enabled" field. It's identical to LongContextPricingEnabledEQ.
-func LongContextPricingEnabled(v bool) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldLongContextPricingEnabled, v))
-}
-
 // PeakRateEnabled applies equality check predicate on the "peak_rate_enabled" field. It's identical to PeakRateEnabledEQ.
 func PeakRateEnabled(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldPeakRateEnabled, v))
@@ -603,16 +598,6 @@ func RateMultiplierLT(v float64) predicate.Group {
 // RateMultiplierLTE applies the LTE predicate on the "rate_multiplier" field.
 func RateMultiplierLTE(v float64) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldRateMultiplier, v))
-}
-
-// LongContextPricingEnabledEQ applies the EQ predicate on the "long_context_pricing_enabled" field.
-func LongContextPricingEnabledEQ(v bool) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldLongContextPricingEnabled, v))
-}
-
-// LongContextPricingEnabledNEQ applies the NEQ predicate on the "long_context_pricing_enabled" field.
-func LongContextPricingEnabledNEQ(v bool) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldLongContextPricingEnabled, v))
 }
 
 // PeakRateEnabledEQ applies the EQ predicate on the "peak_rate_enabled" field.

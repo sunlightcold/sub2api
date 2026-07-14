@@ -350,7 +350,6 @@ func TestAPIContracts(t *testing.T) {
 						"description": "desc",
 						"platform": "anthropic",
 						"rate_multiplier": 1.5,
-						"long_context_pricing_enabled": false,
 						"peak_rate_enabled": false,
 						"peak_start": "",
 						"peak_end": "",

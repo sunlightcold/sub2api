@@ -562,45 +562,6 @@
           <p class="input-hint">{{ t("admin.groups.rateMultiplierHint") }}</p>
         </div>
         <div>
-          <label class="input-label">{{ t("admin.groups.form.longContextPricing") }}</label>
-          <div class="flex min-h-11 items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="createForm.long_context_pricing_enabled"
-              :aria-label="t('admin.groups.form.longContextPricing')"
-              @click="createForm.long_context_pricing_enabled = !createForm.long_context_pricing_enabled"
-              :class="[
-                'relative inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-              ]"
-            >
-              <span
-                :class="[
-                  'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                  createForm.long_context_pricing_enabled
-                    ? 'bg-primary-500'
-                    : 'bg-gray-300 dark:bg-dark-600',
-                ]"
-              >
-                <span
-                  :class="[
-                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                    createForm.long_context_pricing_enabled ? 'translate-x-6' : 'translate-x-1',
-                  ]"
-                />
-              </span>
-            </button>
-            <span class="text-sm text-gray-600 dark:text-gray-300">
-              {{
-                createForm.long_context_pricing_enabled
-                  ? t("admin.groups.form.longContextPricingEnabled")
-                  : t("admin.groups.form.longContextPricingDisabled")
-              }}
-            </span>
-          </div>
-          <p class="input-hint">{{ t("admin.groups.form.longContextPricingHint") }}</p>
-        </div>
-        <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
           <input
             v-model.number="createForm.rpm_limit"
@@ -2186,43 +2147,6 @@
             class="input"
             data-tour="group-form-multiplier"
           />
-        </div>
-        <div>
-          <label class="input-label">{{ t("admin.groups.form.longContextPricing") }}</label>
-          <div class="flex min-h-11 items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="editForm.long_context_pricing_enabled"
-              :aria-label="t('admin.groups.form.longContextPricing')"
-              @click="editForm.long_context_pricing_enabled = !editForm.long_context_pricing_enabled"
-              class="relative inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
-            >
-              <span
-                :class="[
-                  'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                  editForm.long_context_pricing_enabled
-                    ? 'bg-primary-500'
-                    : 'bg-gray-300 dark:bg-dark-600',
-                ]"
-              >
-                <span
-                  :class="[
-                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                    editForm.long_context_pricing_enabled ? 'translate-x-6' : 'translate-x-1',
-                  ]"
-                />
-              </span>
-            </button>
-            <span class="text-sm text-gray-600 dark:text-gray-300">
-              {{
-                editForm.long_context_pricing_enabled
-                  ? t("admin.groups.form.longContextPricingEnabled")
-                  : t("admin.groups.form.longContextPricingDisabled")
-              }}
-            </span>
-          </div>
-          <p class="input-hint">{{ t("admin.groups.form.longContextPricingHint") }}</p>
         </div>
         <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
@@ -4163,7 +4087,6 @@ const createForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
-  long_context_pricing_enabled: false,
   is_exclusive: false,
   subscription_type: "standard" as SubscriptionType,
   daily_limit_usd: null as number | null,
@@ -4513,7 +4436,6 @@ const editForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
-  long_context_pricing_enabled: false,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
   subscription_type: "standard" as SubscriptionType,
@@ -4926,7 +4848,6 @@ const closeCreateModal = () => {
   createForm.description = "";
   createForm.platform = "anthropic";
   createForm.rate_multiplier = 1.0;
-  createForm.long_context_pricing_enabled = false;
   createForm.is_exclusive = false;
   createForm.subscription_type = "standard";
   createForm.daily_limit_usd = null;
@@ -5095,7 +5016,6 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.description = group.description || "";
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
-  editForm.long_context_pricing_enabled = group.long_context_pricing_enabled ?? false;
   editForm.is_exclusive = group.is_exclusive;
   editForm.status = group.status;
   editForm.subscription_type = group.subscription_type || "standard";

@@ -105,20 +105,6 @@ func (_c *GroupCreate) SetNillableRateMultiplier(v *float64) *GroupCreate {
 	return _c
 }
 
-// SetLongContextPricingEnabled sets the "long_context_pricing_enabled" field.
-func (_c *GroupCreate) SetLongContextPricingEnabled(v bool) *GroupCreate {
-	_c.mutation.SetLongContextPricingEnabled(v)
-	return _c
-}
-
-// SetNillableLongContextPricingEnabled sets the "long_context_pricing_enabled" field if the given value is not nil.
-func (_c *GroupCreate) SetNillableLongContextPricingEnabled(v *bool) *GroupCreate {
-	if v != nil {
-		_c.SetLongContextPricingEnabled(*v)
-	}
-	return _c
-}
-
 // SetPeakRateEnabled sets the "peak_rate_enabled" field.
 func (_c *GroupCreate) SetPeakRateEnabled(v bool) *GroupCreate {
 	_c.mutation.SetPeakRateEnabled(v)
@@ -878,10 +864,6 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultRateMultiplier
 		_c.mutation.SetRateMultiplier(v)
 	}
-	if _, ok := _c.mutation.LongContextPricingEnabled(); !ok {
-		v := group.DefaultLongContextPricingEnabled
-		_c.mutation.SetLongContextPricingEnabled(v)
-	}
 	if _, ok := _c.mutation.PeakRateEnabled(); !ok {
 		v := group.DefaultPeakRateEnabled
 		_c.mutation.SetPeakRateEnabled(v)
@@ -1019,9 +1001,6 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "Group.rate_multiplier"`)}
-	}
-	if _, ok := _c.mutation.LongContextPricingEnabled(); !ok {
-		return &ValidationError{Name: "long_context_pricing_enabled", err: errors.New(`ent: missing required field "Group.long_context_pricing_enabled"`)}
 	}
 	if _, ok := _c.mutation.PeakRateEnabled(); !ok {
 		return &ValidationError{Name: "peak_rate_enabled", err: errors.New(`ent: missing required field "Group.peak_rate_enabled"`)}
@@ -1190,10 +1169,6 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RateMultiplier(); ok {
 		_spec.SetField(group.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
-	}
-	if value, ok := _c.mutation.LongContextPricingEnabled(); ok {
-		_spec.SetField(group.FieldLongContextPricingEnabled, field.TypeBool, value)
-		_node.LongContextPricingEnabled = value
 	}
 	if value, ok := _c.mutation.PeakRateEnabled(); ok {
 		_spec.SetField(group.FieldPeakRateEnabled, field.TypeBool, value)
@@ -1606,18 +1581,6 @@ func (u *GroupUpsert) UpdateRateMultiplier() *GroupUpsert {
 // AddRateMultiplier adds v to the "rate_multiplier" field.
 func (u *GroupUpsert) AddRateMultiplier(v float64) *GroupUpsert {
 	u.Add(group.FieldRateMultiplier, v)
-	return u
-}
-
-// SetLongContextPricingEnabled sets the "long_context_pricing_enabled" field.
-func (u *GroupUpsert) SetLongContextPricingEnabled(v bool) *GroupUpsert {
-	u.Set(group.FieldLongContextPricingEnabled, v)
-	return u
-}
-
-// UpdateLongContextPricingEnabled sets the "long_context_pricing_enabled" field to the value that was provided on create.
-func (u *GroupUpsert) UpdateLongContextPricingEnabled() *GroupUpsert {
-	u.SetExcluded(group.FieldLongContextPricingEnabled)
 	return u
 }
 
@@ -2510,20 +2473,6 @@ func (u *GroupUpsertOne) AddRateMultiplier(v float64) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateRateMultiplier() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateRateMultiplier()
-	})
-}
-
-// SetLongContextPricingEnabled sets the "long_context_pricing_enabled" field.
-func (u *GroupUpsertOne) SetLongContextPricingEnabled(v bool) *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetLongContextPricingEnabled(v)
-	})
-}
-
-// UpdateLongContextPricingEnabled sets the "long_context_pricing_enabled" field to the value that was provided on create.
-func (u *GroupUpsertOne) UpdateLongContextPricingEnabled() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateLongContextPricingEnabled()
 	})
 }
 
@@ -3708,20 +3657,6 @@ func (u *GroupUpsertBulk) AddRateMultiplier(v float64) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateRateMultiplier() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateRateMultiplier()
-	})
-}
-
-// SetLongContextPricingEnabled sets the "long_context_pricing_enabled" field.
-func (u *GroupUpsertBulk) SetLongContextPricingEnabled(v bool) *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetLongContextPricingEnabled(v)
-	})
-}
-
-// UpdateLongContextPricingEnabled sets the "long_context_pricing_enabled" field to the value that was provided on create.
-func (u *GroupUpsertBulk) UpdateLongContextPricingEnabled() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateLongContextPricingEnabled()
 	})
 }
 

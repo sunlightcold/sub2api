@@ -28,8 +28,6 @@ const (
 	FieldDescription = "description"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
-	// FieldLongContextPricingEnabled holds the string denoting the long_context_pricing_enabled field in the database.
-	FieldLongContextPricingEnabled = "long_context_pricing_enabled"
 	// FieldPeakRateEnabled holds the string denoting the peak_rate_enabled field in the database.
 	FieldPeakRateEnabled = "peak_rate_enabled"
 	// FieldPeakStart holds the string denoting the peak_start field in the database.
@@ -201,7 +199,6 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldRateMultiplier,
-	FieldLongContextPricingEnabled,
 	FieldPeakRateEnabled,
 	FieldPeakStart,
 	FieldPeakEnd,
@@ -286,8 +283,6 @@ var (
 	NameValidator func(string) error
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
-	// DefaultLongContextPricingEnabled holds the default value on creation for the "long_context_pricing_enabled" field.
-	DefaultLongContextPricingEnabled bool
 	// DefaultPeakRateEnabled holds the default value on creation for the "peak_rate_enabled" field.
 	DefaultPeakRateEnabled bool
 	// DefaultPeakStart holds the default value on creation for the "peak_start" field.
@@ -396,11 +391,6 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByRateMultiplier orders the results by the rate_multiplier field.
 func ByRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRateMultiplier, opts...).ToFunc()
-}
-
-// ByLongContextPricingEnabled orders the results by the long_context_pricing_enabled field.
-func ByLongContextPricingEnabled(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLongContextPricingEnabled, opts...).ToFunc()
 }
 
 // ByPeakRateEnabled orders the results by the peak_rate_enabled field.

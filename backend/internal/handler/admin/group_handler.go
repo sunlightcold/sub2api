@@ -101,7 +101,6 @@ type CreateGroupRequest struct {
 	BatchImageHoldMultiplier        *float64 `json:"batch_image_hold_multiplier"`
 	VideoRateIndependent            bool     `json:"video_rate_independent"`
 	VideoRateMultiplier             *float64 `json:"video_rate_multiplier"`
-	LongContextPricingEnabled       bool     `json:"long_context_pricing_enabled"`
 	PeakRateEnabled                 bool     `json:"peak_rate_enabled"`
 	PeakStart                       string   `json:"peak_start"`
 	PeakEnd                         string   `json:"peak_end"`
@@ -159,7 +158,6 @@ type UpdateGroupRequest struct {
 	BatchImageHoldMultiplier        *float64 `json:"batch_image_hold_multiplier"`
 	VideoRateIndependent            *bool    `json:"video_rate_independent"`
 	VideoRateMultiplier             *float64 `json:"video_rate_multiplier"`
-	LongContextPricingEnabled       *bool    `json:"long_context_pricing_enabled"`
 	PeakRateEnabled                 *bool    `json:"peak_rate_enabled"`
 	PeakStart                       *string  `json:"peak_start"`
 	PeakEnd                         *string  `json:"peak_end"`
@@ -335,7 +333,6 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		BatchImageHoldMultiplier:        req.BatchImageHoldMultiplier,
 		VideoRateIndependent:            req.VideoRateIndependent,
 		VideoRateMultiplier:             req.VideoRateMultiplier,
-		LongContextPricingEnabled:       req.LongContextPricingEnabled,
 		PeakRateEnabled:                 req.PeakRateEnabled,
 		PeakStart:                       req.PeakStart,
 		PeakEnd:                         req.PeakEnd,
@@ -408,7 +405,6 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		BatchImageHoldMultiplier:        req.BatchImageHoldMultiplier,
 		VideoRateIndependent:            req.VideoRateIndependent,
 		VideoRateMultiplier:             req.VideoRateMultiplier,
-		LongContextPricingEnabled:       req.LongContextPricingEnabled,
 		PeakRateEnabled:                 req.PeakRateEnabled,
 		PeakStart:                       req.PeakStart,
 		PeakEnd:                         req.PeakEnd,
