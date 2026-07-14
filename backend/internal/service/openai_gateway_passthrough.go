@@ -958,6 +958,22 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				trimmedData = strings.TrimSpace(string(normalizedData))
 				line = "data: " + string(normalizedData)
 			}
+			if normalizedData, normalized := normalizeCompletedImageGenerationStatus(dataBytes); normalized {
+				dataBytes = normalizedData
+				trimmedData = strings.TrimSpace(string(normalizedData))
+				line = "data: " + string(normalizedData)
+			}
+			if trimmedData != "[DONE]" {
+				restoredData, restoreErr := restoreOpenAIResponsesNamespacePayload(c, dataBytes)
+				if restoreErr != nil {
+					return resultWithUsage(), fmt.Errorf("restore OpenAI passthrough namespace response: %w", restoreErr)
+				}
+				if !bytes.Equal(restoredData, dataBytes) {
+					dataBytes = restoredData
+					trimmedData = strings.TrimSpace(string(restoredData))
+					line = "data: " + string(restoredData)
+				}
+			}
 			eventType := strings.TrimSpace(gjson.Get(trimmedData, "type").String())
 			if openAIStreamDataStartsFirstResponse(trimmedData) {
 				var now time.Time
@@ -1188,6 +1204,10 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
+	body, err = restoreOpenAIResponsesNamespacePayload(c, body)
+	if err != nil {
+		return nil, fmt.Errorf("restore OpenAI passthrough namespace response: %w", err)
+	}
 	if !writeOpenAICompactSSEBridge(c, resp.StatusCode, body) {
 		c.Data(resp.StatusCode, contentType, body)
 	}
@@ -1246,6 +1266,11 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(
 				usage = correctedUsage
 			}
 		}
+		restoredBody, restoreErr := restoreOpenAIResponsesNamespacePayload(c, body)
+		if restoreErr != nil {
+			return nil, fmt.Errorf("restore OpenAI passthrough namespace response: %w", restoreErr)
+		}
+		body = restoredBody
 	} else {
 		terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
 		if terminalOK && terminalType == "response.failed" {
