@@ -866,6 +866,10 @@ describe('EditAccountModal', () => {
 
     const wrapper = mountModal(account)
 
+    expect(wrapper.text()).toContain('admin.accounts.openai.codexImageTool')
+    expect(wrapper.text()).toContain('admin.accounts.openai.codexImageToolDesc')
+    expect(wrapper.text()).toContain('admin.accounts.openai.codexImageToolEnabledDesc')
+
     await wrapper.get('button[data-testid="codex-image-tool-enabled"]').trigger('click')
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
 
@@ -903,6 +907,9 @@ describe('EditAccountModal', () => {
     updateAccountMock.mockResolvedValue(account)
 
     const wrapper = mountModal(account)
+
+    expect(wrapper.text()).toContain('admin.accounts.openai.codexImageToolBlock')
+    expect(wrapper.text()).toContain('admin.accounts.openai.codexImageToolBlockDesc')
 
     await wrapper.get('button[data-testid="codex-image-tool-block"]').trigger('click')
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
