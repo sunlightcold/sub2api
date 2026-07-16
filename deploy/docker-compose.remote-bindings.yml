@@ -17,5 +17,7 @@ services:
       - "${POSTGRES_BIND_HOST:-127.0.0.1}:${POSTGRES_BIND_PORT:-5432}:5432"
 
   redis:
+    environment:
+      REDISCLI_AUTH: "${REDIS_PASSWORD:?REDIS_PASSWORD is required when exposing Redis}"
     ports:
       - "${REDIS_BIND_HOST:-127.0.0.1}:${REDIS_BIND_PORT:-6379}:6379"
