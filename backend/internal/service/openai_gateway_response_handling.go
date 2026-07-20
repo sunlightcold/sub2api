@@ -496,7 +496,10 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(
 		// Extract data from SSE line (supports both "data: " and "data:" formats)
 		if data, ok := extractOpenAISSEDataLine(line); ok {
 			dataBytes := []byte(data)
-			if openAIStreamEventIsTerminal(data) {
+			eventTypeRaw := gjson.GetBytes(dataBytes, "type").String()
+			eventType := strings.TrimSpace(eventTypeRaw)
+			// 初始上游 data 的 type 只解析一次：原始值保持终止事件的精确匹配，规范化值供后续分支复用。
+			if openAIStreamEventIsTerminalWithType(data, eventTypeRaw) {
 				sawTerminalEvent = true
 				if terminalAt.IsZero() {
 					terminalAt = time.Now()
@@ -505,7 +508,6 @@ func (s *OpenAIGatewayService) handleStreamingResponseWithReasoning(
 					}
 				}
 			}
-			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
 			if openAIStreamDataStartsFirstResponse(data) {
 				var now time.Time
 				if firstSSEAt.IsZero() {
