@@ -80,6 +80,55 @@ func TestUsageCleanupRepositoryCreateTaskQueryError(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestUsageCleanupRepositoryCountUsageLogs(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageCleanupRepository{sql: db}
+
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	userID := int64(9)
+	model := "gpt-4"
+	filters := service.UsageCleanupFilters{
+		StartTime: start,
+		EndTime:   end,
+		UserID:    &userID,
+		Model:     &model,
+	}
+
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM usage_logs WHERE created_at >= \\$1 AND created_at <= \\$2 AND user_id = \\$3 AND model = \\$4").
+		WithArgs(start, end, userID, model).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(42)))
+
+	count, err := repo.CountUsageLogs(context.Background(), filters)
+	require.NoError(t, err)
+	require.Equal(t, int64(42), count)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUsageCleanupRepositoryCountUsageLogsRequiresRange(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageCleanupRepository{sql: db}
+
+	_, err := repo.CountUsageLogs(context.Background(), service.UsageCleanupFilters{})
+	require.ErrorContains(t, err, "missing time range")
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUsageCleanupRepositoryCountUsageLogsQueryError(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageCleanupRepository{sql: db}
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(time.Hour)
+
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM usage_logs").
+		WithArgs(start, end).
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := repo.CountUsageLogs(context.Background(), service.UsageCleanupFilters{StartTime: start, EndTime: end})
+	require.ErrorIs(t, err, sql.ErrConnDone)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestUsageCleanupRepositoryListTasksEmpty(t *testing.T) {
 	db, mock := newSQLMock(t)
 	repo := &usageCleanupRepository{sql: db}
@@ -511,4 +560,19 @@ func TestBuildUsageCleanupWhereModelEmpty(t *testing.T) {
 
 	require.Equal(t, "created_at >= $1 AND created_at <= $2", where)
 	require.Equal(t, []any{start, end}, args)
+}
+
+func TestBuildUsageCleanupWhereBillingModeMatchesUsageListSemantics(t *testing.T) {
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+	billingMode := string(service.BillingModeImage)
+
+	where, args := buildUsageCleanupWhere(service.UsageCleanupFilters{
+		StartTime:   start,
+		EndTime:     end,
+		BillingMode: &billingMode,
+	})
+
+	require.Equal(t, "created_at >= $1 AND created_at <= $2 AND (billing_mode = $3 OR ((billing_mode IS NULL OR billing_mode = '') AND COALESCE(image_count, 0) > 0))", where)
+	require.Equal(t, []any{start, end, billingMode}, args)
 }

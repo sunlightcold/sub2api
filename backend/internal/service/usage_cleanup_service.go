@@ -77,6 +77,9 @@ func describeUsageCleanupFilters(filters UsageCleanupFilters) string {
 	if filters.BillingType != nil {
 		parts = append(parts, fmt.Sprintf("billing_type=%d", *filters.BillingType))
 	}
+	if filters.BillingMode != nil {
+		parts = append(parts, "billing_mode="+strings.TrimSpace(*filters.BillingMode))
+	}
 	return strings.Join(parts, " ")
 }
 
@@ -152,6 +155,26 @@ func (s *UsageCleanupService) CreateTask(ctx context.Context, filters UsageClean
 	logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] create_task persisted: task=%d operator=%d status=%s deleted_rows=%d %s", task.ID, createdBy, task.Status, task.DeletedRows, describeUsageCleanupFilters(filters))
 	go s.runOnce()
 	return task, nil
+}
+
+// Estimate returns the number of usage records matching the same filters used by cleanup tasks.
+func (s *UsageCleanupService) Estimate(ctx context.Context, filters UsageCleanupFilters) (int64, error) {
+	if s == nil || s.repo == nil {
+		return 0, fmt.Errorf("cleanup service not ready")
+	}
+	if s.cfg != nil && !s.cfg.UsageCleanup.Enabled {
+		return 0, infraerrors.New(http.StatusServiceUnavailable, "USAGE_CLEANUP_DISABLED", "usage cleanup is disabled")
+	}
+
+	sanitizeUsageCleanupFilters(&filters)
+	if err := s.validateFilters(filters); err != nil {
+		return 0, err
+	}
+	count, err := s.repo.CountUsageLogs(ctx, filters)
+	if err != nil {
+		return 0, fmt.Errorf("count usage logs for cleanup: %w", err)
+	}
+	return count, nil
 }
 
 func (s *UsageCleanupService) runOnce() {
@@ -295,6 +318,9 @@ func (s *UsageCleanupService) validateFilters(filters UsageCleanupFilters) error
 	if filters.EndTime.Before(filters.StartTime) {
 		return infraerrors.BadRequest("USAGE_CLEANUP_INVALID_RANGE", "end_date must be after start_date")
 	}
+	if filters.BillingMode != nil && !BillingMode(*filters.BillingMode).IsValidUsageFilter() {
+		return infraerrors.BadRequest("USAGE_CLEANUP_INVALID_BILLING_MODE", "invalid billing_mode")
+	}
 	maxDays := s.maxRangeDays()
 	if maxDays > 0 {
 		delta := filters.EndTime.Sub(filters.StartTime)
@@ -383,6 +409,14 @@ func sanitizeUsageCleanupFilters(filters *UsageCleanupFilters) {
 	}
 	if filters.BillingType != nil && *filters.BillingType < 0 {
 		filters.BillingType = nil
+	}
+	if filters.BillingMode != nil {
+		mode := strings.TrimSpace(*filters.BillingMode)
+		if mode == "" {
+			filters.BillingMode = nil
+		} else {
+			filters.BillingMode = &mode
+		}
 	}
 }
 

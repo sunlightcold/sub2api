@@ -1,10 +1,25 @@
 <template>
   <BaseDialog :show="show" :title="t('admin.usage.cleanup.title')" width="wide" @close="handleClose">
     <div class="space-y-4">
+      <div class="flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 px-4 py-3 dark:border-dark-700">
+        <div>
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {{ t('admin.usage.cleanup.dateRange') }}
+          </div>
+          <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {{ localStartDate }} ~ {{ localEndDate }}
+          </div>
+        </div>
+        <DateRangePicker
+          v-model:start-date="localStartDate"
+          v-model:end-date="localEndDate"
+        />
+      </div>
+
       <UsageFilters
         v-model="localFilters"
-        v-model:startDate="localStartDate"
-        v-model:endDate="localEndDate"
+        :start-date="localStartDate"
+        :end-date="localEndDate"
         :exporting="false"
         :show-actions="false"
         @change="noop"
@@ -12,6 +27,32 @@
 
       <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
         {{ t('admin.usage.cleanup.warning') }}
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3 dark:border-dark-700">
+        <div>
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {{ t('admin.usage.cleanup.estimateTitle') }}
+          </div>
+          <div v-if="estimatedCount !== null" class="mt-1 text-lg font-semibold text-gray-900 dark:text-white" data-testid="cleanup-estimate-count">
+            {{ t('admin.usage.cleanup.estimateResult', { count: estimatedCount.toLocaleString() }) }}
+          </div>
+          <div v-else class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {{ t('admin.usage.cleanup.estimateNotCalculated') }}
+          </div>
+          <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {{ t('admin.usage.cleanup.estimateHint') }}
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          :disabled="estimating"
+          data-testid="cleanup-estimate-button"
+          @click="estimateCleanup"
+        >
+          {{ estimating ? t('admin.usage.cleanup.estimating') : t('admin.usage.cleanup.estimate') }}
+        </button>
       </div>
 
       <div class="rounded-xl border border-gray-200 p-4 dark:border-dark-700">
@@ -97,7 +138,7 @@
   <ConfirmDialog
     :show="confirmVisible"
     :title="t('admin.usage.cleanup.confirmTitle')"
-    :message="t('admin.usage.cleanup.confirmMessage')"
+    :message="confirmMessage"
     :confirm-text="t('admin.usage.cleanup.confirmSubmit')"
     danger
     @confirm="submitCleanup"
@@ -116,12 +157,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import UsageFilters from '@/components/admin/usage/UsageFilters.vue'
 import { adminUsageAPI } from '@/api/admin/usage'
 import type { AdminUsageQueryParams, UsageCleanupTask, CreateUsageCleanupTaskRequest } from '@/api/admin/usage'
@@ -150,13 +192,31 @@ const tasksPage = ref(1)
 const tasksPageSize = ref(5)
 const tasksTotal = ref(0)
 const submitting = ref(false)
+const estimating = ref(false)
+const estimatedCount = ref<number | null>(null)
 const confirmVisible = ref(false)
 const cancelConfirmVisible = ref(false)
 const canceling = ref(false)
 const cancelTarget = ref<UsageCleanupTask | null>(null)
 let pollTimer: number | null = null
+let estimateRequestVersion = 0
 
 const noop = () => {}
+
+const confirmMessage = computed(() => {
+  if (estimatedCount.value === null) {
+    return t('admin.usage.cleanup.confirmMessage')
+  }
+  return t('admin.usage.cleanup.confirmMessageWithCount', {
+    count: estimatedCount.value.toLocaleString()
+  })
+})
+
+const invalidateEstimate = () => {
+  estimateRequestVersion++
+  estimating.value = false
+  estimatedCount.value = null
+}
 
 const resetFilters = () => {
   localFilters.value = { ...props.filters }
@@ -189,6 +249,7 @@ const handleClose = () => {
   canceling.value = false
   cancelTarget.value = null
   submitting.value = false
+  invalidateEstimate()
   emit('close')
 }
 
@@ -323,8 +384,35 @@ const buildPayload = (): CreateUsageCleanupTaskRequest | null => {
   if (localFilters.value.billing_type !== null && localFilters.value.billing_type !== undefined) {
     payload.billing_type = localFilters.value.billing_type
   }
+  if (localFilters.value.billing_mode) {
+    payload.billing_mode = localFilters.value.billing_mode
+  }
 
   return payload
+}
+
+const estimateCleanup = async () => {
+  const payload = buildPayload()
+  if (!payload) return
+
+  const requestVersion = ++estimateRequestVersion
+  estimating.value = true
+  estimatedCount.value = null
+  try {
+    const result = await adminUsageAPI.estimateCleanup(payload)
+    if (requestVersion === estimateRequestVersion) {
+      estimatedCount.value = result.count
+    }
+  } catch (error) {
+    if (requestVersion === estimateRequestVersion) {
+      console.error('Failed to estimate cleanup count:', error)
+      appStore.showError(t('admin.usage.cleanup.estimateFailed'))
+    }
+  } finally {
+    if (requestVersion === estimateRequestVersion) {
+      estimating.value = false
+    }
+  }
 }
 
 const submitCleanup = async () => {
@@ -338,6 +426,7 @@ const submitCleanup = async () => {
   try {
     await adminUsageAPI.createCleanupTask(payload)
     appStore.showSuccess(t('admin.usage.cleanup.submitSuccess'))
+    invalidateEstimate()
     loadTasks()
   } catch (error) {
     console.error('Failed to create cleanup task:', error)
@@ -379,6 +468,12 @@ watch(
       stopPolling()
     }
   }
+)
+
+watch(
+  [localStartDate, localEndDate, localFilters],
+  invalidateEstimate,
+  { deep: true }
 )
 
 onUnmounted(() => {

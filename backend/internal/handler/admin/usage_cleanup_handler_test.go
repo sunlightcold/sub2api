@@ -29,6 +29,9 @@ type cleanupRepoStub struct {
 	listResult *pagination.PaginationResult
 	listErr    error
 	statusByID map[int64]string
+	count      int64
+	countErr   error
+	counted    []service.UsageCleanupFilters
 }
 
 func (s *cleanupRepoStub) CreateTask(ctx context.Context, task *service.UsageCleanupTask) error {
@@ -102,6 +105,13 @@ func (s *cleanupRepoStub) DeleteUsageLogsBatch(ctx context.Context, filters serv
 	return 0, nil
 }
 
+func (s *cleanupRepoStub) CountUsageLogs(ctx context.Context, filters service.UsageCleanupFilters) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.counted = append(s.counted, filters)
+	return s.count, s.countErr
+}
+
 var _ service.UsageCleanupRepository = (*cleanupRepoStub)(nil)
 
 func setupCleanupRouter(cleanupService *service.UsageCleanupService, userID int64) *gin.Engine {
@@ -116,6 +126,7 @@ func setupCleanupRouter(cleanupService *service.UsageCleanupService, userID int6
 
 	handler := NewUsageHandler(nil, nil, nil, cleanupService)
 	router.POST("/api/v1/admin/usage/cleanup-tasks", handler.CreateCleanupTask)
+	router.POST("/api/v1/admin/usage/cleanup-tasks/estimate", handler.EstimateCleanup)
 	router.GET("/api/v1/admin/usage/cleanup-tasks", handler.ListCleanupTasks)
 	router.POST("/api/v1/admin/usage/cleanup-tasks/:id/cancel", handler.CancelCleanupTask)
 	return router
@@ -349,6 +360,63 @@ func TestUsageHandlerCreateCleanupTaskSuccess(t *testing.T) {
 	end := time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC).Add(24*time.Hour - time.Nanosecond)
 	require.True(t, created.Filters.StartTime.Equal(start))
 	require.True(t, created.Filters.EndTime.Equal(end))
+}
+
+func TestUsageHandlerEstimateCleanupSuccess(t *testing.T) {
+	repo := &cleanupRepoStub{count: 1234}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
+	cleanupService := service.NewUsageCleanupService(repo, nil, nil, cfg)
+	router := setupCleanupRouter(cleanupService, 99)
+
+	payload := map[string]any{
+		"start_date":   "2024-01-01",
+		"end_date":     "2024-01-02",
+		"timezone":     "Asia/Shanghai",
+		"user_id":      8,
+		"model":        "gpt-4",
+		"billing_mode": "image",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/usage/cleanup-tasks/estimate", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var envelope struct {
+		Code int `json:"code"`
+		Data struct {
+			Count int64 `json:"count"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &envelope))
+	require.Zero(t, envelope.Code)
+	require.Equal(t, int64(1234), envelope.Data.Count)
+	require.Len(t, repo.counted, 1)
+	require.NotNil(t, repo.counted[0].UserID)
+	require.Equal(t, int64(8), *repo.counted[0].UserID)
+	require.NotNil(t, repo.counted[0].Model)
+	require.Equal(t, "gpt-4", *repo.counted[0].Model)
+	require.NotNil(t, repo.counted[0].BillingMode)
+	require.Equal(t, "image", *repo.counted[0].BillingMode)
+	require.Equal(t, 16, repo.counted[0].StartTime.UTC().Hour())
+}
+
+func TestUsageHandlerEstimateCleanupInvalidRange(t *testing.T) {
+	repo := &cleanupRepoStub{}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 1}}
+	cleanupService := service.NewUsageCleanupService(repo, nil, nil, cfg)
+	router := setupCleanupRouter(cleanupService, 99)
+
+	body := bytes.NewBufferString(`{"start_date":"2024-01-01","end_date":"2024-01-03","timezone":"UTC"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/usage/cleanup-tasks/estimate", body)
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Empty(t, repo.counted)
 }
 
 func TestUsageHandlerListCleanupTasksUnavailable(t *testing.T) {

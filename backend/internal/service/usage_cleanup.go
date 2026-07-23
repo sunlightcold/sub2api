@@ -36,6 +36,7 @@ type UsageCleanupFilters struct {
 	RequestType *int16    `json:"request_type,omitempty"`
 	Stream      *bool     `json:"stream,omitempty"`
 	BillingType *int8     `json:"billing_type,omitempty"`
+	BillingMode *string   `json:"billing_mode,omitempty"`
 }
 
 // UsageCleanupTask 表示使用记录清理任务
@@ -71,5 +72,6 @@ type UsageCleanupRepository interface {
 	CancelTask(ctx context.Context, taskID int64, canceledBy int64) (bool, error)
 	MarkTaskSucceeded(ctx context.Context, taskID int64, deletedRows int64) error
 	MarkTaskFailed(ctx context.Context, taskID int64, deletedRows int64, errorMsg string) error
+	CountUsageLogs(ctx context.Context, filters UsageCleanupFilters) (int64, error)
 	DeleteUsageLogsBatch(ctx context.Context, filters UsageCleanupFilters, limit int) (int64, error)
 }

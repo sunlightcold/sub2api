@@ -54,7 +54,55 @@ type CreateUsageCleanupTaskRequest struct {
 	RequestType *string `json:"request_type"`
 	Stream      *bool   `json:"stream"`
 	BillingType *int8   `json:"billing_type"`
+	BillingMode *string `json:"billing_mode"`
 	Timezone    string  `json:"timezone"`
+}
+
+func parseUsageCleanupFilters(req *CreateUsageCleanupTaskRequest) (service.UsageCleanupFilters, string) {
+	if req == nil {
+		return service.UsageCleanupFilters{}, "Invalid request"
+	}
+	req.StartDate = strings.TrimSpace(req.StartDate)
+	req.EndDate = strings.TrimSpace(req.EndDate)
+	if req.StartDate == "" || req.EndDate == "" {
+		return service.UsageCleanupFilters{}, "start_date and end_date are required"
+	}
+
+	startTime, err := timezone.ParseInUserLocation("2006-01-02", req.StartDate, req.Timezone)
+	if err != nil {
+		return service.UsageCleanupFilters{}, "Invalid start_date format, use YYYY-MM-DD"
+	}
+	endTime, err := timezone.ParseInUserLocation("2006-01-02", req.EndDate, req.Timezone)
+	if err != nil {
+		return service.UsageCleanupFilters{}, "Invalid end_date format, use YYYY-MM-DD"
+	}
+	endTime = endTime.Add(24*time.Hour - time.Nanosecond)
+
+	var requestType *int16
+	stream := req.Stream
+	if req.RequestType != nil {
+		parsed, err := service.ParseUsageRequestType(*req.RequestType)
+		if err != nil {
+			return service.UsageCleanupFilters{}, err.Error()
+		}
+		value := int16(parsed)
+		requestType = &value
+		stream = nil
+	}
+
+	return service.UsageCleanupFilters{
+		StartTime:   startTime,
+		EndTime:     endTime,
+		UserID:      req.UserID,
+		APIKeyID:    req.APIKeyID,
+		AccountID:   req.AccountID,
+		GroupID:     req.GroupID,
+		Model:       req.Model,
+		RequestType: requestType,
+		Stream:      stream,
+		BillingType: req.BillingType,
+		BillingMode: req.BillingMode,
+	}, ""
 }
 
 // List handles listing all usage records with filters
@@ -454,6 +502,41 @@ func (h *UsageHandler) ListCleanupTasks(c *gin.Context) {
 	response.Paginated(c, out, result.Total, page, pageSize)
 }
 
+// EstimateCleanup handles counting usage records matched by cleanup filters.
+// POST /api/v1/admin/usage/cleanup-tasks/estimate
+func (h *UsageHandler) EstimateCleanup(c *gin.Context) {
+	if h.cleanupService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Usage cleanup service unavailable")
+		return
+	}
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Unauthorized")
+		return
+	}
+
+	var req CreateUsageCleanupTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	filters, validationMessage := parseUsageCleanupFilters(&req)
+	if validationMessage != "" {
+		response.BadRequest(c, validationMessage)
+		return
+	}
+
+	logger.LegacyPrintf("handler.admin.usage", "[UsageCleanup] 请求预估清理数量: operator=%d start=%s end=%s", subject.UserID, filters.StartTime.Format(time.RFC3339), filters.EndTime.Format(time.RFC3339))
+	count, err := h.cleanupService.Estimate(c.Request.Context(), filters)
+	if err != nil {
+		logger.LegacyPrintf("handler.admin.usage", "[UsageCleanup] 预估清理数量失败: operator=%d err=%v", subject.UserID, err)
+		response.ErrorFrom(c, err)
+		return
+	}
+	logger.LegacyPrintf("handler.admin.usage", "[UsageCleanup] 预估清理数量完成: operator=%d count=%d", subject.UserID, count)
+	response.Success(c, gin.H{"count": count})
+}
+
 // CreateCleanupTask handles creating a usage cleanup task
 // POST /api/v1/admin/usage/cleanup-tasks
 func (h *UsageHandler) CreateCleanupTask(c *gin.Context) {
@@ -472,49 +555,10 @@ func (h *UsageHandler) CreateCleanupTask(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
-	req.StartDate = strings.TrimSpace(req.StartDate)
-	req.EndDate = strings.TrimSpace(req.EndDate)
-	if req.StartDate == "" || req.EndDate == "" {
-		response.BadRequest(c, "start_date and end_date are required")
+	filters, validationMessage := parseUsageCleanupFilters(&req)
+	if validationMessage != "" {
+		response.BadRequest(c, validationMessage)
 		return
-	}
-
-	startTime, err := timezone.ParseInUserLocation("2006-01-02", req.StartDate, req.Timezone)
-	if err != nil {
-		response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
-		return
-	}
-	endTime, err := timezone.ParseInUserLocation("2006-01-02", req.EndDate, req.Timezone)
-	if err != nil {
-		response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
-		return
-	}
-	endTime = endTime.Add(24*time.Hour - time.Nanosecond)
-
-	var requestType *int16
-	stream := req.Stream
-	if req.RequestType != nil {
-		parsed, err := service.ParseUsageRequestType(*req.RequestType)
-		if err != nil {
-			response.BadRequest(c, err.Error())
-			return
-		}
-		value := int16(parsed)
-		requestType = &value
-		stream = nil
-	}
-
-	filters := service.UsageCleanupFilters{
-		StartTime:   startTime,
-		EndTime:     endTime,
-		UserID:      req.UserID,
-		APIKeyID:    req.APIKeyID,
-		AccountID:   req.AccountID,
-		GroupID:     req.GroupID,
-		Model:       req.Model,
-		RequestType: requestType,
-		Stream:      stream,
-		BillingType: req.BillingType,
 	}
 
 	var userID any

@@ -53,6 +53,9 @@ type cleanupRepoStub struct {
 	cancelErr     error
 	cancelResult  *bool
 	markFailedErr error
+	count         int64
+	countErr      error
+	countCalls    []UsageCleanupFilters
 }
 
 type dashboardRepoStub struct {
@@ -231,6 +234,13 @@ func (s *cleanupRepoStub) DeleteUsageLogsBatch(ctx context.Context, filters Usag
 	return resp.deleted, resp.err
 }
 
+func (s *cleanupRepoStub) CountUsageLogs(ctx context.Context, filters UsageCleanupFilters) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.countCalls = append(s.countCalls, filters)
+	return s.count, s.countErr
+}
+
 func TestUsageCleanupServiceCreateTaskSanitizeFilters(t *testing.T) {
 	repo := &cleanupRepoStub{}
 	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
@@ -375,6 +385,67 @@ func TestUsageCleanupServiceCreateTaskRepoError(t *testing.T) {
 	_, err := svc.CreateTask(context.Background(), filters, 1)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "create cleanup task")
+}
+
+func TestUsageCleanupServiceEstimate(t *testing.T) {
+	repo := &cleanupRepoStub{count: 37}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
+	svc := NewUsageCleanupService(repo, nil, nil, cfg)
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	userID := int64(-1)
+	model := "  gpt-4  "
+
+	count, err := svc.Estimate(context.Background(), UsageCleanupFilters{
+		StartTime: start,
+		EndTime:   start.Add(24 * time.Hour),
+		UserID:    &userID,
+		Model:     &model,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(37), count)
+	require.Len(t, repo.countCalls, 1)
+	require.Nil(t, repo.countCalls[0].UserID)
+	require.NotNil(t, repo.countCalls[0].Model)
+	require.Equal(t, "gpt-4", *repo.countCalls[0].Model)
+}
+
+func TestUsageCleanupServiceEstimateValidatesRange(t *testing.T) {
+	repo := &cleanupRepoStub{}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 1}}
+	svc := NewUsageCleanupService(repo, nil, nil, cfg)
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	_, err := svc.Estimate(context.Background(), UsageCleanupFilters{StartTime: start, EndTime: start.Add(48 * time.Hour)})
+	require.Error(t, err)
+	require.Equal(t, "USAGE_CLEANUP_RANGE_TOO_LARGE", infraerrors.Reason(err))
+	require.Empty(t, repo.countCalls)
+}
+
+func TestUsageCleanupServiceEstimateRepoError(t *testing.T) {
+	repo := &cleanupRepoStub{countErr: errors.New("count failed")}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
+	svc := NewUsageCleanupService(repo, nil, nil, cfg)
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	_, err := svc.Estimate(context.Background(), UsageCleanupFilters{StartTime: start, EndTime: start.Add(time.Hour)})
+	require.ErrorContains(t, err, "count usage logs for cleanup")
+}
+
+func TestUsageCleanupServiceEstimateRejectsInvalidBillingMode(t *testing.T) {
+	repo := &cleanupRepoStub{}
+	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
+	svc := NewUsageCleanupService(repo, nil, nil, cfg)
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	billingMode := "unknown"
+
+	_, err := svc.Estimate(context.Background(), UsageCleanupFilters{
+		StartTime:   start,
+		EndTime:     start.Add(time.Hour),
+		BillingMode: &billingMode,
+	})
+	require.Error(t, err)
+	require.Equal(t, "USAGE_CLEANUP_INVALID_BILLING_MODE", infraerrors.Reason(err))
+	require.Empty(t, repo.countCalls)
 }
 
 func TestUsageCleanupServiceRunOnceSuccess(t *testing.T) {

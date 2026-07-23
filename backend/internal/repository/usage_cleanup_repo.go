@@ -320,6 +320,23 @@ func (r *usageCleanupRepository) DeleteUsageLogsBatch(ctx context.Context, filte
 	return deleted, nil
 }
 
+func (r *usageCleanupRepository) CountUsageLogs(ctx context.Context, filters service.UsageCleanupFilters) (int64, error) {
+	if filters.StartTime.IsZero() || filters.EndTime.IsZero() {
+		return 0, fmt.Errorf("cleanup filters missing time range")
+	}
+	whereClause, args := buildUsageCleanupWhere(filters)
+	if whereClause == "" {
+		return 0, fmt.Errorf("cleanup filters missing time range")
+	}
+
+	var count int64
+	query := fmt.Sprintf("SELECT COUNT(*) FROM usage_logs WHERE %s", whereClause)
+	if err := scanSingleRow(ctx, r.sql, query, args, &count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any) {
 	conditions := make([]string, 0, 8)
 	args := make([]any, 0, 8)
@@ -375,6 +392,9 @@ func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any)
 	if filters.BillingType != nil {
 		conditions = append(conditions, fmt.Sprintf("billing_type = $%d", idx))
 		args = append(args, *filters.BillingType)
+	}
+	if filters.BillingMode != nil {
+		conditions, args = appendUsageLogBillingModeWhereCondition(conditions, args, *filters.BillingMode)
 	}
 	return strings.Join(conditions, " AND "), args
 }

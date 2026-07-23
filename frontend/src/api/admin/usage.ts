@@ -49,6 +49,7 @@ export interface UsageCleanupFilters {
   request_type?: UsageRequestType | null
   stream?: boolean | null
   billing_type?: number | null
+  billing_mode?: string | null
 }
 
 export interface UsageCleanupTask {
@@ -77,7 +78,12 @@ export interface CreateUsageCleanupTaskRequest {
   request_type?: UsageRequestType | null
   stream?: boolean | null
   billing_type?: number | null
+  billing_mode?: string | null
   timezone?: string
+}
+
+export interface UsageCleanupEstimateResponse {
+  count: number
 }
 
 export interface AdminUsageQueryParams extends UsageQueryParams {
@@ -194,6 +200,14 @@ export async function createCleanupTask(payload: CreateUsageCleanupTaskRequest):
 }
 
 /**
+ * Count usage records matching cleanup filters without deleting them.
+ */
+export async function estimateCleanup(payload: CreateUsageCleanupTaskRequest): Promise<UsageCleanupEstimateResponse> {
+  const { data } = await apiClient.post<UsageCleanupEstimateResponse>('/admin/usage/cleanup-tasks/estimate', payload)
+  return data
+}
+
+/**
  * Cancel a usage cleanup task (admin only)
  * @param taskId - Task ID to cancel
  */
@@ -210,6 +224,7 @@ export const adminUsageAPI = {
   searchUsers,
   searchApiKeys,
   listCleanupTasks,
+  estimateCleanup,
   createCleanupTask,
   cancelCleanupTask
 }

@@ -54,11 +54,13 @@ func TestUsageCleanupTaskFromService_RequestTypeMapping(t *testing.T) {
 	t.Parallel()
 
 	requestType := int16(service.RequestTypeStream)
+	billingMode := string(service.BillingModeImage)
 	task := &service.UsageCleanupTask{
 		ID:     1,
 		Status: service.UsageCleanupStatusPending,
 		Filters: service.UsageCleanupFilters{
 			RequestType: &requestType,
+			BillingMode: &billingMode,
 		},
 	}
 
@@ -66,6 +68,8 @@ func TestUsageCleanupTaskFromService_RequestTypeMapping(t *testing.T) {
 	require.NotNil(t, dtoTask)
 	require.NotNil(t, dtoTask.Filters.RequestType)
 	require.Equal(t, "stream", *dtoTask.Filters.RequestType)
+	require.NotNil(t, dtoTask.Filters.BillingMode)
+	require.Equal(t, billingMode, *dtoTask.Filters.BillingMode)
 }
 
 func TestRequestTypeStringPtrNil(t *testing.T) {
