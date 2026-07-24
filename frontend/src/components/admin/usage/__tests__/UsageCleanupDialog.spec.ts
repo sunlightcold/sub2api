@@ -44,18 +44,6 @@ const BaseDialogStub = defineComponent({
   template: '<div v-if="show"><slot /><slot name="footer" /></div>',
 })
 
-const DateRangePickerStub = defineComponent({
-  name: 'DateRangePicker',
-  props: { startDate: String, endDate: String },
-  emits: ['update:startDate', 'update:endDate'],
-  template: `
-    <button
-      data-testid="change-date-range"
-      @click="$emit('update:startDate', '2026-07-01'); $emit('update:endDate', '2026-07-03')"
-    >change dates</button>
-  `,
-})
-
 const UsageFiltersStub = defineComponent({
   name: 'UsageFilters',
   props: { modelValue: { type: Object, required: true }, startDate: String, endDate: String },
@@ -85,7 +73,6 @@ const mountDialog = async () => {
     global: {
       stubs: {
         BaseDialog: BaseDialogStub,
-        DateRangePicker: DateRangePickerStub,
         UsageFilters: UsageFiltersStub,
         ConfirmDialog: ConfirmDialogStub,
         Pagination: true,
@@ -108,18 +95,33 @@ describe('UsageCleanupDialog', () => {
   it('estimates with the active date range and filters', async () => {
     const wrapper = await mountDialog()
 
-    await wrapper.get('[data-testid="change-date-range"]').trigger('click')
+    await wrapper.get('[data-testid="cleanup-start-time"]').setValue('2026-07-01T12:34:56')
+    await wrapper.get('[data-testid="cleanup-end-time"]').setValue('2026-07-03T23:45:01')
     await wrapper.get('[data-testid="cleanup-estimate-button"]').trigger('click')
     await flushPromises()
 
     expect(estimateCleanupMock).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: '2026-07-01',
-      end_date: '2026-07-03',
+      start_date: '2026-07-01T12:34:56',
+      end_date: '2026-07-03T23:45:01',
       user_id: 7,
       model: 'gpt-4',
       billing_mode: 'image',
     }))
     expect(wrapper.get('[data-testid="cleanup-estimate-count"]').text()).toContain('1,234')
+    wrapper.unmount()
+  })
+
+  it('expands the initial date range to second-precision boundaries', async () => {
+    const wrapper = await mountDialog()
+
+    expect(wrapper.get('[data-testid="cleanup-start-time"]').attributes('step')).toBe('1')
+    expect(wrapper.get('[data-testid="cleanup-end-time"]').attributes('step')).toBe('1')
+    await wrapper.get('[data-testid="cleanup-estimate-button"]').trigger('click')
+    await flushPromises()
+    expect(estimateCleanupMock).toHaveBeenCalledWith(expect.objectContaining({
+      start_date: '2026-06-01T00:00:00',
+      end_date: '2026-06-02T23:59:59',
+    }))
     wrapper.unmount()
   })
 

@@ -1,19 +1,34 @@
 <template>
   <BaseDialog :show="show" :title="t('admin.usage.cleanup.title')" width="wide" @close="handleClose">
     <div class="space-y-4">
-      <div class="flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 px-4 py-3 dark:border-dark-700">
-        <div>
-          <div class="text-sm font-medium text-gray-700 dark:text-gray-200">
-            {{ t('admin.usage.cleanup.dateRange') }}
-          </div>
-          <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {{ localStartDate }} ~ {{ localEndDate }}
-          </div>
+      <div class="rounded-lg border border-gray-200 px-4 py-3 dark:border-dark-700">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-200">
+          {{ t('admin.usage.cleanup.timeRange') }}
         </div>
-        <DateRangePicker
-          v-model:start-date="localStartDate"
-          v-model:end-date="localEndDate"
-        />
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-gray-600 dark:text-gray-300">
+            <span>{{ t('admin.usage.cleanup.startTime') }}</span>
+            <input
+              v-model="localStartDate"
+              type="datetime-local"
+              step="1"
+              :max="localEndDate || undefined"
+              class="input mt-1 w-full"
+              data-testid="cleanup-start-time"
+            />
+          </label>
+          <label class="block text-sm text-gray-600 dark:text-gray-300">
+            <span>{{ t('admin.usage.cleanup.endTime') }}</span>
+            <input
+              v-model="localEndDate"
+              type="datetime-local"
+              step="1"
+              :min="localStartDate || undefined"
+              class="input mt-1 w-full"
+              data-testid="cleanup-end-time"
+            />
+          </label>
+        </div>
       </div>
 
       <UsageFilters
@@ -163,7 +178,6 @@ import { useAppStore } from '@/stores/app'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import UsageFilters from '@/components/admin/usage/UsageFilters.vue'
 import { adminUsageAPI } from '@/api/admin/usage'
 import type { AdminUsageQueryParams, UsageCleanupTask, CreateUsageCleanupTaskRequest } from '@/api/admin/usage'
@@ -218,10 +232,25 @@ const invalidateEstimate = () => {
   estimatedCount.value = null
 }
 
+const normalizeDateTimeLocal = (value: string, endOfDay: boolean) => {
+  const normalized = value.trim().replace(' ', 'T')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return `${normalized}T${endOfDay ? '23:59:59' : '00:00:00'}`
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(normalized)) {
+    return `${normalized}:00`
+  }
+  return normalized
+}
+
+const serializeDateTimeToSecond = (value: string, endOfDay: boolean) => {
+  return normalizeDateTimeLocal(value, endOfDay).replace(/\.\d+$/, '')
+}
+
 const resetFilters = () => {
   localFilters.value = { ...props.filters }
-  localStartDate.value = props.startDate
-  localEndDate.value = props.endDate
+  localStartDate.value = normalizeDateTimeLocal(props.startDate, false)
+  localEndDate.value = normalizeDateTimeLocal(props.endDate, true)
   localFilters.value.start_date = localStartDate.value
   localFilters.value.end_date = localEndDate.value
   tasksPage.value = 1
@@ -352,8 +381,8 @@ const buildPayload = (): CreateUsageCleanupTaskRequest | null => {
   }
 
   const payload: CreateUsageCleanupTaskRequest = {
-    start_date: localStartDate.value,
-    end_date: localEndDate.value,
+    start_date: serializeDateTimeToSecond(localStartDate.value, false),
+    end_date: serializeDateTimeToSecond(localEndDate.value, true),
     timezone: getUserTimezone()
   }
 

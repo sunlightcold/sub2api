@@ -58,6 +58,20 @@ type CreateUsageCleanupTaskRequest struct {
 	Timezone    string  `json:"timezone"`
 }
 
+func parseUsageCleanupBoundary(value, userTimezone string, endOfDay bool) (time.Time, bool) {
+	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02T15:04", "2006-01-02"} {
+		parsed, err := timezone.ParseInUserLocation(layout, value, userTimezone)
+		if err != nil {
+			continue
+		}
+		if layout == "2006-01-02" && endOfDay {
+			parsed = parsed.Add(24*time.Hour - time.Nanosecond)
+		}
+		return parsed, true
+	}
+	return time.Time{}, false
+}
+
 func parseUsageCleanupFilters(req *CreateUsageCleanupTaskRequest) (service.UsageCleanupFilters, string) {
 	if req == nil {
 		return service.UsageCleanupFilters{}, "Invalid request"
@@ -68,15 +82,14 @@ func parseUsageCleanupFilters(req *CreateUsageCleanupTaskRequest) (service.Usage
 		return service.UsageCleanupFilters{}, "start_date and end_date are required"
 	}
 
-	startTime, err := timezone.ParseInUserLocation("2006-01-02", req.StartDate, req.Timezone)
-	if err != nil {
-		return service.UsageCleanupFilters{}, "Invalid start_date format, use YYYY-MM-DD"
+	startTime, ok := parseUsageCleanupBoundary(req.StartDate, req.Timezone, false)
+	if !ok {
+		return service.UsageCleanupFilters{}, "Invalid start_date format, use YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss"
 	}
-	endTime, err := timezone.ParseInUserLocation("2006-01-02", req.EndDate, req.Timezone)
-	if err != nil {
-		return service.UsageCleanupFilters{}, "Invalid end_date format, use YYYY-MM-DD"
+	endTime, ok := parseUsageCleanupBoundary(req.EndDate, req.Timezone, true)
+	if !ok {
+		return service.UsageCleanupFilters{}, "Invalid end_date format, use YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss"
 	}
-	endTime = endTime.Add(24*time.Hour - time.Nanosecond)
 
 	var requestType *int16
 	stream := req.Stream

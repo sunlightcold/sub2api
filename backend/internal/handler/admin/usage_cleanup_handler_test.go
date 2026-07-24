@@ -362,6 +362,20 @@ func TestUsageHandlerCreateCleanupTaskSuccess(t *testing.T) {
 	require.True(t, created.Filters.EndTime.Equal(end))
 }
 
+func TestParseUsageCleanupFiltersSupportsSecondPrecision(t *testing.T) {
+	req := &CreateUsageCleanupTaskRequest{
+		StartDate: "2024-01-01T12:34:56",
+		EndDate:   "2024-01-02T03:04:05",
+		Timezone:  "Asia/Shanghai",
+	}
+
+	filters, validationMessage := parseUsageCleanupFilters(req)
+
+	require.Empty(t, validationMessage)
+	require.Equal(t, time.Date(2024, 1, 1, 4, 34, 56, 0, time.UTC), filters.StartTime.UTC())
+	require.Equal(t, time.Date(2024, 1, 1, 19, 4, 5, 0, time.UTC), filters.EndTime.UTC())
+}
+
 func TestUsageHandlerEstimateCleanupSuccess(t *testing.T) {
 	repo := &cleanupRepoStub{count: 1234}
 	cfg := &config.Config{UsageCleanup: config.UsageCleanupConfig{Enabled: true, MaxRangeDays: 31}}
