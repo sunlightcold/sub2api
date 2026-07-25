@@ -210,6 +210,9 @@ func (Group) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("是否禁用该分组的 Chat Completions API；NULL/false 保持现有行为"),
+		field.Bool("allow_live").
+			Default(false).
+			Comment("是否允许此 OpenAI 分组访问 Live 接口"),
 		field.Bool("require_oauth_only").
 			Default(false).
 			Comment("仅允许非 apikey 类型账号关联到此分组"),

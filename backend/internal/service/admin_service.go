@@ -255,6 +255,7 @@ type CreateGroupInput struct {
 	AllowMessagesDispatch       bool
 	DisableResponsesAPI         *bool
 	DisableChatCompletionsAPI   *bool
+	AllowLive                   bool
 	DefaultMappedModel          string
 	RequireOAuthOnly            bool
 	RequirePrivacySet           bool
@@ -318,6 +319,7 @@ type UpdateGroupInput struct {
 	AllowMessagesDispatch       *bool
 	DisableResponsesAPI         *bool
 	DisableChatCompletionsAPI   *bool
+	AllowLive                   *bool
 	DefaultMappedModel          *string
 	RequireOAuthOnly            *bool
 	RequirePrivacySet           *bool

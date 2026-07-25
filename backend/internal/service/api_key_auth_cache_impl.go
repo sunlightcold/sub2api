@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 17 // v17: include reasoning policy, video pricing, requested image billing, and endpoint controls
+const apiKeyAuthSnapshotVersion = 18 // v18: include endpoint controls and the OpenAI group Live gate
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -412,6 +412,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			AllowMessagesDispatch:           apiKey.Group.AllowMessagesDispatch,
 			DisableResponsesAPI:             apiKey.Group.DisableResponsesAPI,
 			DisableChatCompletionsAPI:       apiKey.Group.DisableChatCompletionsAPI,
+			AllowLive:                       apiKey.Group.AllowLive,
 			DefaultMappedModel:              apiKey.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     apiKey.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                apiKey.Group.ModelsListConfig,
@@ -501,6 +502,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			AllowMessagesDispatch:           snapshot.Group.AllowMessagesDispatch,
 			DisableResponsesAPI:             snapshot.Group.DisableResponsesAPI,
 			DisableChatCompletionsAPI:       snapshot.Group.DisableChatCompletionsAPI,
+			AllowLive:                       snapshot.Group.AllowLive,
 			DefaultMappedModel:              snapshot.Group.DefaultMappedModel,
 			MessagesDispatchModelConfig:     snapshot.Group.MessagesDispatchModelConfig,
 			ModelsListConfig:                snapshot.Group.ModelsListConfig,

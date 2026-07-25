@@ -275,6 +275,11 @@ func DisableChatCompletionsAPI(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldDisableChatCompletionsAPI, v))
 }
 
+// AllowLive applies equality check predicate on the "allow_live" field. It's identical to AllowLiveEQ.
+func AllowLive(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAllowLive, v))
+}
+
 // RequireOauthOnly applies equality check predicate on the "require_oauth_only" field. It's identical to RequireOauthOnlyEQ.
 func RequireOauthOnly(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldRequireOauthOnly, v))
@@ -2058,6 +2063,16 @@ func DisableChatCompletionsAPIIsNil() predicate.Group {
 // DisableChatCompletionsAPINotNil applies the NotNil predicate on the "disable_chat_completions_api" field.
 func DisableChatCompletionsAPINotNil() predicate.Group {
 	return predicate.Group(sql.FieldNotNull(FieldDisableChatCompletionsAPI))
+}
+
+// AllowLiveEQ applies the EQ predicate on the "allow_live" field.
+func AllowLiveEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAllowLive, v))
+}
+
+// AllowLiveNEQ applies the NEQ predicate on the "allow_live" field.
+func AllowLiveNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldAllowLive, v))
 }
 
 // RequireOauthOnlyEQ applies the EQ predicate on the "require_oauth_only" field.

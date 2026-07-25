@@ -97,6 +97,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			sqlmock.AnyArg(), // session_id
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
@@ -187,6 +188,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			sqlmock.AnyArg(), // session_id
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
@@ -299,7 +301,7 @@ func TestPrepareUsageLogInsert_PersistsUpstreamTiming(t *testing.T) {
 	})
 
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
-	upstreamTimingArgIndex := len(usageLogInsertArgTypes) - 5
+	upstreamTimingArgIndex := len(usageLogInsertArgTypes) - 6
 	timingJSON, ok := prepared.args[upstreamTimingArgIndex].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"gateway_prepare_ms":12,"upstream_headers_ms":345,"upstream_first_sse_ms":321,"ttft_ms":678}`, timingJSON)
@@ -852,6 +854,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullFloat64{},
 			sql.NullString{Valid: true, String: `{"ttft_ms":678,"upstream_headers_ms":345}`},
+			sql.NullString{},
 			now,
 		}})
 		require.NoError(t, err)
@@ -928,6 +931,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // upstream_timing
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)
@@ -986,6 +990,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // upstream_timing
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)
@@ -1044,6 +1049,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
 			sql.NullString{},  // upstream_timing
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)

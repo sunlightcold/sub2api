@@ -97,6 +97,7 @@ type APIKeyAuthGroupSnapshot struct {
 	AllowMessagesDispatch       bool                              `json:"allow_messages_dispatch"`
 	DisableResponsesAPI         *bool                             `json:"disable_responses_api,omitempty"`
 	DisableChatCompletionsAPI   *bool                             `json:"disable_chat_completions_api,omitempty"`
+	AllowLive                   bool                              `json:"allow_live"`
 	DefaultMappedModel          string                            `json:"default_mapped_model,omitempty"`
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
 	ModelsListConfig            GroupModelsListConfig             `json:"models_list_config,omitempty"`

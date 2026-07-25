@@ -93,6 +93,7 @@ func createGroupRecord(ctx context.Context, client *dbent.Client, groupIn *servi
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
 		SetNillableDisableResponsesAPI(groupIn.DisableResponsesAPI).
 		SetNillableDisableChatCompletionsAPI(groupIn.DisableChatCompletionsAPI).
+		SetAllowLive(groupIn.AllowLive).
 		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 		SetRequirePrivacySet(groupIn.RequirePrivacySet).
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).
@@ -261,6 +262,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
 		SetNillableDisableResponsesAPI(groupIn.DisableResponsesAPI).
 		SetNillableDisableChatCompletionsAPI(groupIn.DisableChatCompletionsAPI).
+		SetAllowLive(groupIn.AllowLive).
 		SetRequireOauthOnly(groupIn.RequireOAuthOnly).
 		SetRequirePrivacySet(groupIn.RequirePrivacySet).
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).

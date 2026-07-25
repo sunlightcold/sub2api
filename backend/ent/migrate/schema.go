@@ -941,6 +941,7 @@ var (
 		{Name: "allow_messages_dispatch", Type: field.TypeBool, Default: false},
 		{Name: "disable_responses_api", Type: field.TypeBool, Nullable: true},
 		{Name: "disable_chat_completions_api", Type: field.TypeBool, Nullable: true},
+		{Name: "allow_live", Type: field.TypeBool, Default: false},
 		{Name: "require_oauth_only", Type: field.TypeBool, Default: false},
 		{Name: "require_privacy_set", Type: field.TypeBool, Default: false},
 		{Name: "default_mapped_model", Type: field.TypeString, Size: 100, Default: ""},

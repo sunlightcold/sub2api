@@ -108,6 +108,8 @@ const (
 	FieldDisableResponsesAPI = "disable_responses_api"
 	// FieldDisableChatCompletionsAPI holds the string denoting the disable_chat_completions_api field in the database.
 	FieldDisableChatCompletionsAPI = "disable_chat_completions_api"
+	// FieldAllowLive holds the string denoting the allow_live field in the database.
+	FieldAllowLive = "allow_live"
 	// FieldRequireOauthOnly holds the string denoting the require_oauth_only field in the database.
 	FieldRequireOauthOnly = "require_oauth_only"
 	// FieldRequirePrivacySet holds the string denoting the require_privacy_set field in the database.
@@ -245,6 +247,7 @@ var Columns = []string{
 	FieldAllowMessagesDispatch,
 	FieldDisableResponsesAPI,
 	FieldDisableChatCompletionsAPI,
+	FieldAllowLive,
 	FieldRequireOauthOnly,
 	FieldRequirePrivacySet,
 	FieldDefaultMappedModel,
@@ -350,6 +353,8 @@ var (
 	DefaultSortOrder int
 	// DefaultAllowMessagesDispatch holds the default value on creation for the "allow_messages_dispatch" field.
 	DefaultAllowMessagesDispatch bool
+	// DefaultAllowLive holds the default value on creation for the "allow_live" field.
+	DefaultAllowLive bool
 	// DefaultRequireOauthOnly holds the default value on creation for the "require_oauth_only" field.
 	DefaultRequireOauthOnly bool
 	// DefaultRequirePrivacySet holds the default value on creation for the "require_privacy_set" field.
@@ -598,6 +603,11 @@ func ByDisableResponsesAPI(opts ...sql.OrderTermOption) OrderOption {
 // ByDisableChatCompletionsAPI orders the results by the disable_chat_completions_api field.
 func ByDisableChatCompletionsAPI(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisableChatCompletionsAPI, opts...).ToFunc()
+}
+
+// ByAllowLive orders the results by the allow_live field.
+func ByAllowLive(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAllowLive, opts...).ToFunc()
 }
 
 // ByRequireOauthOnly orders the results by the require_oauth_only field.
