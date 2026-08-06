@@ -146,10 +146,23 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	if !isGrokVideoUsageResult(result, nil) {
 		ApplyOpenAIImageBillingResolution(result)
 	}
+	billingAccount := account
+	if account.IsShadow() {
+		var err error
+		billingAccount, err = resolveCredentialAccount(ctx, s.accountRepo, account)
+		if err != nil {
+			return err
+		}
+	}
 
 	// OpenAI input_tokens 是总输入，包含缓存读取和缓存写入明细。
-	// 将三类 token 拆成互斥桶，避免缓存写入同时按普通输入和 cache_write 重复计费。
-	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens - result.Usage.CacheCreationInputTokens
+	// 默认将三类 token 拆成互斥桶。部分兼容上游虽返回 cache-write 别名，实际仍按
+	// OpenAI 普通输入价计费；账号开关开启时将缓存创建保留在普通输入桶中。
+	cacheCreationTokens := result.Usage.CacheCreationInputTokens
+	if billingAccount.IsOpenAICacheCreationAsInputEnabled() {
+		cacheCreationTokens = 0
+	}
+	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens - cacheCreationTokens
 	if actualInputTokens < 0 {
 		actualInputTokens = 0
 	}
@@ -159,7 +172,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		InputTokens:         actualInputTokens,
 		ImageInputTokens:    result.Usage.ImageInputTokens,
 		OutputTokens:        result.Usage.OutputTokens,
-		CacheCreationTokens: result.Usage.CacheCreationInputTokens,
+		CacheCreationTokens: cacheCreationTokens,
 		CacheReadTokens:     result.Usage.CacheReadInputTokens,
 		ImageOutputTokens:   result.Usage.ImageOutputTokens,
 	}
@@ -203,13 +216,6 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	serviceTier := ""
 	if result.ServiceTier != nil {
 		serviceTier = strings.TrimSpace(*result.ServiceTier)
-	}
-	billingAccount := account
-	if account.IsShadow() {
-		billingAccount, err = resolveCredentialAccount(ctx, s.accountRepo, account)
-		if err != nil {
-			return err
-		}
 	}
 	longContextBillingEnabled := billingAccount.IsOpenAILongContextBillingEnabled()
 	cost, err = s.calculateOpenAIRecordUsageCost(
@@ -279,7 +285,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		UpstreamEndpoint:    optionalTrimmedStringPtr(input.UpstreamEndpoint),
 		InputTokens:         actualInputTokens,
 		OutputTokens:        result.Usage.OutputTokens,
-		CacheCreationTokens: result.Usage.CacheCreationInputTokens,
+		CacheCreationTokens: cacheCreationTokens,
 		CacheReadTokens:     result.Usage.CacheReadInputTokens,
 		ImageInputTokens:    result.Usage.ImageInputTokens,
 		ImageOutputTokens:   result.Usage.ImageOutputTokens,

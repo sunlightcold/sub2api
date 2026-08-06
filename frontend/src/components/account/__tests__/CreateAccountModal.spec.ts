@@ -114,7 +114,8 @@ async function selectButtonByText(wrapper: ReturnType<typeof mountModal>, text: 
 async function submitApiKeyAccount(
   platform: 'openai' | 'anthropic',
   enableLongContextBilling = false,
-  disableUpstreamBillingProbe = false
+  disableUpstreamBillingProbe = false,
+  enableCacheCreationAsInput = false
 ) {
   const wrapper = mountModal()
   await selectButtonByText(wrapper, platform === 'openai' ? 'OpenAI' : 'admin.accounts.claudeConsole')
@@ -125,6 +126,9 @@ async function submitApiKeyAccount(
   await wrapper.get('form#create-account-form input[type="password"]').setValue('test-api-key')
   if (enableLongContextBilling) {
     await wrapper.get('[data-testid="openai-long-context-billing-toggle"]').trigger('click')
+  }
+  if (enableCacheCreationAsInput) {
+    await wrapper.get('[data-testid="openai-cache-creation-as-input-toggle"]').trigger('click')
   }
   if (disableUpstreamBillingProbe) {
     await wrapper.get('[data-testid="upstream-billing-auto-probe"]').trigger('click')
@@ -165,6 +169,14 @@ describe('CreateAccountModal OpenAI long-context billing', () => {
 
     expect(createAccountMock).toHaveBeenCalledTimes(1)
     expect(createAccountMock.mock.calls[0]?.[0]?.extra?.openai_long_context_billing_enabled).toBe(false)
+    expect(createAccountMock.mock.calls[0]?.[0]?.extra?.openai_cache_creation_as_input_enabled).toBe(false)
+  })
+
+  it('enables cache creation as ordinary input for one OpenAI account', async () => {
+    await submitApiKeyAccount('openai', false, false, true)
+
+    expect(createAccountMock).toHaveBeenCalledTimes(1)
+    expect(createAccountMock.mock.calls[0]?.[0]?.extra?.openai_cache_creation_as_input_enabled).toBe(true)
   })
 
   // namespace 摊平是仅 OAuth 的兼容开关：API Key 走 chat completions 回退桥时由桥自行摊平

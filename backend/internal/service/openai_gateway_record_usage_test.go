@@ -1104,6 +1104,54 @@ func TestOpenAIGatewayServiceRecordUsage_GPT56SeparatesCacheWriteForBillingAndSt
 	require.InDelta(t, usageRepo.lastLog.TotalCost*1.1, usageRepo.lastLog.ActualCost, 1e-12)
 }
 
+func TestOpenAIGatewayServiceRecordUsage_FoldsCacheCreationIntoInputPerAccount(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	svc.billingService = NewBillingService(svc.cfg, &PricingService{pricingData: map[string]*LiteLLMModelPricing{
+		"gpt-5.6-sol": {
+			InputCostPerToken:       5e-6,
+			OutputCostPerToken:      30e-6,
+			CacheReadInputTokenCost: 0.5e-6,
+		},
+	}})
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_gpt56_cache_write_as_input",
+			Usage: OpenAIUsage{
+				InputTokens:              1000,
+				OutputTokens:             50,
+				CacheCreationInputTokens: 200,
+				CacheReadInputTokens:     100,
+			},
+			Model:    "gpt-5.6-sol",
+			Duration: time.Second,
+		},
+		APIKey: &APIKey{ID: 1057},
+		User:   &User{ID: 2057},
+		Account: &Account{
+			ID:       3057,
+			Platform: PlatformOpenAI,
+			Extra: map[string]any{
+				"openai_cache_creation_as_input_enabled": true,
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, 900, usageRepo.lastLog.InputTokens)
+	require.Zero(t, usageRepo.lastLog.CacheCreationTokens)
+	require.Equal(t, 100, usageRepo.lastLog.CacheReadTokens)
+	require.Equal(t, 1050, usageRepo.lastLog.TotalTokens())
+	require.InDelta(t, 900*5e-6, usageRepo.lastLog.InputCost, 1e-12)
+	require.Zero(t, usageRepo.lastLog.CacheCreationCost)
+	require.InDelta(t, 100*0.5e-6, usageRepo.lastLog.CacheReadCost, 1e-12)
+	require.InDelta(t, 50*30e-6, usageRepo.lastLog.OutputCost, 1e-12)
+}
+
 func TestOpenAIGatewayServiceRecordUsage_Gpt54LongContextBillingDisabledByDefault(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	userRepo := &openAIRecordUsageUserRepoStub{}

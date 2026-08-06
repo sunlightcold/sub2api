@@ -507,6 +507,9 @@ export default {
         longContextBilling: 'API long-context pricing',
         longContextBillingDesc:
           'Disabled by default. Enable only when this account\'s upstream charges OpenAI API long-context rates above the model threshold.',
+        cacheCreationAsInput: 'Count cache creation as input tokens',
+        cacheCreationAsInputDesc:
+          'Disabled by default. When enabled, upstream cache-creation tokens are counted and billed as ordinary input instead of a separate bucket. Use for OpenAI-compatible upstreams whose input_tokens already includes cache creation.',
         responsesWebsocketsV2: 'Responses WebSocket v2',
         responsesWebsocketsV2Desc:
           'Disabled by default. Enable to allow responses_websockets_v2 capability (still gated by global and account-type switches).',

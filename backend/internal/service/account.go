@@ -83,7 +83,10 @@ type Account struct {
 
 type OpenAIEndpointCapability string
 
-const openAILongContextBillingEnabledKey = "openai_long_context_billing_enabled"
+const (
+	openAILongContextBillingEnabledKey   = "openai_long_context_billing_enabled"
+	openAICacheCreationAsInputEnabledKey = "openai_cache_creation_as_input_enabled"
+)
 
 const (
 	OpenAIEndpointCapabilityChatCompletions OpenAIEndpointCapability = "chat_completions"
@@ -1236,6 +1239,19 @@ func (a *Account) IsOpenAILongContextBillingEnabled() bool {
 		return false
 	}
 	enabled, ok := a.Extra[openAILongContextBillingEnabledKey].(bool)
+	return ok && enabled
+}
+
+// IsOpenAICacheCreationAsInputEnabled reports whether cache creation usage from
+// an OpenAI-compatible upstream should remain in the ordinary input bucket.
+// Official OpenAI usage treats input_tokens as inclusive, so this compatibility
+// switch prevents relays that also emit cache-write aliases from splitting those
+// tokens into a separately priced cache-creation bucket.
+func (a *Account) IsOpenAICacheCreationAsInputEnabled() bool {
+	if a == nil || !a.IsOpenAI() || a.Extra == nil {
+		return false
+	}
+	enabled, ok := a.Extra[openAICacheCreationAsInputEnabledKey].(bool)
 	return ok && enabled
 }
 
