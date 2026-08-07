@@ -558,6 +558,10 @@ type AdminUsageLog struct {
 	// UpstreamModel is the actual model sent to the upstream provider after mapping.
 	// Omitted when no mapping was applied (requested model was used as-is).
 	UpstreamModel *string `json:"upstream_model,omitempty"`
+	// UpstreamResponseModel is the raw model declared by the upstream response.
+	UpstreamResponseModel *string `json:"upstream_response_model,omitempty"`
+	// UpstreamModelMismatch is nil when the upstream did not declare a model.
+	UpstreamModelMismatch *bool `json:"upstream_model_mismatch,omitempty"`
 
 	// UpstreamTiming contains raw administrator-only timing diagnostics in milliseconds.
 	UpstreamTiming UsageUpstreamTiming `json:"upstream_timing,omitempty"`
