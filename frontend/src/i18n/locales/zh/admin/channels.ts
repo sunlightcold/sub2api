@@ -539,6 +539,11 @@ export default {
         checkModePassHint: '不发起请求，直接记录为 operational；延时保持在正常范围并随机抖动。',
         retryCount: '失败重试次数',
         retryCountHint: '仅 failed/error 会重试；0 表示不重试，最多 5 次。',
+        passLatencyRange: '直接通过延时范围 (毫秒)',
+        passLatencyMin: '最小延时',
+        passLatencyMax: '最大延时',
+        passLatencyRangeHint: '每次在最小值和最大值之间随机生成延时（含边界），范围为 1 - 5999 毫秒。',
+        passLatencyRangeInvalid: '延时范围无效：最小值至少为 1，最大值不得小于最小值且不能超过 5999 毫秒。',
         enabled: '启用监控',
         kindRequired: '请选择供应商'
       },

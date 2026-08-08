@@ -123,6 +123,7 @@
           <button
             v-for="opt in checkModeOptions"
             :key="opt.value"
+            :data-testid="`monitor-check-mode-${opt.value}`"
             type="button"
             :aria-pressed="form.check_mode === opt.value"
             class="rounded-lg border-2 px-3 py-2 text-left transition-colors"
@@ -139,6 +140,15 @@
         <label class="input-label">{{ t('admin.channelMonitor.form.retryCount') }}</label>
         <input v-model.number="form.retry_count" type="number" min="0" max="5" class="input" />
         <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.retryCountHint') }}</p>
+      </div>
+
+      <div v-if="form.check_mode === CHECK_MODE_PASS">
+        <label class="input-label">{{ t('admin.channelMonitor.form.passLatencyRange') }}</label>
+        <div class="grid grid-cols-2 gap-3">
+          <input v-model.number="form.pass_latency_min_ms" data-testid="monitor-pass-latency-min" type="number" min="1" max="5999" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMin')" />
+          <input v-model.number="form.pass_latency_max_ms" data-testid="monitor-pass-latency-max" type="number" min="1" max="5999" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMax')" />
+        </div>
+        <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.passLatencyRangeHint') }}</p>
       </div>
 
       <div class="flex items-center justify-between">
@@ -295,6 +305,8 @@ interface MonitorForm {
   jitter_seconds: number
   retry_count: number
   check_mode: CheckMode
+  pass_latency_min_ms: number
+  pass_latency_max_ms: number
   enabled: boolean
   // 高级设置快照
   template_id: number | null
@@ -316,6 +328,8 @@ const form = reactive<MonitorForm>({
   jitter_seconds: 0,
   retry_count: 0,
   check_mode: CHECK_MODE_REQUEST,
+  pass_latency_min_ms: 800,
+  pass_latency_max_ms: 2500,
   enabled: true,
   template_id: null,
   extra_headers: {},
@@ -508,6 +522,8 @@ function resetForm() {
   form.jitter_seconds = 0
   form.retry_count = 0
   form.check_mode = CHECK_MODE_REQUEST
+  form.pass_latency_min_ms = 800
+  form.pass_latency_max_ms = 2500
   form.enabled = true
   form.template_id = null
   form.extra_headers = {}
@@ -530,6 +546,8 @@ function loadFromMonitor(m: ChannelMonitor) {
   form.jitter_seconds = m.jitter_seconds || 0
   form.retry_count = m.retry_count ?? 0
   form.check_mode = m.check_mode || CHECK_MODE_REQUEST
+  form.pass_latency_min_ms = m.pass_latency_min_ms || 800
+  form.pass_latency_max_ms = m.pass_latency_max_ms || 2500
   form.enabled = m.enabled
   form.template_id = m.template_id ?? null
   form.extra_headers = { ...(m.extra_headers || {}) }
@@ -599,6 +617,8 @@ function buildPayload(): CreateParams {
     jitter_seconds: form.jitter_seconds || 0,
     retry_count: form.retry_count || 0,
     check_mode: form.check_mode,
+    pass_latency_min_ms: form.pass_latency_min_ms,
+    pass_latency_max_ms: form.pass_latency_max_ms,
     template_id: form.template_id,
     extra_headers: form.extra_headers,
     body_override_mode: form.body_override_mode,
@@ -614,6 +634,14 @@ async function handleSubmit() {
   }
   if (!form.primary_model.trim()) {
     appStore.showError(t('admin.channelMonitor.primaryModelRequired'))
+    return
+  }
+  if (form.check_mode === CHECK_MODE_PASS && (
+    form.pass_latency_min_ms < 1 ||
+    form.pass_latency_max_ms < form.pass_latency_min_ms ||
+    form.pass_latency_max_ms > 5999
+  )) {
+    appStore.showError(t('admin.channelMonitor.form.passLatencyRangeInvalid'))
     return
   }
 

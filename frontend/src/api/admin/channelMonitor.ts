@@ -33,6 +33,8 @@ export interface ChannelMonitor {
   jitter_seconds: number
   retry_count: number
   check_mode: CheckMode
+  pass_latency_min_ms: number
+  pass_latency_max_ms: number
   last_checked_at: string | null
   created_by: number
   created_at: string
@@ -88,6 +90,8 @@ export interface CreateParams {
   jitter_seconds?: number
   retry_count?: number
   check_mode?: CheckMode
+  pass_latency_min_ms?: number
+  pass_latency_max_ms?: number
   template_id?: number | null
   extra_headers?: Record<string, string>
   body_override_mode?: BodyOverrideMode

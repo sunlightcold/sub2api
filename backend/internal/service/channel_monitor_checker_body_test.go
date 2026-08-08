@@ -577,13 +577,15 @@ func TestRunCheckForModelWithRetry_PassModeDoesNotSendRequest(t *testing.T) {
 	t.Cleanup(func() { monitorHTTPClient = original })
 
 	result := runCheckForModelWithRetry(context.Background(), MonitorProviderOpenAI, "https://example.com", "key", "model", &CheckOptions{
-		CheckMode: MonitorCheckModePass,
+		CheckMode:        MonitorCheckModePass,
+		PassLatencyMinMs: 1800,
+		PassLatencyMaxMs: 3200,
 	}, 5)
 	if result.Status != MonitorStatusOperational || result.Message != "" {
 		t.Fatalf("pass mode should return ordinary operational result, got %#v", result)
 	}
-	if result.LatencyMs == nil || *result.LatencyMs < monitorSyntheticLatencyMinMs || *result.LatencyMs > monitorSyntheticLatencyMaxMs {
-		t.Fatalf("pass mode latency should stay in normal range, got %v", result.LatencyMs)
+	if result.LatencyMs == nil || *result.LatencyMs < 1800 || *result.LatencyMs > 3200 {
+		t.Fatalf("pass mode latency should stay in configured range, got %v", result.LatencyMs)
 	}
 	if result.PingLatencyMs != nil {
 		t.Fatalf("pass mode must not fabricate ping latency, got %v", result.PingLatencyMs)
@@ -593,15 +595,44 @@ func TestRunCheckForModelWithRetry_PassModeDoesNotSendRequest(t *testing.T) {
 	}
 }
 
-func TestRandomSyntheticLatencyMsStaysWithinNormalRange(t *testing.T) {
+func TestRandomSyntheticLatencyMsStaysWithinConfiguredRange(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		latencyMs := randomSyntheticLatencyMs()
-		if latencyMs < monitorSyntheticLatencyMinMs || latencyMs > monitorSyntheticLatencyMaxMs {
-			t.Fatalf("synthetic latency escaped normal range: %dms", latencyMs)
+		latencyMs := randomSyntheticLatencyMs(1250, 4750)
+		if latencyMs < 1250 || latencyMs > 4750 {
+			t.Fatalf("synthetic latency escaped configured range: %dms", latencyMs)
 		}
 		if time.Duration(latencyMs)*time.Millisecond >= monitorDegradedThreshold {
 			t.Fatalf("synthetic latency must stay below degraded threshold: %dms", latencyMs)
 		}
+	}
+}
+
+func TestPassCheckResultUsesDefaultsForMissingRange(t *testing.T) {
+	result := passCheckResult("model", &CheckOptions{CheckMode: MonitorCheckModePass})
+	if result.LatencyMs == nil || *result.LatencyMs < MonitorDefaultPassLatencyMinMs || *result.LatencyMs > MonitorDefaultPassLatencyMaxMs {
+		t.Fatalf("pass mode latency should use defaults, got %v", result.LatencyMs)
+	}
+}
+
+func TestValidatePassLatencyRange(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		minMs   int
+		maxMs   int
+		wantErr bool
+	}{
+		{name: "defaults", minMs: 0, maxMs: 0},
+		{name: "configured", minMs: 1000, maxMs: 5000},
+		{name: "minimum below one", minMs: -1, maxMs: 1000, wantErr: true},
+		{name: "maximum below minimum", minMs: 2000, maxMs: 1000, wantErr: true},
+		{name: "maximum reaches degraded range", minMs: 1000, maxMs: 6000, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validatePassLatencyRange(tc.minMs, tc.maxMs)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("validatePassLatencyRange(%d, %d) error = %v, wantErr %v", tc.minMs, tc.maxMs, err, tc.wantErr)
+			}
+		})
 	}
 }
 

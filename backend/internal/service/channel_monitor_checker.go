@@ -53,13 +53,16 @@ type CheckOptions struct {
 	BodyOverride map[string]any
 	// CheckMode: request 发起真实请求；pass 直接生成 operational 结果。
 	CheckMode string
+	// PassLatencyMinMs / PassLatencyMaxMs 仅用于 pass 模式的随机延时（含边界）。
+	PassLatencyMinMs int
+	PassLatencyMaxMs int
 }
 
 // runCheckForModelWithRetry 在单个模型检测层重试失败/错误结果。
 // operational/degraded 都视为本次检测完成，不会额外请求。
 func runCheckForModelWithRetry(ctx context.Context, provider, endpoint, apiKey, model string, opts *CheckOptions, retryCount int) *CheckResult {
 	if bodyCheckMode(opts) == MonitorCheckModePass {
-		return passCheckResult(model)
+		return passCheckResult(model, opts)
 	}
 	if retryCount < 0 {
 		retryCount = 0
@@ -95,8 +98,15 @@ func waitMonitorRetry(ctx context.Context, attempt int) bool {
 	}
 }
 
-func passCheckResult(model string) *CheckResult {
-	latencyMs := randomSyntheticLatencyMs()
+func passCheckResult(model string, opts *CheckOptions) *CheckResult {
+	minMs, maxMs := MonitorDefaultPassLatencyMinMs, MonitorDefaultPassLatencyMaxMs
+	if opts != nil {
+		minMs, maxMs = normalizePassLatencyRange(opts.PassLatencyMinMs, opts.PassLatencyMaxMs)
+	}
+	if validatePassLatencyRange(minMs, maxMs) != nil {
+		minMs, maxMs = MonitorDefaultPassLatencyMinMs, MonitorDefaultPassLatencyMaxMs
+	}
+	latencyMs := randomSyntheticLatencyMs(minMs, maxMs)
 	return &CheckResult{
 		Model:     model,
 		Status:    MonitorStatusOperational,
@@ -108,8 +118,8 @@ func passCheckResult(model string) *CheckResult {
 // randomSyntheticLatencyMs returns a bounded, normal-looking latency for pass mode.
 // The upper bound stays far below monitorDegradedThreshold, while the random
 // jitter prevents consecutive pass results from looking like a fixed constant.
-func randomSyntheticLatencyMs() int {
-	return monitorSyntheticLatencyMinMs + rand.IntN(monitorSyntheticLatencyMaxMs-monitorSyntheticLatencyMinMs+1)
+func randomSyntheticLatencyMs(minMs, maxMs int) int {
+	return minMs + rand.IntN(maxMs-minMs+1)
 }
 
 func canceledCheckResult(model string) *CheckResult {

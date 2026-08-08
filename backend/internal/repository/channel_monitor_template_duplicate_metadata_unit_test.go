@@ -40,12 +40,14 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadataAtomicall
 			service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$5\s+AND id = ANY\(\$6\)\s+AND provider = \$7\s+AND api_mode = \$8`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$7\s+AND id = ANY\(\$8\)\s+AND provider = \$9\s+AND api_mode = \$10`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
 			service.ChannelMonitorRetryCountMetadataKey,
 			service.ChannelMonitorCheckModeMetadataKey,
+			service.ChannelMonitorPassLatencyMinMsMetadataKey,
+			service.ChannelMonitorPassLatencyMaxMsMetadataKey,
 			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
@@ -72,12 +74,14 @@ func TestApplyChannelMonitorTemplateRollsBackWhenHeaderRowCountDiffers(t *testin
 	expectChannelMonitorTemplateForApply(mock, templateID)
 	mock.ExpectExec(`(?s)UPDATE "channel_monitors" SET .*WHERE `).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$5.*AND id = ANY\(\$6\)`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$7.*AND id = ANY\(\$8\)`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
 			service.ChannelMonitorRetryCountMetadataKey,
 			service.ChannelMonitorCheckModeMetadataKey,
+			service.ChannelMonitorPassLatencyMinMsMetadataKey,
+			service.ChannelMonitorPassLatencyMaxMsMetadataKey,
 			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))

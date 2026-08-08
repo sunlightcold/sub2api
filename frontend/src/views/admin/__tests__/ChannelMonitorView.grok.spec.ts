@@ -133,4 +133,22 @@ describe('channel monitor Grok provider', () => {
     expect((endpoint.element as HTMLInputElement).value).toBe(DEFAULT_GROK_ENDPOINT)
     expect((model.element as HTMLInputElement).value).toBe('grok-custom')
   })
+
+  it('shows the configurable direct-pass latency range with realistic defaults', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="monitor-pass-latency-min"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="monitor-check-mode-pass"]').trigger('click')
+
+    const minInput = wrapper.get('[data-testid="monitor-pass-latency-min"]')
+    const maxInput = wrapper.get('[data-testid="monitor-pass-latency-max"]')
+    expect((minInput.element as HTMLInputElement).value).toBe('800')
+    expect((maxInput.element as HTMLInputElement).value).toBe('2500')
+
+    await minInput.setValue(1800)
+    await maxInput.setValue(4200)
+    expect((minInput.element as HTMLInputElement).value).toBe('1800')
+    expect((maxInput.element as HTMLInputElement).value).toBe('4200')
+  })
 })

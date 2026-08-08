@@ -539,6 +539,11 @@ export default {
         checkModePassHint: 'Send no request and record operational with a normal randomized latency.',
         retryCount: 'Failure Retries',
         retryCountHint: 'Retry only failed/error results; 0 disables retries, up to 5.',
+        passLatencyRange: 'Direct Pass Latency Range (ms)',
+        passLatencyMin: 'Minimum latency',
+        passLatencyMax: 'Maximum latency',
+        passLatencyRangeHint: 'Each result uses a random inclusive value between the bounds (1-5999 ms).',
+        passLatencyRangeInvalid: 'Invalid latency range: minimum must be at least 1, maximum must not be below minimum or exceed 5999 ms.',
         enabled: 'Enable monitor',
         kindRequired: 'Please select a provider'
       },

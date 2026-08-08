@@ -195,13 +195,22 @@ func (r *channelMonitorRequestTemplateRepository) applyToMonitorsWithClient(
 			WHEN COALESCE(extra_headers, '{}'::jsonb) ? ($4::text)
 			THEN jsonb_build_object($4::text, COALESCE(extra_headers, '{}'::jsonb) -> ($4::text))
 			ELSE '{}'::jsonb
+		END || CASE
+			WHEN COALESCE(extra_headers, '{}'::jsonb) ? ($5::text)
+			THEN jsonb_build_object($5::text, COALESCE(extra_headers, '{}'::jsonb) -> ($5::text))
+			ELSE '{}'::jsonb
+		END || CASE
+			WHEN COALESCE(extra_headers, '{}'::jsonb) ? ($6::text)
+			THEN jsonb_build_object($6::text, COALESCE(extra_headers, '{}'::jsonb) -> ($6::text))
+			ELSE '{}'::jsonb
 		END
-		WHERE template_id = $5
-		  AND id = ANY($6)
-		  AND provider = $7
-		  AND api_mode = $8
+		WHERE template_id = $7
+		  AND id = ANY($8)
+		  AND provider = $9
+		  AND api_mode = $10
 	`, string(templateHeadersJSON), service.ChannelMonitorDuplicateOperationIDMetadataKey,
 		service.ChannelMonitorRetryCountMetadataKey, service.ChannelMonitorCheckModeMetadataKey,
+		service.ChannelMonitorPassLatencyMinMsMetadataKey, service.ChannelMonitorPassLatencyMaxMsMetadataKey,
 		id, pq.Array(monitorIDs), string(tpl.Provider), defaultAPIModeRepo(tpl.APIMode))
 	if err != nil {
 		return 0, fmt.Errorf("apply template headers to monitors: %w", err)

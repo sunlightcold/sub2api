@@ -742,6 +742,10 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 	delete(headers, service.ChannelMonitorRetryCountMetadataKey)
 	checkModeRaw := headers[service.ChannelMonitorCheckModeMetadataKey]
 	delete(headers, service.ChannelMonitorCheckModeMetadataKey)
+	passLatencyMinRaw := headers[service.ChannelMonitorPassLatencyMinMsMetadataKey]
+	delete(headers, service.ChannelMonitorPassLatencyMinMsMetadataKey)
+	passLatencyMaxRaw := headers[service.ChannelMonitorPassLatencyMaxMsMetadataKey]
+	delete(headers, service.ChannelMonitorPassLatencyMaxMsMetadataKey)
 	out := &service.ChannelMonitor{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -770,6 +774,12 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		}
 	}
 	out.CheckMode = defaultCheckModeRepo(checkModeRaw)
+	out.PassLatencyMinMs = monitorMetadataIntOrDefault(passLatencyMinRaw, service.MonitorDefaultPassLatencyMinMs)
+	out.PassLatencyMaxMs = monitorMetadataIntOrDefault(passLatencyMaxRaw, service.MonitorDefaultPassLatencyMaxMs)
+	if out.PassLatencyMinMs > out.PassLatencyMaxMs || out.PassLatencyMaxMs > service.MonitorMaxPassLatencyMs {
+		out.PassLatencyMinMs = service.MonitorDefaultPassLatencyMinMs
+		out.PassLatencyMaxMs = service.MonitorDefaultPassLatencyMaxMs
+	}
 	if row.TemplateID != nil {
 		id := *row.TemplateID
 		out.TemplateID = &id
@@ -781,9 +791,9 @@ func channelMonitorHeadersForPersistence(m *service.ChannelMonitor) map[string]s
 	if m == nil {
 		return map[string]string{}
 	}
-	headers := make(map[string]string, len(m.ExtraHeaders)+1)
+	headers := make(map[string]string, len(m.ExtraHeaders)+5)
 	for key, value := range m.ExtraHeaders {
-		if key == service.ChannelMonitorDuplicateOperationIDMetadataKey {
+		if isChannelMonitorMetadataKey(key) {
 			continue
 		}
 		headers[key] = value
@@ -794,10 +804,37 @@ func channelMonitorHeadersForPersistence(m *service.ChannelMonitor) map[string]s
 	if mode := defaultCheckModeRepo(m.CheckMode); mode != "request" {
 		headers[service.ChannelMonitorCheckModeMetadataKey] = mode
 	}
+	if m.PassLatencyMinMs != 0 && m.PassLatencyMinMs != service.MonitorDefaultPassLatencyMinMs {
+		headers[service.ChannelMonitorPassLatencyMinMsMetadataKey] = strconv.Itoa(m.PassLatencyMinMs)
+	}
+	if m.PassLatencyMaxMs != 0 && m.PassLatencyMaxMs != service.MonitorDefaultPassLatencyMaxMs {
+		headers[service.ChannelMonitorPassLatencyMaxMsMetadataKey] = strconv.Itoa(m.PassLatencyMaxMs)
+	}
 	if operationID := strings.TrimSpace(m.DuplicateOperationID); operationID != "" {
 		headers[service.ChannelMonitorDuplicateOperationIDMetadataKey] = operationID
 	}
 	return headers
+}
+
+func monitorMetadataIntOrDefault(raw string, defaultValue int) int {
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		return defaultValue
+	}
+	return value
+}
+
+func isChannelMonitorMetadataKey(key string) bool {
+	switch key {
+	case service.ChannelMonitorDuplicateOperationIDMetadataKey,
+		service.ChannelMonitorRetryCountMetadataKey,
+		service.ChannelMonitorCheckModeMetadataKey,
+		service.ChannelMonitorPassLatencyMinMsMetadataKey,
+		service.ChannelMonitorPassLatencyMaxMsMetadataKey:
+		return true
+	default:
+		return false
+	}
 }
 
 // emptyHeadersIfNilRepo 与 service.emptyHeadersIfNil 功能一致，

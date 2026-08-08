@@ -78,12 +78,14 @@ const maxChannelMonitorNameRunes = 100
 // ExtraHeaders to the service layer.
 const ChannelMonitorDuplicateOperationIDMetadataKey = "sub2api:duplicate_operation_id"
 
-// ChannelMonitorRetryCountMetadataKey and ChannelMonitorCheckModeMetadataKey
+// Channel monitor metadata keys
 // use the existing JSON snapshot column for backward-compatible persistence.
 // Repository code strips them before exposing or forwarding ExtraHeaders.
 const (
-	ChannelMonitorRetryCountMetadataKey = "sub2api:retry_count"
-	ChannelMonitorCheckModeMetadataKey  = "sub2api:check_mode"
+	ChannelMonitorRetryCountMetadataKey       = "sub2api:retry_count"
+	ChannelMonitorCheckModeMetadataKey        = "sub2api:check_mode"
+	ChannelMonitorPassLatencyMinMsMetadataKey = "sub2api:pass_latency_min_ms"
+	ChannelMonitorPassLatencyMaxMsMetadataKey = "sub2api:pass_latency_max_ms"
 )
 
 // NewChannelMonitorService 创建渠道监控服务实例。
@@ -151,12 +153,15 @@ func (s *ChannelMonitorService) Create(ctx context.Context, p ChannelMonitorCrea
 		JitterSeconds:    p.JitterSeconds,
 		RetryCount:       p.RetryCount,
 		CheckMode:        defaultCheckMode(p.CheckMode),
+		PassLatencyMinMs: p.PassLatencyMinMs,
+		PassLatencyMaxMs: p.PassLatencyMaxMs,
 		CreatedBy:        p.CreatedBy,
 		TemplateID:       p.TemplateID,
 		ExtraHeaders:     emptyHeadersIfNil(p.ExtraHeaders),
 		BodyOverrideMode: defaultBodyMode(p.BodyOverrideMode),
 		BodyOverride:     p.BodyOverride,
 	}
+	m.PassLatencyMinMs, m.PassLatencyMaxMs = normalizePassLatencyRange(m.PassLatencyMinMs, m.PassLatencyMaxMs)
 	if err := s.repo.Create(ctx, m); err != nil {
 		return nil, fmt.Errorf("create channel monitor: %w", err)
 	}
@@ -218,6 +223,8 @@ func (s *ChannelMonitorService) Duplicate(
 		JitterSeconds:        source.JitterSeconds,
 		RetryCount:           source.RetryCount,
 		CheckMode:            source.CheckMode,
+		PassLatencyMinMs:     source.PassLatencyMinMs,
+		PassLatencyMaxMs:     source.PassLatencyMaxMs,
 		CreatedBy:            createdBy,
 		TemplateID:           cloneInt64Pointer(source.TemplateID),
 		ExtraHeaders:         cloneChannelMonitorHeaders(source.ExtraHeaders),
@@ -350,6 +357,9 @@ func validateCreateParams(p ChannelMonitorCreateParams) error {
 		if err := validateCheckMode(p.CheckMode); err != nil {
 			return err
 		}
+	}
+	if err := validatePassLatencyRange(p.PassLatencyMinMs, p.PassLatencyMaxMs); err != nil {
+		return err
 	}
 	if err := validateEndpoint(p.Endpoint); err != nil {
 		return err
@@ -504,6 +514,8 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 		BodyOverrideMode: m.BodyOverrideMode,
 		BodyOverride:     m.BodyOverride,
 		CheckMode:        defaultCheckMode(m.CheckMode),
+		PassLatencyMinMs: m.PassLatencyMinMs,
+		PassLatencyMaxMs: m.PassLatencyMaxMs,
 	}
 
 	var eg errgroup.Group
@@ -730,6 +742,19 @@ func applyMonitorUpdate(existing *ChannelMonitor, p ChannelMonitorUpdateParams) 
 			return err
 		}
 		existing.CheckMode = *p.CheckMode
+	}
+	if p.PassLatencyMinMs != nil {
+		existing.PassLatencyMinMs = *p.PassLatencyMinMs
+	}
+	if p.PassLatencyMaxMs != nil {
+		existing.PassLatencyMaxMs = *p.PassLatencyMaxMs
+	}
+	if p.PassLatencyMinMs != nil || p.PassLatencyMaxMs != nil {
+		minMs, maxMs := normalizePassLatencyRange(existing.PassLatencyMinMs, existing.PassLatencyMaxMs)
+		if err := validatePassLatencyRange(minMs, maxMs); err != nil {
+			return err
+		}
+		existing.PassLatencyMinMs, existing.PassLatencyMaxMs = minMs, maxMs
 	}
 	if p.IntervalSeconds != nil || p.JitterSeconds != nil {
 		// interval 与 jitter 任一变化都需要重新校验组合约束（interval - jitter >= 下限）。

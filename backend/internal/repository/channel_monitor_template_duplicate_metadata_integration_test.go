@@ -40,6 +40,8 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadata(t *testi
 		SetExtraHeaders(map[string]string{
 			"X-Original": "replaced",
 			service.ChannelMonitorDuplicateOperationIDMetadataKey: "operation-digest",
+			service.ChannelMonitorPassLatencyMinMsMetadataKey:     "1500",
+			service.ChannelMonitorPassLatencyMaxMsMetadataKey:     "4500",
 		}).
 		Save(ctx)
 	require.NoError(t, err)
@@ -54,8 +56,12 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadata(t *testi
 	require.Equal(t, "template-client", stored.ExtraHeaders["User-Agent"])
 	require.NotContains(t, stored.ExtraHeaders, "X-Original")
 	require.Equal(t, "operation-digest", stored.ExtraHeaders[service.ChannelMonitorDuplicateOperationIDMetadataKey])
+	require.Equal(t, "1500", stored.ExtraHeaders[service.ChannelMonitorPassLatencyMinMsMetadataKey])
+	require.Equal(t, "4500", stored.ExtraHeaders[service.ChannelMonitorPassLatencyMaxMsMetadataKey])
 
 	runtimeMonitor := entToServiceMonitor(stored)
 	require.Equal(t, "operation-digest", runtimeMonitor.DuplicateOperationID)
+	require.Equal(t, 1500, runtimeMonitor.PassLatencyMinMs)
+	require.Equal(t, 4500, runtimeMonitor.PassLatencyMaxMs)
 	require.NotContains(t, runtimeMonitor.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 }

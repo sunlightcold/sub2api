@@ -51,6 +51,8 @@ type channelMonitorCreateRequest struct {
 	JitterSeconds    int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
 	RetryCount       int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
 	CheckMode        string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
+	PassLatencyMinMs int               `json:"pass_latency_min_ms" binding:"omitempty,min=1,max=5999"`
+	PassLatencyMaxMs int               `json:"pass_latency_max_ms" binding:"omitempty,min=1,max=5999"`
 	TemplateID       *int64            `json:"template_id"`
 	ExtraHeaders     map[string]string `json:"extra_headers"`
 	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
@@ -71,6 +73,8 @@ type channelMonitorUpdateRequest struct {
 	JitterSeconds    *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
 	RetryCount       *int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
 	CheckMode        *string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
+	PassLatencyMinMs *int               `json:"pass_latency_min_ms" binding:"omitempty,min=1,max=5999"`
+	PassLatencyMaxMs *int               `json:"pass_latency_max_ms" binding:"omitempty,min=1,max=5999"`
 	TemplateID       *int64             `json:"template_id"`
 	ClearTemplate    bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
 	ExtraHeaders     *map[string]string `json:"extra_headers"`
@@ -94,6 +98,8 @@ type channelMonitorResponse struct {
 	JitterSeconds       int                                  `json:"jitter_seconds"`
 	RetryCount          int                                  `json:"retry_count"`
 	CheckMode           string                               `json:"check_mode"`
+	PassLatencyMinMs    int                                  `json:"pass_latency_min_ms"`
+	PassLatencyMaxMs    int                                  `json:"pass_latency_max_ms"`
 	LastCheckedAt       *string                              `json:"last_checked_at"`
 	CreatedBy           int64                                `json:"created_by"`
 	CreatedAt           string                               `json:"created_at"`
@@ -164,6 +170,8 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		JitterSeconds:       m.JitterSeconds,
 		RetryCount:          m.RetryCount,
 		CheckMode:           m.CheckMode,
+		PassLatencyMinMs:    m.PassLatencyMinMs,
+		PassLatencyMaxMs:    m.PassLatencyMaxMs,
 		CreatedBy:           m.CreatedBy,
 		CreatedAt:           m.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:           m.UpdatedAt.UTC().Format(time.RFC3339),
@@ -332,6 +340,8 @@ func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 		JitterSeconds:    req.JitterSeconds,
 		RetryCount:       req.RetryCount,
 		CheckMode:        req.CheckMode,
+		PassLatencyMinMs: req.PassLatencyMinMs,
+		PassLatencyMaxMs: req.PassLatencyMaxMs,
 		CreatedBy:        subject.UserID,
 		TemplateID:       req.TemplateID,
 		ExtraHeaders:     req.ExtraHeaders,
@@ -428,6 +438,8 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 		JitterSeconds:    req.JitterSeconds,
 		RetryCount:       req.RetryCount,
 		CheckMode:        req.CheckMode,
+		PassLatencyMinMs: req.PassLatencyMinMs,
+		PassLatencyMaxMs: req.PassLatencyMaxMs,
 		TemplateID:       req.TemplateID,
 		ClearTemplate:    req.ClearTemplate,
 		ExtraHeaders:     req.ExtraHeaders,
