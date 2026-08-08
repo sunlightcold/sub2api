@@ -40,14 +40,13 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadataAtomicall
 			service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = \$1::jsonb \|\| CASE\s+WHEN COALESCE\(extra_headers, '\{\}'::jsonb\) \? \(\$2::text\)\s+THEN jsonb_build_object\(\$2::text, COALESCE\(extra_headers, '\{\}'::jsonb\) -> \(\$2::text\)\)\s+ELSE '\{\}'::jsonb\s+END\s+WHERE template_id = \$3\s+AND id = ANY\(\$4\)\s+AND provider = \$5\s+AND api_mode = \$6`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$5\s+AND id = ANY\(\$6\)\s+AND provider = \$7\s+AND api_mode = \$8`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
-			templateID,
-			`{41,42}`,
-			service.MonitorProviderOpenAI,
-			service.MonitorAPIModeResponses,
+			service.ChannelMonitorRetryCountMetadataKey,
+			service.ChannelMonitorCheckModeMetadataKey,
+			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 	mock.ExpectCommit()
@@ -73,14 +72,13 @@ func TestApplyChannelMonitorTemplateRollsBackWhenHeaderRowCountDiffers(t *testin
 	expectChannelMonitorTemplateForApply(mock, templateID)
 	mock.ExpectExec(`(?s)UPDATE "channel_monitors" SET .*WHERE `).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = \$1::jsonb \|\| CASE.*jsonb_build_object\(\$2::text,.*WHERE template_id = \$3.*AND id = ANY\(\$4\)`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$5.*AND id = ANY\(\$6\)`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
-			templateID,
-			`{41,42}`,
-			service.MonitorProviderOpenAI,
-			service.MonitorAPIModeResponses,
+			service.ChannelMonitorRetryCountMetadataKey,
+			service.ChannelMonitorCheckModeMetadataKey,
+			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectRollback()

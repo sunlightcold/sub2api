@@ -78,6 +78,14 @@ const maxChannelMonitorNameRunes = 100
 // ExtraHeaders to the service layer.
 const ChannelMonitorDuplicateOperationIDMetadataKey = "sub2api:duplicate_operation_id"
 
+// ChannelMonitorRetryCountMetadataKey and ChannelMonitorCheckModeMetadataKey
+// use the existing JSON snapshot column for backward-compatible persistence.
+// Repository code strips them before exposing or forwarding ExtraHeaders.
+const (
+	ChannelMonitorRetryCountMetadataKey = "sub2api:retry_count"
+	ChannelMonitorCheckModeMetadataKey  = "sub2api:check_mode"
+)
+
 // NewChannelMonitorService 创建渠道监控服务实例。
 func NewChannelMonitorService(repo ChannelMonitorRepository, encryptor SecretEncryptor) *ChannelMonitorService {
 	return &ChannelMonitorService{repo: repo, encryptor: encryptor}
@@ -141,6 +149,8 @@ func (s *ChannelMonitorService) Create(ctx context.Context, p ChannelMonitorCrea
 		Enabled:          p.Enabled,
 		IntervalSeconds:  p.IntervalSeconds,
 		JitterSeconds:    p.JitterSeconds,
+		RetryCount:       p.RetryCount,
+		CheckMode:        defaultCheckMode(p.CheckMode),
 		CreatedBy:        p.CreatedBy,
 		TemplateID:       p.TemplateID,
 		ExtraHeaders:     emptyHeadersIfNil(p.ExtraHeaders),
@@ -206,6 +216,8 @@ func (s *ChannelMonitorService) Duplicate(
 		Enabled:              false,
 		IntervalSeconds:      source.IntervalSeconds,
 		JitterSeconds:        source.JitterSeconds,
+		RetryCount:           source.RetryCount,
+		CheckMode:            source.CheckMode,
 		CreatedBy:            createdBy,
 		TemplateID:           cloneInt64Pointer(source.TemplateID),
 		ExtraHeaders:         cloneChannelMonitorHeaders(source.ExtraHeaders),
@@ -330,6 +342,14 @@ func validateCreateParams(p ChannelMonitorCreateParams) error {
 	}
 	if err := validateJitter(p.JitterSeconds, p.IntervalSeconds); err != nil {
 		return err
+	}
+	if err := validateRetryCount(p.RetryCount); err != nil {
+		return err
+	}
+	if p.CheckMode != "" {
+		if err := validateCheckMode(p.CheckMode); err != nil {
+			return err
+		}
 	}
 	if err := validateEndpoint(p.Endpoint); err != nil {
 		return err
@@ -471,8 +491,11 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 	models := append([]string{m.PrimaryModel}, m.ExtraModels...)
 	results := make([]*CheckResult, len(models))
 
-	// ping 共享一次，所有模型记录同一个 ping 延迟。
-	pingMs := pingEndpointOrigin(ctx, m.Endpoint)
+	// ping 共享一次，所有真实请求模型记录同一个 ping 延迟；直通模式不发起任何 HTTP 请求。
+	var pingMs *int
+	if defaultCheckMode(m.CheckMode) == MonitorCheckModeRequest {
+		pingMs = pingEndpointOrigin(ctx, m.Endpoint)
+	}
 
 	// 所有模型共用同一份 CheckOptions（来自监控的快照字段）。
 	opts := &CheckOptions{
@@ -480,6 +503,7 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 		ExtraHeaders:     m.ExtraHeaders,
 		BodyOverrideMode: m.BodyOverrideMode,
 		BodyOverride:     m.BodyOverride,
+		CheckMode:        defaultCheckMode(m.CheckMode),
 	}
 
 	var eg errgroup.Group
@@ -487,7 +511,7 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 	for i, model := range models {
 		i, model := i, model
 		eg.Go(func() error {
-			r := runCheckForModel(ctx, m.Provider, m.Endpoint, m.APIKey, model, opts)
+			r := runCheckForModelWithRetry(ctx, m.Provider, m.Endpoint, m.APIKey, model, opts, m.RetryCount)
 			r.PingLatencyMs = pingMs
 			mu.Lock()
 			results[i] = r
@@ -690,7 +714,22 @@ func applyMonitorUpdate(existing *ChannelMonitor, p ChannelMonitorUpdateParams) 
 		existing.IntervalSeconds = *p.IntervalSeconds
 	}
 	if p.JitterSeconds != nil {
+		if *p.JitterSeconds < 0 {
+			return ErrChannelMonitorInvalidJitter
+		}
 		existing.JitterSeconds = *p.JitterSeconds
+	}
+	if p.RetryCount != nil {
+		if err := validateRetryCount(*p.RetryCount); err != nil {
+			return err
+		}
+		existing.RetryCount = *p.RetryCount
+	}
+	if p.CheckMode != nil {
+		if err := validateCheckMode(*p.CheckMode); err != nil {
+			return err
+		}
+		existing.CheckMode = *p.CheckMode
 	}
 	if p.IntervalSeconds != nil || p.JitterSeconds != nil {
 		// interval 与 jitter 任一变化都需要重新校验组合约束（interval - jitter >= 下限）。

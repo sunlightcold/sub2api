@@ -532,6 +532,13 @@ export default {
         intervalSecondsHint: '范围：15 - 3600 秒',
         jitterSeconds: '随机抖动 (± 秒)',
         jitterSecondsHint: '每次检测在间隔基础上正负随机偏移该秒数，0 表示固定间隔；需满足 间隔 - 抖动 ≥ 15 秒',
+        checkMode: '检测方式',
+        checkModeRequest: '真实请求',
+        checkModeRequestHint: '按当前配置请求上游并校验响应。',
+        checkModePass: '直接通过',
+        checkModePassHint: '不发起请求，直接记录为 operational；延时保持在正常范围并随机抖动。',
+        retryCount: '失败重试次数',
+        retryCountHint: '仅 failed/error 会重试；0 表示不重试，最多 5 次。',
         enabled: '启用监控',
         kindRequired: '请选择供应商'
       },

@@ -117,6 +117,30 @@
         <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.jitterSecondsHint') }}</p>
       </div>
 
+      <div>
+        <label class="input-label">{{ t('admin.channelMonitor.form.checkMode') }}</label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <button
+            v-for="opt in checkModeOptions"
+            :key="opt.value"
+            type="button"
+            :aria-pressed="form.check_mode === opt.value"
+            class="rounded-lg border-2 px-3 py-2 text-left transition-colors"
+            :class="checkModeButtonClass(opt.value)"
+            @click="form.check_mode = opt.value"
+          >
+            <span class="block text-sm font-semibold">{{ opt.label }}</span>
+            <span class="mt-0.5 block text-xs opacity-80">{{ opt.hint }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="input-label">{{ t('admin.channelMonitor.form.retryCount') }}</label>
+        <input v-model.number="form.retry_count" type="number" min="0" max="5" class="input" />
+        <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.retryCountHint') }}</p>
+      </div>
+
       <div class="flex items-center justify-between">
         <label class="input-label mb-0">{{ t('admin.channelMonitor.form.enabled') }}</label>
         <Toggle v-model="form.enabled" />
@@ -194,6 +218,7 @@ import { keysAPI } from '@/api/keys'
 import { userGroupsAPI } from '@/api/groups'
 import type {
   BodyOverrideMode,
+  CheckMode,
   ChannelMonitor,
   CreateParams,
   APIMode,
@@ -218,6 +243,8 @@ import {
   PROVIDER_GROK,
   API_MODE_CHAT_COMPLETIONS,
   API_MODE_RESPONSES,
+  CHECK_MODE_REQUEST,
+  CHECK_MODE_PASS,
   DEFAULT_GROK_ENDPOINT,
   DEFAULT_GROK_MODEL,
   DEFAULT_INTERVAL_SECONDS,
@@ -266,6 +293,8 @@ interface MonitorForm {
   group_name: string
   interval_seconds: number
   jitter_seconds: number
+  retry_count: number
+  check_mode: CheckMode
   enabled: boolean
   // 高级设置快照
   template_id: number | null
@@ -285,6 +314,8 @@ const form = reactive<MonitorForm>({
   group_name: '',
   interval_seconds: systemDefaultInterval.value,
   jitter_seconds: 0,
+  retry_count: 0,
+  check_mode: CHECK_MODE_REQUEST,
   enabled: true,
   template_id: null,
   extra_headers: {},
@@ -364,6 +395,27 @@ const apiModeOptions = computed<{ value: APIMode; label: string; hint: string }[
     hint: t('admin.channelMonitor.form.apiModeResponsesHint'),
   },
 ])
+
+const checkModeOptions = computed<{ value: CheckMode; label: string; hint: string }[]>(() => [
+  {
+    value: CHECK_MODE_REQUEST,
+    label: t('admin.channelMonitor.form.checkModeRequest'),
+    hint: t('admin.channelMonitor.form.checkModeRequestHint'),
+  },
+  {
+    value: CHECK_MODE_PASS,
+    label: t('admin.channelMonitor.form.checkModePass'),
+    hint: t('admin.channelMonitor.form.checkModePassHint'),
+  },
+])
+
+function checkModeButtonClass(mode: CheckMode): string {
+  const active = form.check_mode === mode
+  if (active) {
+    return 'border-primary-500 bg-white text-primary-700 shadow-sm dark:border-primary-400 dark:bg-primary-500/15 dark:text-primary-300'
+  }
+  return 'border-blue-100 bg-white/70 text-gray-600 hover:border-primary-300 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-400'
+}
 
 function normalizeAPIMode(mode: APIMode | undefined | null): APIMode {
   return mode === API_MODE_RESPONSES ? API_MODE_RESPONSES : API_MODE_CHAT_COMPLETIONS
@@ -454,6 +506,8 @@ function resetForm() {
   form.group_name = ''
   form.interval_seconds = systemDefaultInterval.value
   form.jitter_seconds = 0
+  form.retry_count = 0
+  form.check_mode = CHECK_MODE_REQUEST
   form.enabled = true
   form.template_id = null
   form.extra_headers = {}
@@ -474,6 +528,8 @@ function loadFromMonitor(m: ChannelMonitor) {
   form.group_name = m.group_name || ''
   form.interval_seconds = m.interval_seconds || systemDefaultInterval.value
   form.jitter_seconds = m.jitter_seconds || 0
+  form.retry_count = m.retry_count ?? 0
+  form.check_mode = m.check_mode || CHECK_MODE_REQUEST
   form.enabled = m.enabled
   form.template_id = m.template_id ?? null
   form.extra_headers = { ...(m.extra_headers || {}) }
@@ -541,6 +597,8 @@ function buildPayload(): CreateParams {
     enabled: form.enabled,
     interval_seconds: form.interval_seconds,
     jitter_seconds: form.jitter_seconds || 0,
+    retry_count: form.retry_count || 0,
+    check_mode: form.check_mode,
     template_id: form.template_id,
     extra_headers: form.extra_headers,
     body_override_mode: form.body_override_mode,

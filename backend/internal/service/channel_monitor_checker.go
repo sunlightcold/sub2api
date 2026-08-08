@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -50,6 +51,70 @@ type CheckOptions struct {
 	// BodyOverride 在 merge 模式下做浅合并（key 命中黑名单时静默丢弃），
 	// 在 replace 模式下直接当作完整 body。
 	BodyOverride map[string]any
+	// CheckMode: request 发起真实请求；pass 直接生成 operational 结果。
+	CheckMode string
+}
+
+// runCheckForModelWithRetry 在单个模型检测层重试失败/错误结果。
+// operational/degraded 都视为本次检测完成，不会额外请求。
+func runCheckForModelWithRetry(ctx context.Context, provider, endpoint, apiKey, model string, opts *CheckOptions, retryCount int) *CheckResult {
+	if bodyCheckMode(opts) == MonitorCheckModePass {
+		return passCheckResult(model)
+	}
+	if retryCount < 0 {
+		retryCount = 0
+	}
+	if retryCount > monitorMaxRetryCount {
+		retryCount = monitorMaxRetryCount
+	}
+	var result *CheckResult
+	for attempt := 0; attempt <= retryCount; attempt++ {
+		result = runCheckForModel(ctx, provider, endpoint, apiKey, model, opts)
+		if result.Status != MonitorStatusFailed && result.Status != MonitorStatusError {
+			return result
+		}
+		if attempt == retryCount {
+			return result
+		}
+		if !waitMonitorRetry(ctx, attempt) {
+			return canceledCheckResult(model)
+		}
+	}
+	return result
+}
+
+func waitMonitorRetry(ctx context.Context, attempt int) bool {
+	delay := monitorRetryBaseDelay * time.Duration(1<<attempt)
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func passCheckResult(model string) *CheckResult {
+	latencyMs := randomSyntheticLatencyMs()
+	return &CheckResult{
+		Model:     model,
+		Status:    MonitorStatusOperational,
+		LatencyMs: &latencyMs,
+		CheckedAt: time.Now(),
+	}
+}
+
+// randomSyntheticLatencyMs returns a bounded, normal-looking latency for pass mode.
+// The upper bound stays far below monitorDegradedThreshold, while the random
+// jitter prevents consecutive pass results from looking like a fixed constant.
+func randomSyntheticLatencyMs() int {
+	return monitorSyntheticLatencyMinMs + rand.IntN(monitorSyntheticLatencyMaxMs-monitorSyntheticLatencyMinMs+1)
+}
+
+func canceledCheckResult(model string) *CheckResult {
+	message := "monitor check canceled"
+	return &CheckResult{Model: model, Status: MonitorStatusError, Message: message, CheckedAt: time.Now()}
 }
 
 // runCheckForModel 对单个 (provider, model) 做一次完整检测。
@@ -125,6 +190,13 @@ func bodyOverrideMode(opts *CheckOptions) string {
 		return MonitorBodyOverrideModeOff
 	}
 	return opts.BodyOverrideMode
+}
+
+func bodyCheckMode(opts *CheckOptions) string {
+	if opts == nil || opts.CheckMode == "" {
+		return MonitorCheckModeRequest
+	}
+	return opts.CheckMode
 }
 
 // pingEndpointOrigin 对 endpoint 的 origin (scheme://host) 发起 HEAD 请求，返回耗时。

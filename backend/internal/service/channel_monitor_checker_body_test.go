@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -497,4 +498,115 @@ func TestValidateChallenge_AnthropicTextAfterThinking(t *testing.T) {
 	if !validateChallenge(respText, "2") {
 		t.Fatalf("validateChallenge(%q, %q) = false, want true", respText, "2")
 	}
+}
+
+func TestRunCheckForModelWithRetry_ZeroRetriesSendsOnce(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`{"error":{"message":"temporary"}}`))
+	}))
+	t.Cleanup(server.Close)
+	swapMonitorHTTPClient(t)
+
+	result := runCheckForModelWithRetry(context.Background(), MonitorProviderOpenAI, server.URL, "key", "model", nil, 0)
+	if result.Status != MonitorStatusError {
+		t.Fatalf("expected error result, got %s", result.Status)
+	}
+	if requests != 1 {
+		t.Fatalf("zero retries should send one request, got %d", requests)
+	}
+}
+
+func TestRunCheckForModelWithRetry_RetryThenSucceeds(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if requests == 1 {
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = w.Write([]byte(`{"error":{"message":"temporary"}}`))
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []map[string]any{{"message": map[string]any{
+				"content": answerFromChallengePrompt(body["messages"].([]any)[0].(map[string]any)["content"].(string)),
+			}}},
+		})
+	}))
+	t.Cleanup(server.Close)
+	swapMonitorHTTPClient(t)
+
+	result := runCheckForModelWithRetry(context.Background(), MonitorProviderOpenAI, server.URL, "key", "model", nil, 1)
+	if result.Status != MonitorStatusOperational {
+		t.Fatalf("expected retry to succeed, got %s: %s", result.Status, result.Message)
+	}
+	if requests != 2 {
+		t.Fatalf("expected one retry, got %d requests", requests)
+	}
+}
+
+func TestRunCheckForModelWithRetry_ExhaustsRetries(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte(`{"error":{"message":"temporary"}}`))
+	}))
+	t.Cleanup(server.Close)
+	swapMonitorHTTPClient(t)
+
+	result := runCheckForModelWithRetry(context.Background(), MonitorProviderOpenAI, server.URL, "key", "model", nil, 2)
+	if result.Status != MonitorStatusError {
+		t.Fatalf("expected final error after retries, got %s", result.Status)
+	}
+	if requests != 3 {
+		t.Fatalf("expected initial request plus two retries, got %d", requests)
+	}
+}
+
+func TestRunCheckForModelWithRetry_PassModeDoesNotSendRequest(t *testing.T) {
+	requests := 0
+	original := monitorHTTPClient
+	monitorHTTPClient = &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		requests++
+		return nil, fmt.Errorf("unexpected HTTP request")
+	})}
+	t.Cleanup(func() { monitorHTTPClient = original })
+
+	result := runCheckForModelWithRetry(context.Background(), MonitorProviderOpenAI, "https://example.com", "key", "model", &CheckOptions{
+		CheckMode: MonitorCheckModePass,
+	}, 5)
+	if result.Status != MonitorStatusOperational || result.Message != "" {
+		t.Fatalf("pass mode should return ordinary operational result, got %#v", result)
+	}
+	if result.LatencyMs == nil || *result.LatencyMs < monitorSyntheticLatencyMinMs || *result.LatencyMs > monitorSyntheticLatencyMaxMs {
+		t.Fatalf("pass mode latency should stay in normal range, got %v", result.LatencyMs)
+	}
+	if result.PingLatencyMs != nil {
+		t.Fatalf("pass mode must not fabricate ping latency, got %v", result.PingLatencyMs)
+	}
+	if requests != 0 {
+		t.Fatalf("pass mode sent %d HTTP requests", requests)
+	}
+}
+
+func TestRandomSyntheticLatencyMsStaysWithinNormalRange(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		latencyMs := randomSyntheticLatencyMs()
+		if latencyMs < monitorSyntheticLatencyMinMs || latencyMs > monitorSyntheticLatencyMaxMs {
+			t.Fatalf("synthetic latency escaped normal range: %dms", latencyMs)
+		}
+		if time.Duration(latencyMs)*time.Millisecond >= monitorDegradedThreshold {
+			t.Fatalf("synthetic latency must stay below degraded threshold: %dms", latencyMs)
+		}
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
 }

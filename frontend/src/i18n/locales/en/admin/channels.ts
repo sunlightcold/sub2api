@@ -532,6 +532,13 @@ export default {
         intervalSecondsHint: 'Range: 15 - 3600 seconds',
         jitterSeconds: 'Random Jitter (± seconds)',
         jitterSecondsHint: 'Each check fires at interval ± a random offset within this value; 0 means fixed interval. Interval minus jitter must be ≥ 15s',
+        checkMode: 'Check Mode',
+        checkModeRequest: 'Real Request',
+        checkModeRequestHint: 'Call the upstream with the current configuration and validate the response.',
+        checkModePass: 'Direct Pass',
+        checkModePassHint: 'Send no request and record operational with a normal randomized latency.',
+        retryCount: 'Failure Retries',
+        retryCountHint: 'Retry only failed/error results; 0 disables retries, up to 5.',
         enabled: 'Enable monitor',
         kindRequired: 'Please select a provider'
       },

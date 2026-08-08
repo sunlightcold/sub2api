@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -737,6 +738,10 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 	}
 	duplicateOperationID := headers[service.ChannelMonitorDuplicateOperationIDMetadataKey]
 	delete(headers, service.ChannelMonitorDuplicateOperationIDMetadataKey)
+	retryCountRaw := headers[service.ChannelMonitorRetryCountMetadataKey]
+	delete(headers, service.ChannelMonitorRetryCountMetadataKey)
+	checkModeRaw := headers[service.ChannelMonitorCheckModeMetadataKey]
+	delete(headers, service.ChannelMonitorCheckModeMetadataKey)
 	out := &service.ChannelMonitor{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -759,6 +764,12 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		BodyOverride:         row.BodyOverride,
 		DuplicateOperationID: duplicateOperationID,
 	}
+	if raw := retryCountRaw; raw != "" {
+		if retryCount, err := strconv.Atoi(raw); err == nil {
+			out.RetryCount = retryCount
+		}
+	}
+	out.CheckMode = defaultCheckModeRepo(checkModeRaw)
 	if row.TemplateID != nil {
 		id := *row.TemplateID
 		out.TemplateID = &id
@@ -776,6 +787,12 @@ func channelMonitorHeadersForPersistence(m *service.ChannelMonitor) map[string]s
 			continue
 		}
 		headers[key] = value
+	}
+	if m.RetryCount != 0 {
+		headers[service.ChannelMonitorRetryCountMetadataKey] = strconv.Itoa(m.RetryCount)
+	}
+	if mode := defaultCheckModeRepo(m.CheckMode); mode != "request" {
+		headers[service.ChannelMonitorCheckModeMetadataKey] = mode
 	}
 	if operationID := strings.TrimSpace(m.DuplicateOperationID); operationID != "" {
 		headers[service.ChannelMonitorDuplicateOperationIDMetadataKey] = operationID
@@ -805,6 +822,13 @@ func defaultAPIModeRepo(apiMode string) string {
 		return "chat_completions"
 	}
 	return apiMode
+}
+
+func defaultCheckModeRepo(mode string) string {
+	if mode == "pass" {
+		return "pass"
+	}
+	return "request"
 }
 
 func emptySliceIfNil(in []string) []string {

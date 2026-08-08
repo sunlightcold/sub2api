@@ -49,6 +49,8 @@ type channelMonitorCreateRequest struct {
 	Enabled          *bool             `json:"enabled"`
 	IntervalSeconds  int               `json:"interval_seconds" binding:"required,min=15,max=3600"`
 	JitterSeconds    int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	RetryCount       int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
+	CheckMode        string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
 	TemplateID       *int64            `json:"template_id"`
 	ExtraHeaders     map[string]string `json:"extra_headers"`
 	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
@@ -67,6 +69,8 @@ type channelMonitorUpdateRequest struct {
 	Enabled          *bool              `json:"enabled"`
 	IntervalSeconds  *int               `json:"interval_seconds" binding:"omitempty,min=15,max=3600"`
 	JitterSeconds    *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	RetryCount       *int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
+	CheckMode        *string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
 	TemplateID       *int64             `json:"template_id"`
 	ClearTemplate    bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
 	ExtraHeaders     *map[string]string `json:"extra_headers"`
@@ -88,6 +92,8 @@ type channelMonitorResponse struct {
 	Enabled             bool                                 `json:"enabled"`
 	IntervalSeconds     int                                  `json:"interval_seconds"`
 	JitterSeconds       int                                  `json:"jitter_seconds"`
+	RetryCount          int                                  `json:"retry_count"`
+	CheckMode           string                               `json:"check_mode"`
 	LastCheckedAt       *string                              `json:"last_checked_at"`
 	CreatedBy           int64                                `json:"created_by"`
 	CreatedAt           string                               `json:"created_at"`
@@ -156,6 +162,8 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		Enabled:             m.Enabled,
 		IntervalSeconds:     m.IntervalSeconds,
 		JitterSeconds:       m.JitterSeconds,
+		RetryCount:          m.RetryCount,
+		CheckMode:           m.CheckMode,
 		CreatedBy:           m.CreatedBy,
 		CreatedAt:           m.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:           m.UpdatedAt.UTC().Format(time.RFC3339),
@@ -322,6 +330,8 @@ func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 		Enabled:          enabled,
 		IntervalSeconds:  req.IntervalSeconds,
 		JitterSeconds:    req.JitterSeconds,
+		RetryCount:       req.RetryCount,
+		CheckMode:        req.CheckMode,
 		CreatedBy:        subject.UserID,
 		TemplateID:       req.TemplateID,
 		ExtraHeaders:     req.ExtraHeaders,
@@ -416,6 +426,8 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 		Enabled:          req.Enabled,
 		IntervalSeconds:  req.IntervalSeconds,
 		JitterSeconds:    req.JitterSeconds,
+		RetryCount:       req.RetryCount,
+		CheckMode:        req.CheckMode,
 		TemplateID:       req.TemplateID,
 		ClearTemplate:    req.ClearTemplate,
 		ExtraHeaders:     req.ExtraHeaders,

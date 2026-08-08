@@ -297,7 +297,9 @@ func (r *ChannelMonitorRunner) releaseInFlight(id int64) {
 // runOne 执行单个监控的检测。普通错误只记日志；API key 解密失败会撤销任务。
 // 任务结束时（含 panic recover）必须释放 in-flight 槽。
 func (r *ChannelMonitorRunner) runOne(id int64, name string) {
-	ctx, cancel := context.WithTimeout(context.Background(), monitorRequestTimeout+monitorPingTimeout+monitorRunOneBuffer)
+	// 使用最大重试预算设置任务上下文，具体 retry_count 由 service 层裁剪；
+	// 这样无需为调度器增加额外的监控读取接口，也不会改变现有 runner 测试契约。
+	ctx, cancel := context.WithTimeout(context.Background(), monitorCheckTimeout(monitorMaxRetryCount))
 	defer cancel()
 
 	defer r.releaseInFlight(id)

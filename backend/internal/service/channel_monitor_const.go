@@ -33,6 +33,11 @@ const (
 	// monitorMinIntervalSeconds / monitorMaxIntervalSeconds 用户配置的检测间隔上下限。
 	monitorMinIntervalSeconds = 15
 	monitorMaxIntervalSeconds = 3600
+	// monitorMaxRetryCount 单个模型检测允许的额外重试次数上限。
+	monitorMaxRetryCount = 5
+	// 直通模式写入的正常延时范围（毫秒）。
+	monitorSyntheticLatencyMinMs = 120
+	monitorSyntheticLatencyMaxMs = 480
 	// monitorMessageMaxBytes message 字段最大字节数（与 schema/migration 一致）。
 	monitorMessageMaxBytes = 500
 	// monitorResponseMaxBytes 单次模型响应最大读取字节，防止 OOM。
@@ -71,6 +76,11 @@ const (
 	MonitorStatusFailed      = "failed"
 	MonitorStatusError       = "error"
 
+	// MonitorCheckModeRequest 发起真实上游请求。
+	MonitorCheckModeRequest = "request"
+	// MonitorCheckModePass 直接判定通过，不发起 HTTP 请求。
+	MonitorCheckModePass = "pass"
+
 	// monitorAvailability7Days / 15 / 30 用于聚合查询窗口。
 	monitorAvailability7Days  = 7
 	monitorAvailability15Days = 15
@@ -96,6 +106,8 @@ const (
 
 	// monitorRunOneBuffer runOne 的总超时缓冲（除请求超时与 ping 超时外的额外裕量）。
 	monitorRunOneBuffer = 10 * time.Second
+	// monitorRetryBaseDelay 失败重试的指数退避基准。
+	monitorRetryBaseDelay = 250 * time.Millisecond
 
 	// monitorIdleConnTimeout HTTP transport 空闲连接关闭超时。
 	monitorIdleConnTimeout = 30 * time.Second
@@ -111,6 +123,21 @@ const (
 	// monitorDialKeepAlive 自定义 dialer keep-alive 间隔。
 	monitorDialKeepAlive = 30 * time.Second
 )
+
+func monitorCheckTimeout(retryCount int) time.Duration {
+	if retryCount < 0 {
+		retryCount = 0
+	}
+	if retryCount > monitorMaxRetryCount {
+		retryCount = monitorMaxRetryCount
+	}
+	backoff := time.Duration(0)
+	for attempt := 0; attempt < retryCount; attempt++ {
+		backoff += monitorRetryBaseDelay * time.Duration(1<<attempt)
+	}
+	return monitorPingTimeout + monitorRunOneBuffer +
+		time.Duration(retryCount+1)*monitorRequestTimeout + backoff
+}
 
 // 业务错误（统一在此声明，避免散落）。
 var (
@@ -131,6 +158,12 @@ var (
 	)
 	ErrChannelMonitorInvalidJitter = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_JITTER", "jitter_seconds must be >= 0 and interval_seconds - jitter_seconds must be >= 15",
+	)
+	ErrChannelMonitorInvalidRetryCount = infraerrors.BadRequest(
+		"CHANNEL_MONITOR_INVALID_RETRY_COUNT", "retry_count must be in [0, 5]",
+	)
+	ErrChannelMonitorInvalidCheckMode = infraerrors.BadRequest(
+		"CHANNEL_MONITOR_INVALID_CHECK_MODE", "check_mode must be request or pass",
 	)
 	ErrChannelMonitorInvalidEndpoint = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_ENDPOINT", "endpoint must be a valid https URL",

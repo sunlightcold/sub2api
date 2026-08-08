@@ -52,6 +52,27 @@ func validateJitter(jitterSec, intervalSec int) error {
 	return nil
 }
 
+func validateRetryCount(count int) error {
+	if count < 0 || count > monitorMaxRetryCount {
+		return ErrChannelMonitorInvalidRetryCount
+	}
+	return nil
+}
+
+func validateCheckMode(mode string) error {
+	if mode != MonitorCheckModeRequest && mode != MonitorCheckModePass {
+		return ErrChannelMonitorInvalidCheckMode
+	}
+	return nil
+}
+
+func defaultCheckMode(mode string) string {
+	if mode == MonitorCheckModePass {
+		return MonitorCheckModePass
+	}
+	return MonitorCheckModeRequest
+}
+
 // validateEndpoint 校验 endpoint：
 //   - scheme 强制 https（拒绝 http，避免明文凭证 + 部分 SSRF 利用面）
 //   - 必须为 origin（无 path/query/fragment），防止用户填 https://api.openai.com/v1

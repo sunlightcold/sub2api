@@ -40,6 +40,8 @@ type ChannelMonitor struct {
 	Enabled         bool
 	IntervalSeconds int
 	JitterSeconds   int // 每次调度 ± [0, jitter] 的随机偏移（秒），0 = 固定间隔
+	RetryCount      int // 单个模型检测失败或错误后的额外重试次数
+	CheckMode       string
 	LastCheckedAt   *time.Time
 	CreatedBy       int64
 	CreatedAt       time.Time
@@ -84,6 +86,8 @@ type ChannelMonitorCreateParams struct {
 	Enabled          bool
 	IntervalSeconds  int
 	JitterSeconds    int
+	RetryCount       int
+	CheckMode        string
 	CreatedBy        int64
 	TemplateID       *int64
 	ExtraHeaders     map[string]string
@@ -104,6 +108,8 @@ type ChannelMonitorUpdateParams struct {
 	Enabled         *bool
 	IntervalSeconds *int
 	JitterSeconds   *int
+	RetryCount      *int
+	CheckMode       *string
 	// 自定义快照字段：指针为 nil 表示不更新，非 nil 覆盖
 	// TemplateID *(*int64)：用 ** 表达三态：nil=不更新；&nil=清空；&&id=设为 id。
 	// 简化处理：用 ClearTemplate 显式标志 + TemplateID（普通指针）
