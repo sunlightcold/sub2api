@@ -32,6 +32,22 @@ func (s *openAICacheReadStateCacheStub) DeleteSessionAccountID(context.Context, 
 	return nil
 }
 
+func (s *openAICacheReadStateCacheStub) SetGrokVideoPendingBilling(context.Context, string, []byte, time.Duration) error {
+	return nil
+}
+
+func (s *openAICacheReadStateCacheStub) GetGrokVideoPendingBilling(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+
+func (s *openAICacheReadStateCacheStub) ClaimGrokVideoBilled(context.Context, string, time.Duration) (bool, error) {
+	return true, nil
+}
+
+func (s *openAICacheReadStateCacheStub) ReleaseGrokVideoBilled(context.Context, string) error {
+	return nil
+}
+
 func (s *openAICacheReadStateCacheStub) GetOpenAICacheReadState(_ context.Context, key string) (*OpenAICacheReadState, error) {
 	s.gets++
 	if s.states == nil {
