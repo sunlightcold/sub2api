@@ -147,8 +147,8 @@ describe('channel monitor Grok provider', () => {
     expect((maxInput.element as HTMLInputElement).value).toBe('2500')
 
     await minInput.setValue(1800)
-    await maxInput.setValue(4200)
+    await maxInput.setValue(12000)
     expect((minInput.element as HTMLInputElement).value).toBe('1800')
-    expect((maxInput.element as HTMLInputElement).value).toBe('4200')
+    expect((maxInput.element as HTMLInputElement).value).toBe('12000')
   })
 })

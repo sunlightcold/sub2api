@@ -145,8 +145,8 @@
       <div v-if="form.check_mode === CHECK_MODE_PASS">
         <label class="input-label">{{ t('admin.channelMonitor.form.passLatencyRange') }}</label>
         <div class="grid grid-cols-2 gap-3">
-          <input v-model.number="form.pass_latency_min_ms" data-testid="monitor-pass-latency-min" type="number" min="1" max="5999" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMin')" />
-          <input v-model.number="form.pass_latency_max_ms" data-testid="monitor-pass-latency-max" type="number" min="1" max="5999" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMax')" />
+          <input v-model.number="form.pass_latency_min_ms" data-testid="monitor-pass-latency-min" type="number" min="1" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMin')" />
+          <input v-model.number="form.pass_latency_max_ms" data-testid="monitor-pass-latency-max" type="number" min="1" required class="input" :placeholder="t('admin.channelMonitor.form.passLatencyMax')" />
         </div>
         <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.passLatencyRangeHint') }}</p>
       </div>
@@ -638,8 +638,7 @@ async function handleSubmit() {
   }
   if (form.check_mode === CHECK_MODE_PASS && (
     form.pass_latency_min_ms < 1 ||
-    form.pass_latency_max_ms < form.pass_latency_min_ms ||
-    form.pass_latency_max_ms > 5999
+    form.pass_latency_max_ms < form.pass_latency_min_ms
   )) {
     appStore.showError(t('admin.channelMonitor.form.passLatencyRangeInvalid'))
     return

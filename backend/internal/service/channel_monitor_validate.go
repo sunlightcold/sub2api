@@ -85,7 +85,7 @@ func normalizePassLatencyRange(minMs, maxMs int) (int, int) {
 
 func validatePassLatencyRange(minMs, maxMs int) error {
 	minMs, maxMs = normalizePassLatencyRange(minMs, maxMs)
-	if minMs < 1 || maxMs < minMs || maxMs > MonitorMaxPassLatencyMs {
+	if minMs < 1 || maxMs < minMs {
 		return ErrChannelMonitorInvalidPassLatencyRange
 	}
 	return nil

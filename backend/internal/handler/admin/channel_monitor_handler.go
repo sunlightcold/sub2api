@@ -51,8 +51,8 @@ type channelMonitorCreateRequest struct {
 	JitterSeconds    int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
 	RetryCount       int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
 	CheckMode        string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
-	PassLatencyMinMs int               `json:"pass_latency_min_ms" binding:"omitempty,min=1,max=5999"`
-	PassLatencyMaxMs int               `json:"pass_latency_max_ms" binding:"omitempty,min=1,max=5999"`
+	PassLatencyMinMs int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
+	PassLatencyMaxMs int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
 	TemplateID       *int64            `json:"template_id"`
 	ExtraHeaders     map[string]string `json:"extra_headers"`
 	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
@@ -73,8 +73,8 @@ type channelMonitorUpdateRequest struct {
 	JitterSeconds    *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
 	RetryCount       *int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
 	CheckMode        *string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
-	PassLatencyMinMs *int               `json:"pass_latency_min_ms" binding:"omitempty,min=1,max=5999"`
-	PassLatencyMaxMs *int               `json:"pass_latency_max_ms" binding:"omitempty,min=1,max=5999"`
+	PassLatencyMinMs *int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
+	PassLatencyMaxMs *int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
 	TemplateID       *int64             `json:"template_id"`
 	ClearTemplate    bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
 	ExtraHeaders     *map[string]string `json:"extra_headers"`

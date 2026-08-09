@@ -542,8 +542,8 @@ export default {
         passLatencyRange: 'Direct Pass Latency Range (ms)',
         passLatencyMin: 'Minimum latency',
         passLatencyMax: 'Maximum latency',
-        passLatencyRangeHint: 'Each result uses a random inclusive value between the bounds (1-5999 ms).',
-        passLatencyRangeInvalid: 'Invalid latency range: minimum must be at least 1, maximum must not be below minimum or exceed 5999 ms.',
+        passLatencyRangeHint: 'Each result uses a random inclusive value between the bounds; values at 6 seconds or above are recorded as degraded.',
+        passLatencyRangeInvalid: 'Invalid latency range: minimum must be at least 1 and maximum must not be below minimum.',
         enabled: 'Enable monitor',
         kindRequired: 'Please select a provider'
       },

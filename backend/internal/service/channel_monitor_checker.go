@@ -107,17 +107,21 @@ func passCheckResult(model string, opts *CheckOptions) *CheckResult {
 		minMs, maxMs = MonitorDefaultPassLatencyMinMs, MonitorDefaultPassLatencyMaxMs
 	}
 	latencyMs := randomSyntheticLatencyMs(minMs, maxMs)
-	return &CheckResult{
+	res := &CheckResult{
 		Model:     model,
-		Status:    MonitorStatusOperational,
 		LatencyMs: &latencyMs,
 		CheckedAt: time.Now(),
 	}
+	if latencyMs >= int(monitorDegradedThreshold/time.Millisecond) {
+		res.Status = MonitorStatusDegraded
+		res.Message = truncateMessage(fmt.Sprintf("slow response: %dms", latencyMs))
+		return res
+	}
+	res.Status = MonitorStatusOperational
+	return res
 }
 
-// randomSyntheticLatencyMs returns a bounded, normal-looking latency for pass mode.
-// The upper bound stays far below monitorDegradedThreshold, while the random
-// jitter prevents consecutive pass results from looking like a fixed constant.
+// randomSyntheticLatencyMs returns an inclusive random latency in the configured range.
 func randomSyntheticLatencyMs(minMs, maxMs int) int {
 	return minMs + rand.IntN(maxMs-minMs+1)
 }

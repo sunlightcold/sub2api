@@ -542,8 +542,8 @@ export default {
         passLatencyRange: '直接通过延时范围 (毫秒)',
         passLatencyMin: '最小延时',
         passLatencyMax: '最大延时',
-        passLatencyRangeHint: '每次在最小值和最大值之间随机生成延时（含边界），范围为 1 - 5999 毫秒。',
-        passLatencyRangeInvalid: '延时范围无效：最小值至少为 1，最大值不得小于最小值且不能超过 5999 毫秒。',
+        passLatencyRangeHint: '每次在最小值和最大值之间随机生成延时（含边界）；达到 6 秒时记录为 degraded。',
+        passLatencyRangeInvalid: '延时范围无效：最小值至少为 1，最大值不得小于最小值。',
         enabled: '启用监控',
         kindRequired: '请选择供应商'
       },

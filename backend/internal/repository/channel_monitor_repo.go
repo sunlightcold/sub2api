@@ -776,7 +776,7 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 	out.CheckMode = defaultCheckModeRepo(checkModeRaw)
 	out.PassLatencyMinMs = monitorMetadataIntOrDefault(passLatencyMinRaw, service.MonitorDefaultPassLatencyMinMs)
 	out.PassLatencyMaxMs = monitorMetadataIntOrDefault(passLatencyMaxRaw, service.MonitorDefaultPassLatencyMaxMs)
-	if out.PassLatencyMinMs > out.PassLatencyMaxMs || out.PassLatencyMaxMs > service.MonitorMaxPassLatencyMs {
+	if out.PassLatencyMinMs > out.PassLatencyMaxMs {
 		out.PassLatencyMinMs = service.MonitorDefaultPassLatencyMinMs
 		out.PassLatencyMaxMs = service.MonitorDefaultPassLatencyMaxMs
 	}

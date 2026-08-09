@@ -15,21 +15,21 @@ func TestChannelMonitorDuplicateOperationMetadataStaysOutOfRuntimeHeaders(t *tes
 		ExtraHeaders:         map[string]string{"User-Agent": "Codex"},
 		DuplicateOperationID: "operation-digest",
 		PassLatencyMinMs:     1500,
-		PassLatencyMaxMs:     4500,
+		PassLatencyMaxMs:     14500,
 	}
 
 	persisted := channelMonitorHeadersForPersistence(monitor)
 	require.Equal(t, "operation-digest", persisted[service.ChannelMonitorDuplicateOperationIDMetadataKey])
 	require.Equal(t, "Codex", persisted["User-Agent"])
 	require.Equal(t, "1500", persisted[service.ChannelMonitorPassLatencyMinMsMetadataKey])
-	require.Equal(t, "4500", persisted[service.ChannelMonitorPassLatencyMaxMsMetadataKey])
+	require.Equal(t, "14500", persisted[service.ChannelMonitorPassLatencyMaxMsMetadataKey])
 	require.NotContains(t, monitor.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 
 	restored := entToServiceMonitor(&dbent.ChannelMonitor{ExtraHeaders: persisted})
 	require.Equal(t, "operation-digest", restored.DuplicateOperationID)
 	require.Equal(t, map[string]string{"User-Agent": "Codex"}, restored.ExtraHeaders)
 	require.Equal(t, 1500, restored.PassLatencyMinMs)
-	require.Equal(t, 4500, restored.PassLatencyMaxMs)
+	require.Equal(t, 14500, restored.PassLatencyMaxMs)
 	require.NotContains(t, restored.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 	require.Equal(t, "operation-digest", persisted[service.ChannelMonitorDuplicateOperationIDMetadataKey], "decoding must not mutate the ent row")
 }

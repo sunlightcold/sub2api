@@ -614,6 +614,23 @@ func TestPassCheckResultUsesDefaultsForMissingRange(t *testing.T) {
 	}
 }
 
+func TestPassCheckResultUsesLatencyThresholdForStatus(t *testing.T) {
+	result := passCheckResult("model", &CheckOptions{
+		CheckMode:        MonitorCheckModePass,
+		PassLatencyMinMs: 12500,
+		PassLatencyMaxMs: 12500,
+	})
+	if result.Status != MonitorStatusDegraded {
+		t.Fatalf("pass mode should derive status from latency, got %#v", result)
+	}
+	if result.LatencyMs == nil || *result.LatencyMs != 12500 {
+		t.Fatalf("pass mode should retain configured latency, got %v", result.LatencyMs)
+	}
+	if result.Message != "slow response: 12500ms" {
+		t.Fatalf("pass mode should include the standard slow response message, got %q", result.Message)
+	}
+}
+
 func TestValidatePassLatencyRange(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -625,7 +642,7 @@ func TestValidatePassLatencyRange(t *testing.T) {
 		{name: "configured", minMs: 1000, maxMs: 5000},
 		{name: "minimum below one", minMs: -1, maxMs: 1000, wantErr: true},
 		{name: "maximum below minimum", minMs: 2000, maxMs: 1000, wantErr: true},
-		{name: "maximum reaches degraded range", minMs: 1000, maxMs: 6000, wantErr: true},
+		{name: "maximum may exceed degraded threshold", minMs: 1000, maxMs: 60000},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validatePassLatencyRange(tc.minMs, tc.maxMs)
