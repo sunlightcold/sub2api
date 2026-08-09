@@ -544,6 +544,11 @@ export default {
         passLatencyMax: '最大延时',
         passLatencyRangeHint: '每次在最小值和最大值之间随机生成延时（含边界）；达到 6 秒时记录为 degraded。',
         passLatencyRangeInvalid: '延时范围无效：最小值至少为 1，最大值不得小于最小值。',
+        passPingLatencyRange: '端点 Ping 延时范围 (毫秒)',
+        passPingLatencyMin: '最小 Ping 延时',
+        passPingLatencyMax: '最大 Ping 延时',
+        passPingLatencyRangeHint: '直通模式不请求上游，在最小值和最大值之间随机生成端点 Ping 延时（含边界）。',
+        passPingLatencyRangeInvalid: '端点 Ping 延时范围无效：最小值至少为 1，最大值不得小于最小值。',
         enabled: '启用监控',
         kindRequired: '请选择供应商'
       },

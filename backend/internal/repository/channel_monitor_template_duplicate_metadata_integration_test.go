@@ -42,6 +42,8 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadata(t *testi
 			service.ChannelMonitorDuplicateOperationIDMetadataKey: "operation-digest",
 			service.ChannelMonitorPassLatencyMinMsMetadataKey:     "1500",
 			service.ChannelMonitorPassLatencyMaxMsMetadataKey:     "4500",
+			service.ChannelMonitorPassPingLatencyMinMsMetadataKey: "35",
+			service.ChannelMonitorPassPingLatencyMaxMsMetadataKey: "275",
 		}).
 		Save(ctx)
 	require.NoError(t, err)
@@ -58,10 +60,14 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadata(t *testi
 	require.Equal(t, "operation-digest", stored.ExtraHeaders[service.ChannelMonitorDuplicateOperationIDMetadataKey])
 	require.Equal(t, "1500", stored.ExtraHeaders[service.ChannelMonitorPassLatencyMinMsMetadataKey])
 	require.Equal(t, "4500", stored.ExtraHeaders[service.ChannelMonitorPassLatencyMaxMsMetadataKey])
+	require.Equal(t, "35", stored.ExtraHeaders[service.ChannelMonitorPassPingLatencyMinMsMetadataKey])
+	require.Equal(t, "275", stored.ExtraHeaders[service.ChannelMonitorPassPingLatencyMaxMsMetadataKey])
 
 	runtimeMonitor := entToServiceMonitor(stored)
 	require.Equal(t, "operation-digest", runtimeMonitor.DuplicateOperationID)
 	require.Equal(t, 1500, runtimeMonitor.PassLatencyMinMs)
 	require.Equal(t, 4500, runtimeMonitor.PassLatencyMaxMs)
+	require.Equal(t, 35, runtimeMonitor.PassPingLatencyMinMs)
+	require.Equal(t, 275, runtimeMonitor.PassPingLatencyMaxMs)
 	require.NotContains(t, runtimeMonitor.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 }

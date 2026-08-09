@@ -746,6 +746,10 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 	delete(headers, service.ChannelMonitorPassLatencyMinMsMetadataKey)
 	passLatencyMaxRaw := headers[service.ChannelMonitorPassLatencyMaxMsMetadataKey]
 	delete(headers, service.ChannelMonitorPassLatencyMaxMsMetadataKey)
+	passPingLatencyMinRaw := headers[service.ChannelMonitorPassPingLatencyMinMsMetadataKey]
+	delete(headers, service.ChannelMonitorPassPingLatencyMinMsMetadataKey)
+	passPingLatencyMaxRaw := headers[service.ChannelMonitorPassPingLatencyMaxMsMetadataKey]
+	delete(headers, service.ChannelMonitorPassPingLatencyMaxMsMetadataKey)
 	out := &service.ChannelMonitor{
 		ID:                   row.ID,
 		Name:                 row.Name,
@@ -780,6 +784,12 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		out.PassLatencyMinMs = service.MonitorDefaultPassLatencyMinMs
 		out.PassLatencyMaxMs = service.MonitorDefaultPassLatencyMaxMs
 	}
+	out.PassPingLatencyMinMs = monitorMetadataIntOrDefault(passPingLatencyMinRaw, service.MonitorDefaultPassPingLatencyMinMs)
+	out.PassPingLatencyMaxMs = monitorMetadataIntOrDefault(passPingLatencyMaxRaw, service.MonitorDefaultPassPingLatencyMaxMs)
+	if out.PassPingLatencyMinMs > out.PassPingLatencyMaxMs {
+		out.PassPingLatencyMinMs = service.MonitorDefaultPassPingLatencyMinMs
+		out.PassPingLatencyMaxMs = service.MonitorDefaultPassPingLatencyMaxMs
+	}
 	if row.TemplateID != nil {
 		id := *row.TemplateID
 		out.TemplateID = &id
@@ -791,7 +801,7 @@ func channelMonitorHeadersForPersistence(m *service.ChannelMonitor) map[string]s
 	if m == nil {
 		return map[string]string{}
 	}
-	headers := make(map[string]string, len(m.ExtraHeaders)+5)
+	headers := make(map[string]string, len(m.ExtraHeaders)+7)
 	for key, value := range m.ExtraHeaders {
 		if isChannelMonitorMetadataKey(key) {
 			continue
@@ -809,6 +819,12 @@ func channelMonitorHeadersForPersistence(m *service.ChannelMonitor) map[string]s
 	}
 	if m.PassLatencyMaxMs != 0 && m.PassLatencyMaxMs != service.MonitorDefaultPassLatencyMaxMs {
 		headers[service.ChannelMonitorPassLatencyMaxMsMetadataKey] = strconv.Itoa(m.PassLatencyMaxMs)
+	}
+	if m.PassPingLatencyMinMs != 0 && m.PassPingLatencyMinMs != service.MonitorDefaultPassPingLatencyMinMs {
+		headers[service.ChannelMonitorPassPingLatencyMinMsMetadataKey] = strconv.Itoa(m.PassPingLatencyMinMs)
+	}
+	if m.PassPingLatencyMaxMs != 0 && m.PassPingLatencyMaxMs != service.MonitorDefaultPassPingLatencyMaxMs {
+		headers[service.ChannelMonitorPassPingLatencyMaxMsMetadataKey] = strconv.Itoa(m.PassPingLatencyMaxMs)
 	}
 	if operationID := strings.TrimSpace(m.DuplicateOperationID); operationID != "" {
 		headers[service.ChannelMonitorDuplicateOperationIDMetadataKey] = operationID
@@ -830,7 +846,9 @@ func isChannelMonitorMetadataKey(key string) bool {
 		service.ChannelMonitorRetryCountMetadataKey,
 		service.ChannelMonitorCheckModeMetadataKey,
 		service.ChannelMonitorPassLatencyMinMsMetadataKey,
-		service.ChannelMonitorPassLatencyMaxMsMetadataKey:
+		service.ChannelMonitorPassLatencyMaxMsMetadataKey,
+		service.ChannelMonitorPassPingLatencyMinMsMetadataKey,
+		service.ChannelMonitorPassPingLatencyMaxMsMetadataKey:
 		return true
 	default:
 		return false

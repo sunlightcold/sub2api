@@ -151,6 +151,15 @@
         <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.passLatencyRangeHint') }}</p>
       </div>
 
+      <div v-if="form.check_mode === CHECK_MODE_PASS">
+        <label class="input-label">{{ t('admin.channelMonitor.form.passPingLatencyRange') }}</label>
+        <div class="grid grid-cols-2 gap-3">
+          <input v-model.number="form.pass_ping_latency_min_ms" data-testid="monitor-pass-ping-latency-min" type="number" min="1" required class="input" :placeholder="t('admin.channelMonitor.form.passPingLatencyMin')" />
+          <input v-model.number="form.pass_ping_latency_max_ms" data-testid="monitor-pass-ping-latency-max" type="number" min="1" required class="input" :placeholder="t('admin.channelMonitor.form.passPingLatencyMax')" />
+        </div>
+        <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.passPingLatencyRangeHint') }}</p>
+      </div>
+
       <div class="flex items-center justify-between">
         <label class="input-label mb-0">{{ t('admin.channelMonitor.form.enabled') }}</label>
         <Toggle v-model="form.enabled" />
@@ -307,6 +316,8 @@ interface MonitorForm {
   check_mode: CheckMode
   pass_latency_min_ms: number
   pass_latency_max_ms: number
+  pass_ping_latency_min_ms: number
+  pass_ping_latency_max_ms: number
   enabled: boolean
   // 高级设置快照
   template_id: number | null
@@ -330,6 +341,8 @@ const form = reactive<MonitorForm>({
   check_mode: CHECK_MODE_REQUEST,
   pass_latency_min_ms: 800,
   pass_latency_max_ms: 2500,
+  pass_ping_latency_min_ms: 20,
+  pass_ping_latency_max_ms: 120,
   enabled: true,
   template_id: null,
   extra_headers: {},
@@ -524,6 +537,8 @@ function resetForm() {
   form.check_mode = CHECK_MODE_REQUEST
   form.pass_latency_min_ms = 800
   form.pass_latency_max_ms = 2500
+  form.pass_ping_latency_min_ms = 20
+  form.pass_ping_latency_max_ms = 120
   form.enabled = true
   form.template_id = null
   form.extra_headers = {}
@@ -548,6 +563,8 @@ function loadFromMonitor(m: ChannelMonitor) {
   form.check_mode = m.check_mode || CHECK_MODE_REQUEST
   form.pass_latency_min_ms = m.pass_latency_min_ms || 800
   form.pass_latency_max_ms = m.pass_latency_max_ms || 2500
+  form.pass_ping_latency_min_ms = m.pass_ping_latency_min_ms || 20
+  form.pass_ping_latency_max_ms = m.pass_ping_latency_max_ms || 120
   form.enabled = m.enabled
   form.template_id = m.template_id ?? null
   form.extra_headers = { ...(m.extra_headers || {}) }
@@ -619,6 +636,8 @@ function buildPayload(): CreateParams {
     check_mode: form.check_mode,
     pass_latency_min_ms: form.pass_latency_min_ms,
     pass_latency_max_ms: form.pass_latency_max_ms,
+    pass_ping_latency_min_ms: form.pass_ping_latency_min_ms,
+    pass_ping_latency_max_ms: form.pass_ping_latency_max_ms,
     template_id: form.template_id,
     extra_headers: form.extra_headers,
     body_override_mode: form.body_override_mode,
@@ -641,6 +660,14 @@ async function handleSubmit() {
     form.pass_latency_max_ms < form.pass_latency_min_ms
   )) {
     appStore.showError(t('admin.channelMonitor.form.passLatencyRangeInvalid'))
+    return
+  }
+
+  if (form.check_mode === CHECK_MODE_PASS && (
+    form.pass_ping_latency_min_ms < 1 ||
+    form.pass_ping_latency_max_ms < form.pass_ping_latency_min_ms
+  )) {
+    appStore.showError(t('admin.channelMonitor.form.passPingLatencyRangeInvalid'))
     return
   }
 

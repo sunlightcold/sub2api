@@ -595,6 +595,42 @@ func TestRunCheckForModelWithRetry_PassModeDoesNotSendRequest(t *testing.T) {
 	}
 }
 
+func TestRunChecksConcurrent_PassModeGeneratesSharedConfiguredPing(t *testing.T) {
+	pingRequests := 0
+	original := monitorPingHTTPClient
+	monitorPingHTTPClient = &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		pingRequests++
+		return nil, fmt.Errorf("unexpected ping request")
+	})}
+	t.Cleanup(func() { monitorPingHTTPClient = original })
+
+	service := &ChannelMonitorService{}
+	results := service.runChecksConcurrent(context.Background(), &ChannelMonitor{
+		Provider:             MonitorProviderOpenAI,
+		Endpoint:             "https://example.com",
+		PrimaryModel:         "primary",
+		ExtraModels:          []string{"extra"},
+		CheckMode:            MonitorCheckModePass,
+		PassLatencyMinMs:     800,
+		PassLatencyMaxMs:     2500,
+		PassPingLatencyMinMs: 35,
+		PassPingLatencyMaxMs: 275,
+	})
+
+	if pingRequests != 0 {
+		t.Fatalf("pass mode sent %d endpoint ping requests", pingRequests)
+	}
+	if len(results) != 2 || results[0].PingLatencyMs == nil || results[1].PingLatencyMs == nil {
+		t.Fatalf("pass mode should generate ping for every model, got %#v", results)
+	}
+	if *results[0].PingLatencyMs < 35 || *results[0].PingLatencyMs > 275 {
+		t.Fatalf("synthetic ping escaped configured range: %dms", *results[0].PingLatencyMs)
+	}
+	if *results[0].PingLatencyMs != *results[1].PingLatencyMs {
+		t.Fatalf("models in one run should share endpoint ping: %#v", results)
+	}
+}
+
 func TestRandomSyntheticLatencyMsStaysWithinConfiguredRange(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		latencyMs := randomSyntheticLatencyMs(1250, 4750)
@@ -650,6 +686,25 @@ func TestValidatePassLatencyRange(t *testing.T) {
 				t.Fatalf("validatePassLatencyRange(%d, %d) error = %v, wantErr %v", tc.minMs, tc.maxMs, err, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestNormalizeAndValidatePassPingLatencyRange(t *testing.T) {
+	minMs, maxMs := normalizePassPingLatencyRange(0, 0)
+	if minMs != MonitorDefaultPassPingLatencyMinMs || maxMs != MonitorDefaultPassPingLatencyMaxMs {
+		t.Fatalf("unexpected default pass ping range: %d-%d", minMs, maxMs)
+	}
+	for i := 0; i < 1000; i++ {
+		pingMs := randomSyntheticLatencyMs(35, 275)
+		if pingMs < 35 || pingMs > 275 {
+			t.Fatalf("synthetic ping escaped configured range: %dms", pingMs)
+		}
+	}
+	if err := validatePassPingLatencyRange(-1, 100); err == nil {
+		t.Fatal("negative pass ping minimum should be rejected")
+	}
+	if err := validatePassPingLatencyRange(200, 100); err == nil {
+		t.Fatal("pass ping maximum below minimum should be rejected")
 	}
 }
 

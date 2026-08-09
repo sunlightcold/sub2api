@@ -91,10 +91,12 @@ const ChannelMonitorDuplicateOperationIDMetadataKey = "sub2api:duplicate_operati
 // use the existing JSON snapshot column for backward-compatible persistence.
 // Repository code strips them before exposing or forwarding ExtraHeaders.
 const (
-	ChannelMonitorRetryCountMetadataKey       = "sub2api:retry_count"
-	ChannelMonitorCheckModeMetadataKey        = "sub2api:check_mode"
-	ChannelMonitorPassLatencyMinMsMetadataKey = "sub2api:pass_latency_min_ms"
-	ChannelMonitorPassLatencyMaxMsMetadataKey = "sub2api:pass_latency_max_ms"
+	ChannelMonitorRetryCountMetadataKey           = "sub2api:retry_count"
+	ChannelMonitorCheckModeMetadataKey            = "sub2api:check_mode"
+	ChannelMonitorPassLatencyMinMsMetadataKey     = "sub2api:pass_latency_min_ms"
+	ChannelMonitorPassLatencyMaxMsMetadataKey     = "sub2api:pass_latency_max_ms"
+	ChannelMonitorPassPingLatencyMinMsMetadataKey = "sub2api:pass_ping_latency_min_ms"
+	ChannelMonitorPassPingLatencyMaxMsMetadataKey = "sub2api:pass_ping_latency_max_ms"
 )
 
 // NewChannelMonitorService 创建渠道监控服务实例。
@@ -165,28 +167,31 @@ func (s *ChannelMonitorService) Create(ctx context.Context, p ChannelMonitorCrea
 		return nil, fmt.Errorf("encrypt api key: %w", err)
 	}
 	m := &ChannelMonitor{
-		Name:             strings.TrimSpace(p.Name),
-		Provider:         p.Provider,
-		APIMode:          defaultAPIMode(p.APIMode),
-		Endpoint:         normalizeEndpoint(p.Endpoint),
-		APIKey:           encrypted, // 注意：传入 repository 时该字段为密文
-		PrimaryModel:     normalizeMonitorPrimaryModel(p.Provider, p.PrimaryModel),
-		ExtraModels:      normalizeModels(p.ExtraModels),
-		GroupName:        strings.TrimSpace(p.GroupName),
-		Enabled:          p.Enabled,
-		IntervalSeconds:  p.IntervalSeconds,
-		JitterSeconds:    p.JitterSeconds,
-		RetryCount:       p.RetryCount,
-		CheckMode:        defaultCheckMode(p.CheckMode),
-		PassLatencyMinMs: p.PassLatencyMinMs,
-		PassLatencyMaxMs: p.PassLatencyMaxMs,
-		CreatedBy:        p.CreatedBy,
-		TemplateID:       p.TemplateID,
-		ExtraHeaders:     emptyHeadersIfNil(p.ExtraHeaders),
-		BodyOverrideMode: defaultBodyMode(p.BodyOverrideMode),
-		BodyOverride:     p.BodyOverride,
+		Name:                 strings.TrimSpace(p.Name),
+		Provider:             p.Provider,
+		APIMode:              defaultAPIMode(p.APIMode),
+		Endpoint:             normalizeEndpoint(p.Endpoint),
+		APIKey:               encrypted, // 注意：传入 repository 时该字段为密文
+		PrimaryModel:         normalizeMonitorPrimaryModel(p.Provider, p.PrimaryModel),
+		ExtraModels:          normalizeModels(p.ExtraModels),
+		GroupName:            strings.TrimSpace(p.GroupName),
+		Enabled:              p.Enabled,
+		IntervalSeconds:      p.IntervalSeconds,
+		JitterSeconds:        p.JitterSeconds,
+		RetryCount:           p.RetryCount,
+		CheckMode:            defaultCheckMode(p.CheckMode),
+		PassLatencyMinMs:     p.PassLatencyMinMs,
+		PassLatencyMaxMs:     p.PassLatencyMaxMs,
+		PassPingLatencyMinMs: p.PassPingLatencyMinMs,
+		PassPingLatencyMaxMs: p.PassPingLatencyMaxMs,
+		CreatedBy:            p.CreatedBy,
+		TemplateID:           p.TemplateID,
+		ExtraHeaders:         emptyHeadersIfNil(p.ExtraHeaders),
+		BodyOverrideMode:     defaultBodyMode(p.BodyOverrideMode),
+		BodyOverride:         p.BodyOverride,
 	}
 	m.PassLatencyMinMs, m.PassLatencyMaxMs = normalizePassLatencyRange(m.PassLatencyMinMs, m.PassLatencyMaxMs)
+	m.PassPingLatencyMinMs, m.PassPingLatencyMaxMs = normalizePassPingLatencyRange(m.PassPingLatencyMinMs, m.PassPingLatencyMaxMs)
 	if err := s.repo.Create(ctx, m); err != nil {
 		return nil, fmt.Errorf("create channel monitor: %w", err)
 	}
@@ -250,6 +255,8 @@ func (s *ChannelMonitorService) Duplicate(
 		CheckMode:            source.CheckMode,
 		PassLatencyMinMs:     source.PassLatencyMinMs,
 		PassLatencyMaxMs:     source.PassLatencyMaxMs,
+		PassPingLatencyMinMs: source.PassPingLatencyMinMs,
+		PassPingLatencyMaxMs: source.PassPingLatencyMaxMs,
 		CreatedBy:            createdBy,
 		TemplateID:           cloneInt64Pointer(source.TemplateID),
 		ExtraHeaders:         cloneChannelMonitorHeaders(source.ExtraHeaders),
@@ -384,6 +391,9 @@ func validateCreateParams(p ChannelMonitorCreateParams) error {
 		}
 	}
 	if err := validatePassLatencyRange(p.PassLatencyMinMs, p.PassLatencyMaxMs); err != nil {
+		return err
+	}
+	if err := validatePassPingLatencyRange(p.PassPingLatencyMinMs, p.PassPingLatencyMaxMs); err != nil {
 		return err
 	}
 	if err := validateEndpoint(p.Endpoint); err != nil {
@@ -535,10 +545,18 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 	models := append([]string{m.PrimaryModel}, m.ExtraModels...)
 	results := make([]*CheckResult, len(models))
 
-	// ping 共享一次，所有真实请求模型记录同一个 ping 延迟；直通模式不发起任何 HTTP 请求。
+	// ping 共享一次，所有模型记录同一个 ping 延迟。真实请求模式执行原有
+	// endpoint HEAD ping；直通模式只生成模拟值，不发起任何 HTTP 请求。
 	var pingMs *int
 	if defaultCheckMode(m.CheckMode) == MonitorCheckModeRequest {
 		pingMs = pingEndpointOrigin(ctx, m.Endpoint)
+	} else {
+		minMs, maxMs := normalizePassPingLatencyRange(m.PassPingLatencyMinMs, m.PassPingLatencyMaxMs)
+		if validatePassPingLatencyRange(minMs, maxMs) != nil {
+			minMs, maxMs = MonitorDefaultPassPingLatencyMinMs, MonitorDefaultPassPingLatencyMaxMs
+		}
+		ping := randomSyntheticLatencyMs(minMs, maxMs)
+		pingMs = &ping
 	}
 
 	// 所有模型共用同一份 CheckOptions（来自监控的快照字段）。
@@ -789,6 +807,19 @@ func applyMonitorUpdate(existing *ChannelMonitor, p ChannelMonitorUpdateParams) 
 			return err
 		}
 		existing.PassLatencyMinMs, existing.PassLatencyMaxMs = minMs, maxMs
+	}
+	if p.PassPingLatencyMinMs != nil {
+		existing.PassPingLatencyMinMs = *p.PassPingLatencyMinMs
+	}
+	if p.PassPingLatencyMaxMs != nil {
+		existing.PassPingLatencyMaxMs = *p.PassPingLatencyMaxMs
+	}
+	if p.PassPingLatencyMinMs != nil || p.PassPingLatencyMaxMs != nil {
+		minMs, maxMs := normalizePassPingLatencyRange(existing.PassPingLatencyMinMs, existing.PassPingLatencyMaxMs)
+		if err := validatePassPingLatencyRange(minMs, maxMs); err != nil {
+			return err
+		}
+		existing.PassPingLatencyMinMs, existing.PassPingLatencyMaxMs = minMs, maxMs
 	}
 	if p.IntervalSeconds != nil || p.JitterSeconds != nil {
 		// interval 与 jitter 任一变化都需要重新校验组合约束（interval - jitter >= 下限）。

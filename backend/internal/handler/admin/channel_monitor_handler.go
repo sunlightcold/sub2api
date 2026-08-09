@@ -38,76 +38,82 @@ func NewChannelMonitorHandler(monitorService *service.ChannelMonitorService) *Ch
 // --- Request / Response ---
 
 type channelMonitorCreateRequest struct {
-	Name             string            `json:"name" binding:"required,max=100"`
-	Provider         string            `json:"provider" binding:"required,oneof=openai anthropic gemini grok"`
-	APIMode          string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
-	Endpoint         string            `json:"endpoint" binding:"required,max=500"`
-	APIKey           string            `json:"api_key" binding:"required,max=2000"`
-	PrimaryModel     string            `json:"primary_model" binding:"max=200"`
-	ExtraModels      []string          `json:"extra_models"`
-	GroupName        string            `json:"group_name" binding:"max=100"`
-	Enabled          *bool             `json:"enabled"`
-	IntervalSeconds  int               `json:"interval_seconds" binding:"required,min=15,max=3600"`
-	JitterSeconds    int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
-	RetryCount       int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
-	CheckMode        string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
-	PassLatencyMinMs int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
-	PassLatencyMaxMs int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
-	TemplateID       *int64            `json:"template_id"`
-	ExtraHeaders     map[string]string `json:"extra_headers"`
-	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
-	BodyOverride     map[string]any    `json:"body_override"`
+	Name                 string            `json:"name" binding:"required,max=100"`
+	Provider             string            `json:"provider" binding:"required,oneof=openai anthropic gemini grok"`
+	APIMode              string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
+	Endpoint             string            `json:"endpoint" binding:"required,max=500"`
+	APIKey               string            `json:"api_key" binding:"required,max=2000"`
+	PrimaryModel         string            `json:"primary_model" binding:"max=200"`
+	ExtraModels          []string          `json:"extra_models"`
+	GroupName            string            `json:"group_name" binding:"max=100"`
+	Enabled              *bool             `json:"enabled"`
+	IntervalSeconds      int               `json:"interval_seconds" binding:"required,min=15,max=3600"`
+	JitterSeconds        int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	RetryCount           int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
+	CheckMode            string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
+	PassLatencyMinMs     int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
+	PassLatencyMaxMs     int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
+	PassPingLatencyMinMs int               `json:"pass_ping_latency_min_ms" binding:"omitempty,min=1"`
+	PassPingLatencyMaxMs int               `json:"pass_ping_latency_max_ms" binding:"omitempty,min=1"`
+	TemplateID           *int64            `json:"template_id"`
+	ExtraHeaders         map[string]string `json:"extra_headers"`
+	BodyOverrideMode     string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
+	BodyOverride         map[string]any    `json:"body_override"`
 }
 
 type channelMonitorUpdateRequest struct {
-	Name             *string            `json:"name" binding:"omitempty,max=100"`
-	Provider         *string            `json:"provider" binding:"omitempty,oneof=openai anthropic gemini grok"`
-	APIMode          *string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
-	Endpoint         *string            `json:"endpoint" binding:"omitempty,max=500"`
-	APIKey           *string            `json:"api_key" binding:"omitempty,max=2000"`
-	PrimaryModel     *string            `json:"primary_model" binding:"omitempty,max=200"`
-	ExtraModels      *[]string          `json:"extra_models"`
-	GroupName        *string            `json:"group_name" binding:"omitempty,max=100"`
-	Enabled          *bool              `json:"enabled"`
-	IntervalSeconds  *int               `json:"interval_seconds" binding:"omitempty,min=15,max=3600"`
-	JitterSeconds    *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
-	RetryCount       *int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
-	CheckMode        *string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
-	PassLatencyMinMs *int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
-	PassLatencyMaxMs *int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
-	TemplateID       *int64             `json:"template_id"`
-	ClearTemplate    bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
-	ExtraHeaders     *map[string]string `json:"extra_headers"`
-	BodyOverrideMode *string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
-	BodyOverride     *map[string]any    `json:"body_override"`
+	Name                 *string            `json:"name" binding:"omitempty,max=100"`
+	Provider             *string            `json:"provider" binding:"omitempty,oneof=openai anthropic gemini grok"`
+	APIMode              *string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
+	Endpoint             *string            `json:"endpoint" binding:"omitempty,max=500"`
+	APIKey               *string            `json:"api_key" binding:"omitempty,max=2000"`
+	PrimaryModel         *string            `json:"primary_model" binding:"omitempty,max=200"`
+	ExtraModels          *[]string          `json:"extra_models"`
+	GroupName            *string            `json:"group_name" binding:"omitempty,max=100"`
+	Enabled              *bool              `json:"enabled"`
+	IntervalSeconds      *int               `json:"interval_seconds" binding:"omitempty,min=15,max=3600"`
+	JitterSeconds        *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	RetryCount           *int               `json:"retry_count" binding:"omitempty,min=0,max=5"`
+	CheckMode            *string            `json:"check_mode" binding:"omitempty,oneof=request pass"`
+	PassLatencyMinMs     *int               `json:"pass_latency_min_ms" binding:"omitempty,min=1"`
+	PassLatencyMaxMs     *int               `json:"pass_latency_max_ms" binding:"omitempty,min=1"`
+	PassPingLatencyMinMs *int               `json:"pass_ping_latency_min_ms" binding:"omitempty,min=1"`
+	PassPingLatencyMaxMs *int               `json:"pass_ping_latency_max_ms" binding:"omitempty,min=1"`
+	TemplateID           *int64             `json:"template_id"`
+	ClearTemplate        bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
+	ExtraHeaders         *map[string]string `json:"extra_headers"`
+	BodyOverrideMode     *string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
+	BodyOverride         *map[string]any    `json:"body_override"`
 }
 
 type channelMonitorResponse struct {
-	ID                  int64                                `json:"id"`
-	Name                string                               `json:"name"`
-	Provider            string                               `json:"provider"`
-	APIMode             string                               `json:"api_mode"`
-	Endpoint            string                               `json:"endpoint"`
-	APIKeyMasked        string                               `json:"api_key_masked"`
-	APIKeyDecryptFailed bool                                 `json:"api_key_decrypt_failed"`
-	PrimaryModel        string                               `json:"primary_model"`
-	ExtraModels         []string                             `json:"extra_models"`
-	GroupName           string                               `json:"group_name"`
-	Enabled             bool                                 `json:"enabled"`
-	IntervalSeconds     int                                  `json:"interval_seconds"`
-	JitterSeconds       int                                  `json:"jitter_seconds"`
-	RetryCount          int                                  `json:"retry_count"`
-	CheckMode           string                               `json:"check_mode"`
-	PassLatencyMinMs    int                                  `json:"pass_latency_min_ms"`
-	PassLatencyMaxMs    int                                  `json:"pass_latency_max_ms"`
-	LastCheckedAt       *string                              `json:"last_checked_at"`
-	CreatedBy           int64                                `json:"created_by"`
-	CreatedAt           string                               `json:"created_at"`
-	UpdatedAt           string                               `json:"updated_at"`
-	PrimaryStatus       string                               `json:"primary_status"`
-	PrimaryLatencyMs    *int                                 `json:"primary_latency_ms"`
-	Availability7d      float64                              `json:"availability_7d"`
-	ExtraModelsStatus   []dto.ChannelMonitorExtraModelStatus `json:"extra_models_status"`
+	ID                   int64                                `json:"id"`
+	Name                 string                               `json:"name"`
+	Provider             string                               `json:"provider"`
+	APIMode              string                               `json:"api_mode"`
+	Endpoint             string                               `json:"endpoint"`
+	APIKeyMasked         string                               `json:"api_key_masked"`
+	APIKeyDecryptFailed  bool                                 `json:"api_key_decrypt_failed"`
+	PrimaryModel         string                               `json:"primary_model"`
+	ExtraModels          []string                             `json:"extra_models"`
+	GroupName            string                               `json:"group_name"`
+	Enabled              bool                                 `json:"enabled"`
+	IntervalSeconds      int                                  `json:"interval_seconds"`
+	JitterSeconds        int                                  `json:"jitter_seconds"`
+	RetryCount           int                                  `json:"retry_count"`
+	CheckMode            string                               `json:"check_mode"`
+	PassLatencyMinMs     int                                  `json:"pass_latency_min_ms"`
+	PassLatencyMaxMs     int                                  `json:"pass_latency_max_ms"`
+	PassPingLatencyMinMs int                                  `json:"pass_ping_latency_min_ms"`
+	PassPingLatencyMaxMs int                                  `json:"pass_ping_latency_max_ms"`
+	LastCheckedAt        *string                              `json:"last_checked_at"`
+	CreatedBy            int64                                `json:"created_by"`
+	CreatedAt            string                               `json:"created_at"`
+	UpdatedAt            string                               `json:"updated_at"`
+	PrimaryStatus        string                               `json:"primary_status"`
+	PrimaryLatencyMs     *int                                 `json:"primary_latency_ms"`
+	Availability7d       float64                              `json:"availability_7d"`
+	ExtraModelsStatus    []dto.ChannelMonitorExtraModelStatus `json:"extra_models_status"`
 	// 请求自定义快照：前端编辑 / 展示「高级设置」用
 	TemplateID       *int64            `json:"template_id"`
 	ExtraHeaders     map[string]string `json:"extra_headers"`
@@ -155,30 +161,32 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		headers = map[string]string{}
 	}
 	resp := &channelMonitorResponse{
-		ID:                  m.ID,
-		Name:                m.Name,
-		Provider:            m.Provider,
-		APIMode:             m.APIMode,
-		Endpoint:            m.Endpoint,
-		APIKeyMasked:        maskAPIKey(m.APIKey),
-		APIKeyDecryptFailed: m.APIKeyDecryptFailed,
-		PrimaryModel:        m.PrimaryModel,
-		ExtraModels:         extras,
-		GroupName:           m.GroupName,
-		Enabled:             m.Enabled,
-		IntervalSeconds:     m.IntervalSeconds,
-		JitterSeconds:       m.JitterSeconds,
-		RetryCount:          m.RetryCount,
-		CheckMode:           m.CheckMode,
-		PassLatencyMinMs:    m.PassLatencyMinMs,
-		PassLatencyMaxMs:    m.PassLatencyMaxMs,
-		CreatedBy:           m.CreatedBy,
-		CreatedAt:           m.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:           m.UpdatedAt.UTC().Format(time.RFC3339),
-		TemplateID:          m.TemplateID,
-		ExtraHeaders:        headers,
-		BodyOverrideMode:    m.BodyOverrideMode,
-		BodyOverride:        m.BodyOverride,
+		ID:                   m.ID,
+		Name:                 m.Name,
+		Provider:             m.Provider,
+		APIMode:              m.APIMode,
+		Endpoint:             m.Endpoint,
+		APIKeyMasked:         maskAPIKey(m.APIKey),
+		APIKeyDecryptFailed:  m.APIKeyDecryptFailed,
+		PrimaryModel:         m.PrimaryModel,
+		ExtraModels:          extras,
+		GroupName:            m.GroupName,
+		Enabled:              m.Enabled,
+		IntervalSeconds:      m.IntervalSeconds,
+		JitterSeconds:        m.JitterSeconds,
+		RetryCount:           m.RetryCount,
+		CheckMode:            m.CheckMode,
+		PassLatencyMinMs:     m.PassLatencyMinMs,
+		PassLatencyMaxMs:     m.PassLatencyMaxMs,
+		PassPingLatencyMinMs: m.PassPingLatencyMinMs,
+		PassPingLatencyMaxMs: m.PassPingLatencyMaxMs,
+		CreatedBy:            m.CreatedBy,
+		CreatedAt:            m.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:            m.UpdatedAt.UTC().Format(time.RFC3339),
+		TemplateID:           m.TemplateID,
+		ExtraHeaders:         headers,
+		BodyOverrideMode:     m.BodyOverrideMode,
+		BodyOverride:         m.BodyOverride,
 		// PrimaryStatus / PrimaryLatencyMs / Availability7d 由 List handler 在批量聚合后填充。
 	}
 	if m.LastCheckedAt != nil {
@@ -327,26 +335,28 @@ func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 	}
 
 	m, err := h.monitorService.Create(c.Request.Context(), service.ChannelMonitorCreateParams{
-		Name:             req.Name,
-		Provider:         req.Provider,
-		APIMode:          req.APIMode,
-		Endpoint:         req.Endpoint,
-		APIKey:           req.APIKey,
-		PrimaryModel:     req.PrimaryModel,
-		ExtraModels:      req.ExtraModels,
-		GroupName:        req.GroupName,
-		Enabled:          enabled,
-		IntervalSeconds:  req.IntervalSeconds,
-		JitterSeconds:    req.JitterSeconds,
-		RetryCount:       req.RetryCount,
-		CheckMode:        req.CheckMode,
-		PassLatencyMinMs: req.PassLatencyMinMs,
-		PassLatencyMaxMs: req.PassLatencyMaxMs,
-		CreatedBy:        subject.UserID,
-		TemplateID:       req.TemplateID,
-		ExtraHeaders:     req.ExtraHeaders,
-		BodyOverrideMode: req.BodyOverrideMode,
-		BodyOverride:     req.BodyOverride,
+		Name:                 req.Name,
+		Provider:             req.Provider,
+		APIMode:              req.APIMode,
+		Endpoint:             req.Endpoint,
+		APIKey:               req.APIKey,
+		PrimaryModel:         req.PrimaryModel,
+		ExtraModels:          req.ExtraModels,
+		GroupName:            req.GroupName,
+		Enabled:              enabled,
+		IntervalSeconds:      req.IntervalSeconds,
+		JitterSeconds:        req.JitterSeconds,
+		RetryCount:           req.RetryCount,
+		CheckMode:            req.CheckMode,
+		PassLatencyMinMs:     req.PassLatencyMinMs,
+		PassLatencyMaxMs:     req.PassLatencyMaxMs,
+		PassPingLatencyMinMs: req.PassPingLatencyMinMs,
+		PassPingLatencyMaxMs: req.PassPingLatencyMaxMs,
+		CreatedBy:            subject.UserID,
+		TemplateID:           req.TemplateID,
+		ExtraHeaders:         req.ExtraHeaders,
+		BodyOverrideMode:     req.BodyOverrideMode,
+		BodyOverride:         req.BodyOverride,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -425,26 +435,28 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 	}
 
 	m, err := h.monitorService.Update(c.Request.Context(), id, service.ChannelMonitorUpdateParams{
-		Name:             req.Name,
-		Provider:         req.Provider,
-		APIMode:          req.APIMode,
-		Endpoint:         req.Endpoint,
-		APIKey:           req.APIKey,
-		PrimaryModel:     req.PrimaryModel,
-		ExtraModels:      req.ExtraModels,
-		GroupName:        req.GroupName,
-		Enabled:          req.Enabled,
-		IntervalSeconds:  req.IntervalSeconds,
-		JitterSeconds:    req.JitterSeconds,
-		RetryCount:       req.RetryCount,
-		CheckMode:        req.CheckMode,
-		PassLatencyMinMs: req.PassLatencyMinMs,
-		PassLatencyMaxMs: req.PassLatencyMaxMs,
-		TemplateID:       req.TemplateID,
-		ClearTemplate:    req.ClearTemplate,
-		ExtraHeaders:     req.ExtraHeaders,
-		BodyOverrideMode: req.BodyOverrideMode,
-		BodyOverride:     req.BodyOverride,
+		Name:                 req.Name,
+		Provider:             req.Provider,
+		APIMode:              req.APIMode,
+		Endpoint:             req.Endpoint,
+		APIKey:               req.APIKey,
+		PrimaryModel:         req.PrimaryModel,
+		ExtraModels:          req.ExtraModels,
+		GroupName:            req.GroupName,
+		Enabled:              req.Enabled,
+		IntervalSeconds:      req.IntervalSeconds,
+		JitterSeconds:        req.JitterSeconds,
+		RetryCount:           req.RetryCount,
+		CheckMode:            req.CheckMode,
+		PassLatencyMinMs:     req.PassLatencyMinMs,
+		PassLatencyMaxMs:     req.PassLatencyMaxMs,
+		PassPingLatencyMinMs: req.PassPingLatencyMinMs,
+		PassPingLatencyMaxMs: req.PassPingLatencyMaxMs,
+		TemplateID:           req.TemplateID,
+		ClearTemplate:        req.ClearTemplate,
+		ExtraHeaders:         req.ExtraHeaders,
+		BodyOverrideMode:     req.BodyOverrideMode,
+		BodyOverride:         req.BodyOverride,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

@@ -40,7 +40,7 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadataAtomicall
 			service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$7\s+AND id = ANY\(\$8\)\s+AND provider = \$9\s+AND api_mode = \$10`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$9\s+AND id = ANY\(\$10\)\s+AND provider = \$11\s+AND api_mode = \$12`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
@@ -48,6 +48,8 @@ func TestApplyChannelMonitorTemplatePreservesDuplicateOperationMetadataAtomicall
 			service.ChannelMonitorCheckModeMetadataKey,
 			service.ChannelMonitorPassLatencyMinMsMetadataKey,
 			service.ChannelMonitorPassLatencyMaxMsMetadataKey,
+			service.ChannelMonitorPassPingLatencyMinMsMetadataKey,
+			service.ChannelMonitorPassPingLatencyMaxMsMetadataKey,
 			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 2))
@@ -74,7 +76,7 @@ func TestApplyChannelMonitorTemplateRollsBackWhenHeaderRowCountDiffers(t *testin
 	expectChannelMonitorTemplateForApply(mock, templateID)
 	mock.ExpectExec(`(?s)UPDATE "channel_monitors" SET .*WHERE `).
 		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$7.*AND id = ANY\(\$8\)`).
+	mock.ExpectExec(`(?s)UPDATE channel_monitors\s+SET extra_headers = .*WHERE template_id = \$9.*AND id = ANY\(\$10\)`).
 		WithArgs(
 			`{"User-Agent":"template-client"}`,
 			service.ChannelMonitorDuplicateOperationIDMetadataKey,
@@ -82,6 +84,8 @@ func TestApplyChannelMonitorTemplateRollsBackWhenHeaderRowCountDiffers(t *testin
 			service.ChannelMonitorCheckModeMetadataKey,
 			service.ChannelMonitorPassLatencyMinMsMetadataKey,
 			service.ChannelMonitorPassLatencyMaxMsMetadataKey,
+			service.ChannelMonitorPassPingLatencyMinMsMetadataKey,
+			service.ChannelMonitorPassPingLatencyMaxMsMetadataKey,
 			templateID, `{41,42}`, service.MonitorProviderOpenAI, service.MonitorAPIModeResponses,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))

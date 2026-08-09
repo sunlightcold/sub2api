@@ -16,6 +16,8 @@ func TestChannelMonitorDuplicateOperationMetadataStaysOutOfRuntimeHeaders(t *tes
 		DuplicateOperationID: "operation-digest",
 		PassLatencyMinMs:     1500,
 		PassLatencyMaxMs:     14500,
+		PassPingLatencyMinMs: 35,
+		PassPingLatencyMaxMs: 275,
 	}
 
 	persisted := channelMonitorHeadersForPersistence(monitor)
@@ -23,6 +25,8 @@ func TestChannelMonitorDuplicateOperationMetadataStaysOutOfRuntimeHeaders(t *tes
 	require.Equal(t, "Codex", persisted["User-Agent"])
 	require.Equal(t, "1500", persisted[service.ChannelMonitorPassLatencyMinMsMetadataKey])
 	require.Equal(t, "14500", persisted[service.ChannelMonitorPassLatencyMaxMsMetadataKey])
+	require.Equal(t, "35", persisted[service.ChannelMonitorPassPingLatencyMinMsMetadataKey])
+	require.Equal(t, "275", persisted[service.ChannelMonitorPassPingLatencyMaxMsMetadataKey])
 	require.NotContains(t, monitor.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 
 	restored := entToServiceMonitor(&dbent.ChannelMonitor{ExtraHeaders: persisted})
@@ -30,6 +34,8 @@ func TestChannelMonitorDuplicateOperationMetadataStaysOutOfRuntimeHeaders(t *tes
 	require.Equal(t, map[string]string{"User-Agent": "Codex"}, restored.ExtraHeaders)
 	require.Equal(t, 1500, restored.PassLatencyMinMs)
 	require.Equal(t, 14500, restored.PassLatencyMaxMs)
+	require.Equal(t, 35, restored.PassPingLatencyMinMs)
+	require.Equal(t, 275, restored.PassPingLatencyMaxMs)
 	require.NotContains(t, restored.ExtraHeaders, service.ChannelMonitorDuplicateOperationIDMetadataKey)
 	require.Equal(t, "operation-digest", persisted[service.ChannelMonitorDuplicateOperationIDMetadataKey], "decoding must not mutate the ent row")
 }
@@ -38,4 +44,6 @@ func TestChannelMonitorPassLatencyMetadataUsesDefaultsWhenMissing(t *testing.T) 
 	restored := entToServiceMonitor(&dbent.ChannelMonitor{ExtraHeaders: map[string]string{}})
 	require.Equal(t, service.MonitorDefaultPassLatencyMinMs, restored.PassLatencyMinMs)
 	require.Equal(t, service.MonitorDefaultPassLatencyMaxMs, restored.PassLatencyMaxMs)
+	require.Equal(t, service.MonitorDefaultPassPingLatencyMinMs, restored.PassPingLatencyMinMs)
+	require.Equal(t, service.MonitorDefaultPassPingLatencyMaxMs, restored.PassPingLatencyMaxMs)
 }

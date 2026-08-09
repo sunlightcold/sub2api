@@ -91,6 +91,24 @@ func validatePassLatencyRange(minMs, maxMs int) error {
 	return nil
 }
 
+func normalizePassPingLatencyRange(minMs, maxMs int) (int, int) {
+	if minMs == 0 {
+		minMs = MonitorDefaultPassPingLatencyMinMs
+	}
+	if maxMs == 0 {
+		maxMs = MonitorDefaultPassPingLatencyMaxMs
+	}
+	return minMs, maxMs
+}
+
+func validatePassPingLatencyRange(minMs, maxMs int) error {
+	minMs, maxMs = normalizePassPingLatencyRange(minMs, maxMs)
+	if minMs < 1 || maxMs < minMs {
+		return ErrChannelMonitorInvalidPassPingLatencyRange
+	}
+	return nil
+}
+
 // validateEndpoint 校验 endpoint：
 //   - scheme 强制 https（拒绝 http，避免明文凭证 + 部分 SSRF 利用面）
 //   - 必须为 origin（无 path/query/fragment），防止用户填 https://api.openai.com/v1

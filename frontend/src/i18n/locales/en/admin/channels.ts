@@ -544,6 +544,11 @@ export default {
         passLatencyMax: 'Maximum latency',
         passLatencyRangeHint: 'Each result uses a random inclusive value between the bounds; values at 6 seconds or above are recorded as degraded.',
         passLatencyRangeInvalid: 'Invalid latency range: minimum must be at least 1 and maximum must not be below minimum.',
+        passPingLatencyRange: 'Endpoint Ping Latency Range (ms)',
+        passPingLatencyMin: 'Minimum Ping latency',
+        passPingLatencyMax: 'Maximum Ping latency',
+        passPingLatencyRangeHint: 'Direct-pass mode sends no upstream request and generates an inclusive random endpoint Ping latency within these bounds.',
+        passPingLatencyRangeInvalid: 'Invalid endpoint Ping latency range: minimum must be at least 1 and maximum must not be below minimum.',
         enabled: 'Enable monitor',
         kindRequired: 'Please select a provider'
       },

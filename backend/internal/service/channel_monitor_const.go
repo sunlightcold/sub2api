@@ -38,6 +38,9 @@ const (
 	// 直通模式写入的默认延时范围（毫秒）。管理员可为每个监控覆盖该范围。
 	MonitorDefaultPassLatencyMinMs = 800
 	MonitorDefaultPassLatencyMaxMs = 2500
+	// 直通模式写入的默认端点 Ping 延时范围（毫秒）。管理员可为每个监控覆盖该范围。
+	MonitorDefaultPassPingLatencyMinMs = 20
+	MonitorDefaultPassPingLatencyMaxMs = 120
 	// monitorMessageMaxBytes message 字段最大字节数（与 schema/migration 一致）。
 	monitorMessageMaxBytes = 500
 	// monitorResponseMaxBytes 单次模型响应最大读取字节，防止 OOM。
@@ -167,6 +170,9 @@ var (
 	)
 	ErrChannelMonitorInvalidPassLatencyRange = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_PASS_LATENCY_RANGE", "pass latency range must satisfy 1 <= pass_latency_min_ms <= pass_latency_max_ms",
+	)
+	ErrChannelMonitorInvalidPassPingLatencyRange = infraerrors.BadRequest(
+		"CHANNEL_MONITOR_INVALID_PASS_PING_LATENCY_RANGE", "pass ping latency range must satisfy 1 <= pass_ping_latency_min_ms <= pass_ping_latency_max_ms",
 	)
 	ErrChannelMonitorInvalidEndpoint = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_ENDPOINT", "endpoint must be a valid https URL",
