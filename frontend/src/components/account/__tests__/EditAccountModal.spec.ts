@@ -817,17 +817,17 @@ describe('EditAccountModal', () => {
 
     const wrapper = mountModal(account)
 
-    await wrapper.get('[data-testid="openai-first-token-metric-mode-select"]').setValue('first_output')
+    await wrapper.get('[data-testid="openai-first-token-metric-mode-select"]').setValue('first_response')
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
 
     expect(updateAccountMock).toHaveBeenCalledTimes(1)
-    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.openai_first_token_metric_mode).toBe('first_output')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.openai_first_token_metric_mode).toBe('first_response')
   })
 
-  it('clears OpenAI first token metric mode override when set back to current mode', async () => {
+  it('clears OpenAI first token metric mode override when set back to official mode', async () => {
     const account = buildAccount()
     account.extra = {
-      openai_first_token_metric_mode: 'first_output',
+      openai_first_token_metric_mode: 'first_response',
       openai_responses_supported: true
     }
     updateAccountMock.mockReset()
@@ -837,7 +837,7 @@ describe('EditAccountModal', () => {
 
     const wrapper = mountModal(account)
 
-    await wrapper.get('[data-testid="openai-first-token-metric-mode-select"]').setValue('first_response')
+    await wrapper.get('[data-testid="openai-first-token-metric-mode-select"]').setValue('first_output')
     await wrapper.get('form#edit-account-form').trigger('submit.prevent')
 
     expect(updateAccountMock).toHaveBeenCalledTimes(1)

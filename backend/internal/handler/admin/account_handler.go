@@ -3110,7 +3110,7 @@ func sanitizeOpenAIFirstTokenMetricModeValue(extra map[string]any, deleteDefault
 		return
 	}
 	mode := service.NormalizeOpenAIFirstTokenMetricMode(raw)
-	if mode == service.OpenAIFirstTokenMetricModeFirstResponse {
+	if mode == service.OpenAIFirstTokenMetricModeFirstOutput {
 		if deleteDefault {
 			delete(extra, service.OpenAIFirstTokenMetricModeExtraKey)
 		} else {

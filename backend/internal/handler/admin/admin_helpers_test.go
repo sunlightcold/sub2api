@@ -61,13 +61,13 @@ func TestParseOpsDuration(t *testing.T) {
 
 func TestSanitizeOpenAIFirstTokenMetricMode(t *testing.T) {
 	extra := map[string]any{
-		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstOutput,
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstResponse,
 	}
 	sanitizeOpenAIFirstTokenMetricMode(extra)
-	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstOutput, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstResponse, extra[service.OpenAIFirstTokenMetricModeExtraKey])
 
 	extra = map[string]any{
-		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstResponse,
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstOutput,
 	}
 	sanitizeOpenAIFirstTokenMetricMode(extra)
 	require.NotContains(t, extra, service.OpenAIFirstTokenMetricModeExtraKey)
@@ -81,16 +81,16 @@ func TestSanitizeOpenAIFirstTokenMetricMode(t *testing.T) {
 
 func TestSanitizeOpenAIFirstTokenMetricModeForMergeKeepsExplicitDefault(t *testing.T) {
 	extra := map[string]any{
-		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstResponse,
+		service.OpenAIFirstTokenMetricModeExtraKey: service.OpenAIFirstTokenMetricModeFirstOutput,
 	}
 	sanitizeOpenAIFirstTokenMetricModeForMerge(extra)
-	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstResponse, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstOutput, extra[service.OpenAIFirstTokenMetricModeExtraKey])
 
 	extra = map[string]any{
 		service.OpenAIFirstTokenMetricModeExtraKey: "invalid",
 	}
 	sanitizeOpenAIFirstTokenMetricModeForMerge(extra)
-	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstResponse, extra[service.OpenAIFirstTokenMetricModeExtraKey])
+	require.Equal(t, service.OpenAIFirstTokenMetricModeFirstOutput, extra[service.OpenAIFirstTokenMetricModeExtraKey])
 }
 
 func TestParseOpsOpenAITokenStatsDuration(t *testing.T) {

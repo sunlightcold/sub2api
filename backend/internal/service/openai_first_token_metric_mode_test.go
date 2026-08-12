@@ -12,13 +12,13 @@ func TestNormalizeOpenAIFirstTokenMetricMode(t *testing.T) {
 		raw  any
 		want string
 	}{
-		{name: "nil defaults to first response", raw: nil, want: OpenAIFirstTokenMetricModeFirstResponse},
-		{name: "empty defaults to first response", raw: "", want: OpenAIFirstTokenMetricModeFirstResponse},
+		{name: "nil defaults to first output", raw: nil, want: OpenAIFirstTokenMetricModeFirstOutput},
+		{name: "empty defaults to first output", raw: "", want: OpenAIFirstTokenMetricModeFirstOutput},
 		{name: "explicit first response", raw: OpenAIFirstTokenMetricModeFirstResponse, want: OpenAIFirstTokenMetricModeFirstResponse},
 		{name: "first output", raw: OpenAIFirstTokenMetricModeFirstOutput, want: OpenAIFirstTokenMetricModeFirstOutput},
 		{name: "first output trims spaces", raw: "  first_output  ", want: OpenAIFirstTokenMetricModeFirstOutput},
-		{name: "invalid defaults to first response", raw: "legacy", want: OpenAIFirstTokenMetricModeFirstResponse},
-		{name: "non string defaults to first response", raw: 1, want: OpenAIFirstTokenMetricModeFirstResponse},
+		{name: "invalid defaults to first output", raw: "legacy", want: OpenAIFirstTokenMetricModeFirstOutput},
+		{name: "non string defaults to first output", raw: 1, want: OpenAIFirstTokenMetricModeFirstOutput},
 	}
 
 	for _, tt := range tests {
@@ -29,16 +29,16 @@ func TestNormalizeOpenAIFirstTokenMetricMode(t *testing.T) {
 }
 
 func TestAccountOpenAIFirstTokenMetricModeFromExtra(t *testing.T) {
-	require.Equal(t, OpenAIFirstTokenMetricModeFirstResponse, (*Account)(nil).OpenAIFirstTokenMetricMode())
-	require.True(t, (*Account)(nil).UseOpenAIFirstResponseTTFT())
+	require.Equal(t, OpenAIFirstTokenMetricModeFirstOutput, (*Account)(nil).OpenAIFirstTokenMetricMode())
+	require.False(t, (*Account)(nil).UseOpenAIFirstResponseTTFT())
 
 	account := &Account{Extra: map[string]any{
-		OpenAIFirstTokenMetricModeExtraKey: OpenAIFirstTokenMetricModeFirstOutput,
+		OpenAIFirstTokenMetricModeExtraKey: OpenAIFirstTokenMetricModeFirstResponse,
 	}}
-	require.Equal(t, OpenAIFirstTokenMetricModeFirstOutput, account.OpenAIFirstTokenMetricMode())
-	require.False(t, account.UseOpenAIFirstResponseTTFT())
-
-	account.Extra[OpenAIFirstTokenMetricModeExtraKey] = "invalid"
 	require.Equal(t, OpenAIFirstTokenMetricModeFirstResponse, account.OpenAIFirstTokenMetricMode())
 	require.True(t, account.UseOpenAIFirstResponseTTFT())
+
+	account.Extra[OpenAIFirstTokenMetricModeExtraKey] = "invalid"
+	require.Equal(t, OpenAIFirstTokenMetricModeFirstOutput, account.OpenAIFirstTokenMetricMode())
+	require.False(t, account.UseOpenAIFirstResponseTTFT())
 }

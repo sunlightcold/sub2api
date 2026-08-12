@@ -2179,16 +2179,16 @@ const (
 func NormalizeOpenAIFirstTokenMetricMode(value any) string {
 	mode, _ := value.(string)
 	switch strings.TrimSpace(mode) {
-	case OpenAIFirstTokenMetricModeFirstOutput:
-		return OpenAIFirstTokenMetricModeFirstOutput
-	default:
+	case OpenAIFirstTokenMetricModeFirstResponse:
 		return OpenAIFirstTokenMetricModeFirstResponse
+	default:
+		return OpenAIFirstTokenMetricModeFirstOutput
 	}
 }
 
 func (a *Account) OpenAIFirstTokenMetricMode() string {
 	if a == nil || a.Extra == nil {
-		return OpenAIFirstTokenMetricModeFirstResponse
+		return OpenAIFirstTokenMetricModeFirstOutput
 	}
 	return NormalizeOpenAIFirstTokenMetricMode(a.Extra[OpenAIFirstTokenMetricModeExtraKey])
 }
