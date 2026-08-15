@@ -1402,7 +1402,6 @@ export interface CodexUsageSnapshot {
 export type OpenAICompactMode = 'auto' | 'force_on' | 'force_off'
 export type OpenAIResponsesMode =
   | 'auto'
-  | 'preserve_chat_endpoint'
   | 'force_responses'
   | 'force_chat_completions'
 export type OpenAIFirstTokenMetricMode = 'first_response' | 'first_output'

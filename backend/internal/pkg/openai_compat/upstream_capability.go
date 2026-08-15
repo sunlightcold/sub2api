@@ -47,16 +47,11 @@ const (
 
 	// ResponsesSupportModeForceChatCompletions 强制使用 /v1/chat/completions。
 	ResponsesSupportModeForceChatCompletions ResponsesSupportMode = "force_chat_completions"
-
-	// ResponsesSupportModePreserveChatEndpoint 仅保持入站 /v1/chat/completions
-	// 走上游 /v1/chat/completions；入站 /v1/responses 继续跟随 auto 探测逻辑。
-	ResponsesSupportModePreserveChatEndpoint ResponsesSupportMode = "preserve_chat_endpoint"
 )
 
 // ExtraKeyResponsesMode 是 accounts.extra JSON 中存储手动覆盖模式的键名。
 // 值类型为 string：auto=跟随探测，force_responses=强制 Responses，
-// force_chat_completions=强制 Chat Completions，
-// preserve_chat_endpoint=仅保持 Chat Completions 入站端点。
+// force_chat_completions=强制 Chat Completions。
 const ExtraKeyResponsesMode = "openai_responses_mode"
 
 // ExtraKeyResponsesSupported 是 accounts.extra JSON 中存储自动探测结果的键名。
@@ -71,8 +66,6 @@ func NormalizeResponsesSupportMode(mode string) ResponsesSupportMode {
 		return ResponsesSupportModeForceResponses
 	case ResponsesSupportModeForceChatCompletions:
 		return ResponsesSupportModeForceChatCompletions
-	case ResponsesSupportModePreserveChatEndpoint:
-		return ResponsesSupportModePreserveChatEndpoint
 	default:
 		return ResponsesSupportModeAuto
 	}
@@ -92,9 +85,6 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 			return ResponsesSupportYes
 		case ResponsesSupportModeForceChatCompletions:
 			return ResponsesSupportNo
-		case ResponsesSupportModePreserveChatEndpoint:
-			// "仅保持 Chat 端点"只覆盖 Chat 入站路由；Responses 入站继续
-			// 跟随探测标记执行 auto 兼容行为。
 		}
 	}
 	v, ok := extra[ExtraKeyResponsesSupported]
@@ -121,37 +111,5 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 // 仅当账号已探测且确认不支持时返回 false，此时调用方应走 CC 直转路径
 // （详见 internal/service/openai_gateway_chat_completions_raw.go）。
 func ShouldUseResponsesAPI(extra map[string]any) bool {
-	return ShouldRouteChatCompletionsViaResponses(extra)
-}
-
-// ShouldRouteChatCompletionsViaResponses 判断入站 /v1/chat/completions
-// 是否应转换为上游 /v1/responses。
-func ShouldRouteChatCompletionsViaResponses(extra map[string]any) bool {
-	if extra != nil {
-		if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
-			switch NormalizeResponsesSupportMode(mode) {
-			case ResponsesSupportModePreserveChatEndpoint, ResponsesSupportModeForceChatCompletions:
-				return false
-			case ResponsesSupportModeForceResponses:
-				return true
-			}
-		}
-	}
 	return ResolveResponsesSupport(extra) != ResponsesSupportNo
-}
-
-// ShouldRouteResponsesViaChatCompletions 判断入站 /v1/responses 是否应转换为
-// 上游 /v1/chat/completions。
-func ShouldRouteResponsesViaChatCompletions(extra map[string]any) bool {
-	if extra != nil {
-		if mode, ok := extra[ExtraKeyResponsesMode].(string); ok {
-			switch NormalizeResponsesSupportMode(mode) {
-			case ResponsesSupportModeForceChatCompletions:
-				return true
-			case ResponsesSupportModeForceResponses:
-				return false
-			}
-		}
-	}
-	return ResolveResponsesSupport(extra) == ResponsesSupportNo
 }
