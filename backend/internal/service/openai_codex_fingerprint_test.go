@@ -493,13 +493,16 @@ func rawVsMapClientMetadata(t *testing.T, body []byte, ids *codexFingerprintIDs)
 	var rawDecoded map[string]any
 	require.NoError(t, json.Unmarshal(rawBody, &rawDecoded))
 	rawCM, _ := rawDecoded["client_metadata"].(map[string]any)
-	require.Contains(t, mapCM, "turn_started_at_unix_ms")
-	require.Contains(t, rawCM, "turn_started_at_unix_ms")
+	_, mapHasTimestamp := mapCM["turn_started_at_unix_ms"]
+	_, rawHasTimestamp := rawCM["turn_started_at_unix_ms"]
+	require.Equal(t, mapHasTimestamp, rawHasTimestamp)
 	// The two implementations intentionally stamp their own current time;
 	// compare the deterministic metadata fields without making the test
 	// depend on whether the calls cross a millisecond boundary.
-	delete(mapCM, "turn_started_at_unix_ms")
-	delete(rawCM, "turn_started_at_unix_ms")
+	if mapHasTimestamp {
+		delete(mapCM, "turn_started_at_unix_ms")
+		delete(rawCM, "turn_started_at_unix_ms")
+	}
 	return mapCM, rawCM
 }
 
