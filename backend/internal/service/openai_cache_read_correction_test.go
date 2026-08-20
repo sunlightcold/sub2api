@@ -48,6 +48,14 @@ func (s *openAICacheReadStateCacheStub) ReleaseGrokVideoBilled(context.Context, 
 	return nil
 }
 
+func (s *openAICacheReadStateCacheStub) SetReasoningContent(context.Context, string, string, time.Duration) error {
+	return nil
+}
+
+func (s *openAICacheReadStateCacheStub) GetReasoningContent(context.Context, string) (string, error) {
+	return "", context.Canceled
+}
+
 func (s *openAICacheReadStateCacheStub) GetOpenAICacheReadState(_ context.Context, key string) (*OpenAICacheReadState, error) {
 	s.gets++
 	if s.states == nil {
