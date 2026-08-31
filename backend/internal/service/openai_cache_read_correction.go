@@ -646,35 +646,3 @@ func (s *OpenAIGatewayService) correctOpenAICacheReadUsageOnly(
 	}
 	s.correctOpenAICacheReadUsage(ctx, account, correction, usage, requestID)
 }
-
-func (s *OpenAIGatewayService) correctOpenAICacheReadSSEBody(
-	ctx context.Context,
-	account *Account,
-	correction *openAICacheReadCorrectionContext,
-	body string,
-	requestID string,
-	usage *OpenAIUsage,
-) (string, *OpenAIUsage) {
-	if correction == nil || strings.TrimSpace(body) == "" {
-		return body, usage
-	}
-	lines := strings.Split(body, "\n")
-	var correctedUsage *OpenAIUsage
-	for i, line := range lines {
-		data, ok := extractOpenAISSEDataLine(line)
-		if !ok || !openAIStreamEventIsTerminal(data) {
-			continue
-		}
-		updated, nextUsage, changed := s.correctOpenAICacheReadResponseBody(ctx, account, correction, []byte(data), requestID)
-		if nextUsage != nil {
-			correctedUsage = nextUsage
-		}
-		if changed {
-			lines[i] = "data: " + string(updated)
-		}
-	}
-	if correctedUsage != nil {
-		return strings.Join(lines, "\n"), correctedUsage
-	}
-	return body, usage
-}
