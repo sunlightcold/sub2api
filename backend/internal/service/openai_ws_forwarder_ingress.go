@@ -652,6 +652,7 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				currentBridgePayload.imageBillingModel,
 				currentBridgePayload.imageSizeTier,
 				currentBridgePayload.imageInputSize,
+				0,
 				grokCacheIdentity,
 				turn,
 				writeClientMessage,

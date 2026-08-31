@@ -2395,7 +2395,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	// stream=false was requested. Without this conversion the client would
 	// receive raw SSE text or a terminal event with empty output.
 	if isEventStreamResponse(resp.Header) {
-		return s.handlePassthroughSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
+		return s.handlePassthroughSSEToJSON(resp, c, account, body, originalModel, mappedModel)
 	}
 
 	usage := &OpenAIUsage{}
@@ -2454,14 +2454,12 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 // preserving passthrough payloads, except compact-only model remapping may
 // rewrite model fields back to the original requested model.
 func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(
-	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
 	body []byte,
 	originalModel string,
 	mappedModel string,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*openaiNonStreamingResultPassthrough, error) {
 	bodyText := string(body)
 	terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
@@ -2501,14 +2499,6 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
-		if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); correctedUsage != nil || bodyChanged {
-			if bodyChanged {
-				body = correctedBody
-			}
-			if correctedUsage != nil {
-				usage = correctedUsage
-			}
-		}
 		restoredBody, restoreErr := restoreOpenAIResponsesNamespacePayload(c, body)
 		if restoreErr != nil {
 			return nil, fmt.Errorf("restore OpenAI passthrough namespace response: %w", restoreErr)
@@ -2519,7 +2509,6 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(
 		if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 			bodyText = s.replaceModelInSSEBody(bodyText, mappedModel, originalModel)
 		}
-		bodyText, usage = s.correctOpenAICacheReadSSEBody(ctx, account, cacheReadCorrection, bodyText, resp.Header.Get("x-request-id"), usage)
 		body = []byte(bodyText)
 	}
 

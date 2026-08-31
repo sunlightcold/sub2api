@@ -1720,7 +1720,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(
 	// Some OpenAI-compatible upstreams (including other sub2api instances)
 	// may return SSE even when stream=false was requested.
 	if isEventStreamResponse(resp.Header) {
-		return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
+		return s.handleSSEToJSON(resp, c, account, body, originalModel, mappedModel)
 	}
 	// bodyLooksLikeSSE is a line-level heuristic: real SSE framing requires
 	// "data:"/"event:" field names at the very start of a physical line. A
@@ -1736,7 +1736,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(
 	// positives on JSON responses that coincidentally contain "data:" or
 	// "event:" in their text content.
 	if account.Type == AccountTypeOAuth && bodyLooksLikeSSE {
-		return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
+		return s.handleSSEToJSON(resp, c, account, body, originalModel, mappedModel)
 	}
 	if account != nil && account.IsGrok() && isOpenAIResponsesCompactPath(c) {
 		body, err = convertGrokResponseToOpenAICompact(body)
@@ -1748,7 +1748,7 @@ func (s *OpenAIGatewayService) handleNonStreamingResponse(
 	usageValue, usageOK := extractOpenAIUsageFromJSONBytes(body)
 	if !usageOK {
 		if bodyLooksLikeSSE {
-			return s.handleSSEToJSON(ctx, resp, c, account, body, originalModel, mappedModel, cacheReadCorrection)
+			return s.handleSSEToJSON(resp, c, account, body, originalModel, mappedModel)
 		}
 		return nil, fmt.Errorf("parse response: invalid json response")
 	}
@@ -1828,14 +1828,12 @@ func bodyHasSSEFraming(body []byte) bool {
 }
 
 func (s *OpenAIGatewayService) handleSSEToJSON(
-	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
 	body []byte,
 	originalModel string,
 	mappedModel string,
-	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*openaiNonStreamingResult, error) {
 	bodyText := string(body)
 	terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
@@ -1876,14 +1874,6 @@ func (s *OpenAIGatewayService) handleSSEToJSON(
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
-		if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); correctedUsage != nil || bodyChanged {
-			if bodyChanged {
-				body = correctedBody
-			}
-			if correctedUsage != nil {
-				usage = correctedUsage
-			}
-		}
 		restoredBody, restoreErr := restoreGrokResponsesClientToolPayload(c, body)
 		if restoreErr != nil {
 			return nil, fmt.Errorf("restore Grok Responses client tool response: %w", restoreErr)
@@ -1902,7 +1892,6 @@ func (s *OpenAIGatewayService) handleSSEToJSON(
 		if originalModel != mappedModel {
 			bodyText = s.replaceModelInSSEBody(bodyText, mappedModel, originalModel)
 		}
-		bodyText, usage = s.correctOpenAICacheReadSSEBody(ctx, account, cacheReadCorrection, bodyText, resp.Header.Get("x-request-id"), usage)
 		body = []byte(bodyText)
 	}
 

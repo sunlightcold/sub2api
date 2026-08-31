@@ -39,7 +39,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 		CreatedAt:      createdAt,
 	}
 
-	mock.ExpectQuery(`(?s)INSERT INTO usage_logs.*\$55`).
+	mock.ExpectQuery("INSERT INTO usage_logs").
 		WithArgs(
 			log.UserID,
 			log.APIKeyID,
@@ -96,7 +96,6 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			log.LongContextBillingApplied,
 			sqlmock.AnyArg(), // channel_id
 			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // upstream_timing
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
@@ -134,7 +133,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 		CreatedAt:      createdAt,
 	}
 
-	mock.ExpectQuery(`(?s)INSERT INTO usage_logs.*\$55`).
+	mock.ExpectQuery("INSERT INTO usage_logs").
 		WithArgs(
 			log.UserID,
 			log.APIKeyID,
@@ -191,7 +190,6 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			log.LongContextBillingApplied,
 			sqlmock.AnyArg(), // channel_id
 			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // upstream_timing
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
@@ -239,7 +237,7 @@ func TestExecUsageLogInsertNoResult_PersistsRequestedModel(t *testing.T) {
 		CreatedAt:      time.Date(2025, 1, 4, 12, 0, 0, 0, time.UTC),
 	})
 
-	mock.ExpectExec(`(?s)INSERT INTO usage_logs.*\$55`).
+	mock.ExpectExec("INSERT INTO usage_logs").
 		WithArgs(anySliceToDriverValues(prepared.args)...).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
@@ -314,29 +312,6 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 	breakdownJSON, ok := prepared.args[42].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
-}
-
-func TestPrepareUsageLogInsert_PersistsUpstreamTiming(t *testing.T) {
-	prepared := prepareUsageLogInsert(&service.UsageLog{
-		UserID:    1,
-		APIKeyID:  2,
-		AccountID: 3,
-		RequestID: "req-upstream-timing",
-		Model:     "gpt-5",
-		CreatedAt: time.Date(2025, 1, 7, 12, 0, 0, 0, time.UTC),
-		UpstreamTiming: service.UsageUpstreamTiming{
-			"gateway_prepare_ms":    12,
-			"upstream_headers_ms":   345,
-			"upstream_first_sse_ms": 321,
-			"ttft_ms":               678,
-		},
-	})
-
-	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
-	upstreamTimingArgIndex := len(usageLogInsertArgTypes) - 6
-	timingJSON, ok := prepared.args[upstreamTimingArgIndex].(string)
-	require.True(t, ok)
-	require.JSONEq(t, `{"gateway_prepare_ms":12,"upstream_headers_ms":345,"upstream_first_sse_ms":321,"ttft_ms":678}`, timingJSON)
 }
 
 func TestCoalesceTrimmedString(t *testing.T) {
@@ -980,7 +955,6 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullFloat64{},
-			sql.NullString{Valid: true, String: `{"ttft_ms":678,"upstream_headers_ms":345}`},
 			sql.NullString{},
 			false, // native_compaction_v2
 			now,
@@ -996,7 +970,6 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NotNil(t, log.ImageSizeSource)
 		require.Equal(t, "output", *log.ImageSizeSource)
 		require.Equal(t, map[string]int{"4K": 2}, log.ImageSizeBreakdown)
-		require.Equal(t, service.UsageUpstreamTiming{"ttft_ms": 678, "upstream_headers_ms": 345}, log.UpstreamTiming)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -1061,7 +1034,6 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
-			sql.NullString{},  // upstream_timing
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
 			now,
@@ -1124,7 +1096,6 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
-			sql.NullString{},  // upstream_timing
 			sql.NullString{},  // session_id
 			true,              // native_compaction_v2
 			now,
@@ -1188,7 +1159,6 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
-			sql.NullString{},  // upstream_timing
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
 			now,

@@ -173,6 +173,10 @@ type UsageLog struct {
 	// AccountStatsCost 账号统计定价预计算费用（nil = 使用默认公式 total_cost × account_rate_multiplier）
 	AccountStatsCost *float64
 
+	// UpstreamTiming is retained for compatibility with the fork's optional
+	// diagnostics path. Official usage persistence does not depend on it.
+	UpstreamTiming UsageUpstreamTiming
+
 	BillingType        int8
 	RequestType        RequestType
 	Stream             bool
@@ -212,6 +216,8 @@ type UsageLog struct {
 	Group        *Group
 	Subscription *UserSubscription
 }
+
+type UsageUpstreamTiming map[string]int64
 
 func (u *UsageLog) TotalTokens() int {
 	return u.InputTokens + u.OutputTokens + u.CacheCreationTokens + u.CacheReadTokens

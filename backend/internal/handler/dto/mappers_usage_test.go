@@ -75,13 +75,11 @@ func TestUsageCleanupTaskFromService_RequestTypeMapping(t *testing.T) {
 	t.Parallel()
 
 	requestType := int16(service.RequestTypeStream)
-	billingMode := string(service.BillingModeImage)
 	task := &service.UsageCleanupTask{
 		ID:     1,
 		Status: service.UsageCleanupStatusPending,
 		Filters: service.UsageCleanupFilters{
 			RequestType: &requestType,
-			BillingMode: &billingMode,
 		},
 	}
 
@@ -89,8 +87,6 @@ func TestUsageCleanupTaskFromService_RequestTypeMapping(t *testing.T) {
 	require.NotNil(t, dtoTask)
 	require.NotNil(t, dtoTask.Filters.RequestType)
 	require.Equal(t, "stream", *dtoTask.Filters.RequestType)
-	require.NotNil(t, dtoTask.Filters.BillingMode)
-	require.Equal(t, billingMode, *dtoTask.Filters.BillingMode)
 }
 
 func TestRequestTypeStringPtrNil(t *testing.T) {
@@ -163,38 +159,6 @@ func TestUsageLogFromService_UsesRequestedModelAndKeepsUpstreamAdminOnly(t *test
 	require.Contains(t, string(adminJSON), `"upstream_model":"claude-sonnet-4-20250514"`)
 	require.Contains(t, string(adminJSON), `"upstream_response_model":"claude-sonnet-4-20250513"`)
 	require.Contains(t, string(adminJSON), `"upstream_model_mismatch":true`)
-}
-
-func TestUsageLogFromService_ExposesUpstreamTimingOnlyToAdmin(t *testing.T) {
-	t.Parallel()
-
-	log := &service.UsageLog{
-		RequestID: "req_timing",
-		Model:     "gpt-5",
-		UpstreamTiming: service.UsageUpstreamTiming{
-			"gateway_prepare_ms":    10,
-			"upstream_headers_ms":   420,
-			"upstream_first_sse_ms": 770,
-			"ttft_ms":               1200,
-		},
-	}
-
-	userDTO := UsageLogFromService(log)
-	adminDTO := UsageLogFromServiceAdmin(log)
-
-	userJSON, err := json.Marshal(userDTO)
-	require.NoError(t, err)
-	require.NotContains(t, string(userJSON), "upstream_timing")
-
-	adminJSON, err := json.Marshal(adminDTO)
-	require.NoError(t, err)
-	require.Contains(t, string(adminJSON), `"upstream_timing"`)
-	require.Equal(t, UsageUpstreamTiming{
-		"gateway_prepare_ms":    10,
-		"upstream_headers_ms":   420,
-		"upstream_first_sse_ms": 770,
-		"ttft_ms":               1200,
-	}, adminDTO.UpstreamTiming)
 }
 
 func TestUsageLogFromService_KeepsUserBillingAndIPWithoutAdminCostFields(t *testing.T) {

@@ -343,38 +343,6 @@ func TestOpenAIGatewayServiceRecordUsage_ZeroUsageStillWritesUsageLog(t *testing
 	require.Zero(t, billingRepo.lastCmd.AccountQuotaCost)
 }
 
-func TestOpenAIGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	userRepo := &openAIRecordUsageUserRepoStub{}
-	subRepo := &openAIRecordUsageSubRepoStub{}
-	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
-	firstTokenMs := 120
-
-	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
-		Result: &OpenAIForwardResult{
-			RequestID:    "resp_latency_offset",
-			Usage:        OpenAIUsage{InputTokens: 20, OutputTokens: 10},
-			Model:        "gpt-5.1",
-			Duration:     1200 * time.Millisecond,
-			FirstTokenMs: &firstTokenMs,
-		},
-		APIKey:  &APIKey{ID: 1001, Group: &Group{RateMultiplier: 1}},
-		User:    &User{ID: 2001},
-		Account: &Account{ID: 3001, Type: AccountTypeAPIKey, Extra: map[string]any{"usage_latency_offset_ms": 150}},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.NotNil(t, usageRepo.lastLog.DurationMs)
-	require.GreaterOrEqual(t, *usageRepo.lastLog.DurationMs, 1000)
-	require.LessOrEqual(t, *usageRepo.lastLog.DurationMs, 1100)
-	require.NotNil(t, usageRepo.lastLog.FirstTokenMs)
-	require.GreaterOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 1)
-	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 120)
-	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, *usageRepo.lastLog.DurationMs)
-	require.Equal(t, 120, firstTokenMs)
-}
-
 func TestOpenAIGatewayServiceRecordUsage_MissingPricingRecordsZeroCostUsageLog(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
@@ -2194,84 +2162,6 @@ func TestOpenAIGatewayServiceRecordUsage_RequestedImageCountDisabledKeepsOutputC
 	require.NotNil(t, usageRepo.lastLog)
 	require.Equal(t, 2, usageRepo.lastLog.ImageCount)
 	require.InDelta(t, 0.04, usageRepo.lastLog.TotalCost, 1e-12)
-}
-
-func TestOpenAIGatewayServiceRecordUsage_RequestedImageCountEnabledUsesRequestedCount(t *testing.T) {
-	imagePrice := 0.02
-	groupID := int64(1204)
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	svc := newOpenAIRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{}, nil)
-
-	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
-		Result: &OpenAIForwardResult{
-			RequestID:           "resp_image_requested_count",
-			Model:               "gpt-image-2",
-			ImageCount:          2,
-			RequestedImageCount: 1,
-			ImageSize:           "1K",
-			Duration:            time.Second,
-		},
-		APIKey: &APIKey{
-			ID:      11204,
-			GroupID: i64p(groupID),
-			Group: &Group{
-				ID:                            groupID,
-				RateMultiplier:                1.0,
-				ImageBillingUseRequestedCount: boolPtr(true),
-				ImagePrice1K:                  &imagePrice,
-			},
-		},
-		User:    &User{ID: 21204},
-		Account: &Account{ID: 31204},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
-	require.InDelta(t, 0.02, usageRepo.lastLog.TotalCost, 1e-12)
-}
-
-func TestOpenAIGatewayServiceRecordUsage_GroupImagePricingUsesRequestedCount(t *testing.T) {
-	legacyImagePrice := 0.20
-	groupImagePrice := 0.03
-	groupID := int64(1205)
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	svc := newOpenAIRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{}, nil)
-	svc.resolver = NewModelPricingResolver(nil, svc.billingService)
-
-	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
-		Result: &OpenAIForwardResult{
-			RequestID:           "resp_group_image_requested_count",
-			Model:               "gpt-image-2",
-			ImageCount:          2,
-			RequestedImageCount: 1,
-			ImageSize:           "1K",
-			Duration:            time.Second,
-		},
-		APIKey: &APIKey{
-			ID:      11205,
-			GroupID: i64p(groupID),
-			Group: &Group{
-				ID:                            groupID,
-				RateMultiplier:                1.0,
-				ImageBillingUseRequestedCount: boolPtr(true),
-				ImagePrice1K:                  &legacyImagePrice,
-				ModelPricing: []ChannelModelPricing{{
-					Models:          []string{"gpt-image-2"},
-					BillingMode:     BillingModeImage,
-					PerRequestPrice: &groupImagePrice,
-				}},
-			},
-		},
-		User:    &User{ID: 21205},
-		Account: &Account{ID: 31205},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
-	require.InDelta(t, groupImagePrice, usageRepo.lastLog.TotalCost, 1e-12)
-	require.Equal(t, string(BillingModeImage), *usageRepo.lastLog.BillingMode)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_ImageSharedMultiplierPreservesExistingBehavior(t *testing.T) {
