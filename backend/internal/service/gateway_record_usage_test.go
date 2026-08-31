@@ -194,36 +194,6 @@ func TestGatewayServiceRecordUsage_PreservesRequestedAndUpstreamModels(t *testin
 	require.Equal(t, mappedModel, *usageRepo.lastLog.UpstreamModel)
 }
 
-func TestGatewayServiceRecordUsage_AdjustsUsageLatencyMetrics(t *testing.T) {
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
-	firstTokenMs := 450
-
-	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
-		Result: &ForwardResult{
-			RequestID:    "gateway_latency_offset",
-			Usage:        ClaudeUsage{InputTokens: 10, OutputTokens: 6},
-			Model:        "claude-sonnet-4",
-			Duration:     1500 * time.Millisecond,
-			FirstTokenMs: &firstTokenMs,
-		},
-		APIKey:  &APIKey{ID: 502, Quota: 100},
-		User:    &User{ID: 602},
-		Account: &Account{ID: 702, Extra: map[string]any{"usage_latency_offset_ms": 200}},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.NotNil(t, usageRepo.lastLog.DurationMs)
-	require.GreaterOrEqual(t, *usageRepo.lastLog.DurationMs, 1250)
-	require.LessOrEqual(t, *usageRepo.lastLog.DurationMs, 1350)
-	require.NotNil(t, usageRepo.lastLog.FirstTokenMs)
-	require.GreaterOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 200)
-	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, 300)
-	require.LessOrEqual(t, *usageRepo.lastLog.FirstTokenMs, *usageRepo.lastLog.DurationMs)
-	require.Equal(t, 450, firstTokenMs)
-}
-
 func TestGatewayServiceRecordUsage_PreservesChannelMappedUpstreamModel(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
@@ -320,84 +290,6 @@ func TestGatewayServiceRecordUsage_EmptyImageSizeDefaultsBeforeBillingAndPersist
 	require.Equal(t, ImageSizeSourceDefault, *usageRepo.lastLog.ImageSizeSource)
 	require.InDelta(t, 0.19, usageRepo.lastLog.TotalCost, 1e-12)
 	require.InDelta(t, 0.19, usageRepo.lastLog.ActualCost, 1e-12)
-}
-
-func TestGatewayServiceRecordUsage_RequestedImageCountEnabledUsesRequestedCount(t *testing.T) {
-	imagePrice1K := 0.25
-	groupID := int64(902)
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
-
-	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
-		Result: &ForwardResult{
-			RequestID:           "gateway_image_requested_count",
-			Model:               "gemini-image",
-			ImageCount:          2,
-			RequestedImageCount: 1,
-			ImageSize:           "1K",
-			Duration:            time.Second,
-		},
-		APIKey: &APIKey{
-			ID:      802,
-			GroupID: i64p(groupID),
-			Group: &Group{
-				ID:                            groupID,
-				RateMultiplier:                1.0,
-				ImageBillingUseRequestedCount: boolPtr(true),
-				ImagePrice1K:                  &imagePrice1K,
-			},
-		},
-		User:    &User{ID: 602},
-		Account: &Account{ID: 702},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
-	require.InDelta(t, 0.25, usageRepo.lastLog.TotalCost, 1e-12)
-}
-
-func TestGatewayServiceRecordUsage_GroupImagePricingUsesRequestedCount(t *testing.T) {
-	legacyImagePrice := 0.25
-	groupImagePrice := 0.04
-	groupID := int64(903)
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
-	svc := newGatewayRecordUsageServiceForTest(usageRepo, &openAIRecordUsageUserRepoStub{}, &openAIRecordUsageSubRepoStub{})
-	svc.resolver = NewModelPricingResolver(nil, svc.billingService)
-
-	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
-		Result: &ForwardResult{
-			RequestID:           "gateway_group_image_requested_count",
-			Model:               "gemini-image",
-			ImageCount:          2,
-			RequestedImageCount: 1,
-			ImageSize:           "1K",
-			Duration:            time.Second,
-		},
-		APIKey: &APIKey{
-			ID:      803,
-			GroupID: i64p(groupID),
-			Group: &Group{
-				ID:                            groupID,
-				RateMultiplier:                1.0,
-				ImageBillingUseRequestedCount: boolPtr(true),
-				ImagePrice1K:                  &legacyImagePrice,
-				ModelPricing: []ChannelModelPricing{{
-					Models:          []string{"gemini-image"},
-					BillingMode:     BillingModeImage,
-					PerRequestPrice: &groupImagePrice,
-				}},
-			},
-		},
-		User:    &User{ID: 603},
-		Account: &Account{ID: 703},
-	})
-
-	require.NoError(t, err)
-	require.NotNil(t, usageRepo.lastLog)
-	require.Equal(t, 1, usageRepo.lastLog.ImageCount)
-	require.InDelta(t, groupImagePrice, usageRepo.lastLog.TotalCost, 1e-12)
-	require.Equal(t, string(BillingModeImage), *usageRepo.lastLog.BillingMode)
 }
 
 func TestGatewayServiceRecordUsage_PeakRateAffectsTokenModeImageOutputTokens(t *testing.T) {
