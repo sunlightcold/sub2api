@@ -22109,7 +22109,6 @@ type GroupMutation struct {
 	allow_image_generation                  *bool
 	allow_batch_image_generation            *bool
 	image_rate_independent                  *bool
-	image_billing_use_requested_count       *bool
 	image_rate_multiplier                   *float64
 	addimage_rate_multiplier                *float64
 	image_price_1k                          *float64
@@ -22158,9 +22157,9 @@ type GroupMutation struct {
 	sort_order                              *int
 	addsort_order                           *int
 	allow_messages_dispatch                 *bool
-	disable_responses_api                   *bool
-	disable_chat_completions_api            *bool
 	allow_live                              *bool
+	force_openai_fast                       *bool
+	free_openai_fast                        *bool
 	require_oauth_only                      *bool
 	require_privacy_set                     *bool
 	default_mapped_model                    *string
@@ -22169,6 +22168,7 @@ type GroupMutation struct {
 	rpm_limit                               *int
 	addrpm_limit                            *int
 	max_reasoning_effort                    *string
+	max_reasoning_effort_over_limit         *string
 	reasoning_effort_mappings               *[]domain.ReasoningEffortMapping
 	appendreasoning_effort_mappings         []domain.ReasoningEffortMapping
 	profit_control_enabled                  *bool
@@ -23289,55 +23289,6 @@ func (m *GroupMutation) OldImageRateIndependent(ctx context.Context) (v bool, er
 // ResetImageRateIndependent resets all changes to the "image_rate_independent" field.
 func (m *GroupMutation) ResetImageRateIndependent() {
 	m.image_rate_independent = nil
-}
-
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (m *GroupMutation) SetImageBillingUseRequestedCount(b bool) {
-	m.image_billing_use_requested_count = &b
-}
-
-// ImageBillingUseRequestedCount returns the value of the "image_billing_use_requested_count" field in the mutation.
-func (m *GroupMutation) ImageBillingUseRequestedCount() (r bool, exists bool) {
-	v := m.image_billing_use_requested_count
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldImageBillingUseRequestedCount returns the old "image_billing_use_requested_count" field's value of the Group entity.
-// If the Group object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldImageBillingUseRequestedCount(ctx context.Context) (v *bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldImageBillingUseRequestedCount is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldImageBillingUseRequestedCount requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldImageBillingUseRequestedCount: %w", err)
-	}
-	return oldValue.ImageBillingUseRequestedCount, nil
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (m *GroupMutation) ClearImageBillingUseRequestedCount() {
-	m.image_billing_use_requested_count = nil
-	m.clearedFields[group.FieldImageBillingUseRequestedCount] = struct{}{}
-}
-
-// ImageBillingUseRequestedCountCleared returns if the "image_billing_use_requested_count" field was cleared in this mutation.
-func (m *GroupMutation) ImageBillingUseRequestedCountCleared() bool {
-	_, ok := m.clearedFields[group.FieldImageBillingUseRequestedCount]
-	return ok
-}
-
-// ResetImageBillingUseRequestedCount resets all changes to the "image_billing_use_requested_count" field.
-func (m *GroupMutation) ResetImageBillingUseRequestedCount() {
-	m.image_billing_use_requested_count = nil
-	delete(m.clearedFields, group.FieldImageBillingUseRequestedCount)
 }
 
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
@@ -24960,104 +24911,6 @@ func (m *GroupMutation) ResetAllowMessagesDispatch() {
 	m.allow_messages_dispatch = nil
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (m *GroupMutation) SetDisableResponsesAPI(b bool) {
-	m.disable_responses_api = &b
-}
-
-// DisableResponsesAPI returns the value of the "disable_responses_api" field in the mutation.
-func (m *GroupMutation) DisableResponsesAPI() (r bool, exists bool) {
-	v := m.disable_responses_api
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDisableResponsesAPI returns the old "disable_responses_api" field's value of the Group entity.
-// If the Group object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldDisableResponsesAPI(ctx context.Context) (v *bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDisableResponsesAPI is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDisableResponsesAPI requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDisableResponsesAPI: %w", err)
-	}
-	return oldValue.DisableResponsesAPI, nil
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (m *GroupMutation) ClearDisableResponsesAPI() {
-	m.disable_responses_api = nil
-	m.clearedFields[group.FieldDisableResponsesAPI] = struct{}{}
-}
-
-// DisableResponsesAPICleared returns if the "disable_responses_api" field was cleared in this mutation.
-func (m *GroupMutation) DisableResponsesAPICleared() bool {
-	_, ok := m.clearedFields[group.FieldDisableResponsesAPI]
-	return ok
-}
-
-// ResetDisableResponsesAPI resets all changes to the "disable_responses_api" field.
-func (m *GroupMutation) ResetDisableResponsesAPI() {
-	m.disable_responses_api = nil
-	delete(m.clearedFields, group.FieldDisableResponsesAPI)
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (m *GroupMutation) SetDisableChatCompletionsAPI(b bool) {
-	m.disable_chat_completions_api = &b
-}
-
-// DisableChatCompletionsAPI returns the value of the "disable_chat_completions_api" field in the mutation.
-func (m *GroupMutation) DisableChatCompletionsAPI() (r bool, exists bool) {
-	v := m.disable_chat_completions_api
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDisableChatCompletionsAPI returns the old "disable_chat_completions_api" field's value of the Group entity.
-// If the Group object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldDisableChatCompletionsAPI(ctx context.Context) (v *bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDisableChatCompletionsAPI is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDisableChatCompletionsAPI requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDisableChatCompletionsAPI: %w", err)
-	}
-	return oldValue.DisableChatCompletionsAPI, nil
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (m *GroupMutation) ClearDisableChatCompletionsAPI() {
-	m.disable_chat_completions_api = nil
-	m.clearedFields[group.FieldDisableChatCompletionsAPI] = struct{}{}
-}
-
-// DisableChatCompletionsAPICleared returns if the "disable_chat_completions_api" field was cleared in this mutation.
-func (m *GroupMutation) DisableChatCompletionsAPICleared() bool {
-	_, ok := m.clearedFields[group.FieldDisableChatCompletionsAPI]
-	return ok
-}
-
-// ResetDisableChatCompletionsAPI resets all changes to the "disable_chat_completions_api" field.
-func (m *GroupMutation) ResetDisableChatCompletionsAPI() {
-	m.disable_chat_completions_api = nil
-	delete(m.clearedFields, group.FieldDisableChatCompletionsAPI)
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (m *GroupMutation) SetAllowLive(b bool) {
 	m.allow_live = &b
@@ -25092,6 +24945,78 @@ func (m *GroupMutation) OldAllowLive(ctx context.Context) (v bool, err error) {
 // ResetAllowLive resets all changes to the "allow_live" field.
 func (m *GroupMutation) ResetAllowLive() {
 	m.allow_live = nil
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (m *GroupMutation) SetForceOpenaiFast(b bool) {
+	m.force_openai_fast = &b
+}
+
+// ForceOpenaiFast returns the value of the "force_openai_fast" field in the mutation.
+func (m *GroupMutation) ForceOpenaiFast() (r bool, exists bool) {
+	v := m.force_openai_fast
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldForceOpenaiFast returns the old "force_openai_fast" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldForceOpenaiFast(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldForceOpenaiFast is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldForceOpenaiFast requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldForceOpenaiFast: %w", err)
+	}
+	return oldValue.ForceOpenaiFast, nil
+}
+
+// ResetForceOpenaiFast resets all changes to the "force_openai_fast" field.
+func (m *GroupMutation) ResetForceOpenaiFast() {
+	m.force_openai_fast = nil
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (m *GroupMutation) SetFreeOpenaiFast(b bool) {
+	m.free_openai_fast = &b
+}
+
+// FreeOpenaiFast returns the value of the "free_openai_fast" field in the mutation.
+func (m *GroupMutation) FreeOpenaiFast() (r bool, exists bool) {
+	v := m.free_openai_fast
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFreeOpenaiFast returns the old "free_openai_fast" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldFreeOpenaiFast(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFreeOpenaiFast is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFreeOpenaiFast requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFreeOpenaiFast: %w", err)
+	}
+	return oldValue.FreeOpenaiFast, nil
+}
+
+// ResetFreeOpenaiFast resets all changes to the "free_openai_fast" field.
+func (m *GroupMutation) ResetFreeOpenaiFast() {
+	m.free_openai_fast = nil
 }
 
 // SetRequireOauthOnly sets the "require_oauth_only" field.
@@ -25364,6 +25289,42 @@ func (m *GroupMutation) OldMaxReasoningEffort(ctx context.Context) (v string, er
 // ResetMaxReasoningEffort resets all changes to the "max_reasoning_effort" field.
 func (m *GroupMutation) ResetMaxReasoningEffort() {
 	m.max_reasoning_effort = nil
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (m *GroupMutation) SetMaxReasoningEffortOverLimit(s string) {
+	m.max_reasoning_effort_over_limit = &s
+}
+
+// MaxReasoningEffortOverLimit returns the value of the "max_reasoning_effort_over_limit" field in the mutation.
+func (m *GroupMutation) MaxReasoningEffortOverLimit() (r string, exists bool) {
+	v := m.max_reasoning_effort_over_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxReasoningEffortOverLimit returns the old "max_reasoning_effort_over_limit" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldMaxReasoningEffortOverLimit(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxReasoningEffortOverLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxReasoningEffortOverLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxReasoningEffortOverLimit: %w", err)
+	}
+	return oldValue.MaxReasoningEffortOverLimit, nil
+}
+
+// ResetMaxReasoningEffortOverLimit resets all changes to the "max_reasoning_effort_over_limit" field.
+func (m *GroupMutation) ResetMaxReasoningEffortOverLimit() {
+	m.max_reasoning_effort_over_limit = nil
 }
 
 // SetReasoningEffortMappings sets the "reasoning_effort_mappings" field.
@@ -25990,9 +25951,6 @@ func (m *GroupMutation) Fields() []string {
 	if m.image_rate_independent != nil {
 		fields = append(fields, group.FieldImageRateIndependent)
 	}
-	if m.image_billing_use_requested_count != nil {
-		fields = append(fields, group.FieldImageBillingUseRequestedCount)
-	}
 	if m.image_rate_multiplier != nil {
 		fields = append(fields, group.FieldImageRateMultiplier)
 	}
@@ -26077,14 +26035,14 @@ func (m *GroupMutation) Fields() []string {
 	if m.allow_messages_dispatch != nil {
 		fields = append(fields, group.FieldAllowMessagesDispatch)
 	}
-	if m.disable_responses_api != nil {
-		fields = append(fields, group.FieldDisableResponsesAPI)
-	}
-	if m.disable_chat_completions_api != nil {
-		fields = append(fields, group.FieldDisableChatCompletionsAPI)
-	}
 	if m.allow_live != nil {
 		fields = append(fields, group.FieldAllowLive)
+	}
+	if m.force_openai_fast != nil {
+		fields = append(fields, group.FieldForceOpenaiFast)
+	}
+	if m.free_openai_fast != nil {
+		fields = append(fields, group.FieldFreeOpenaiFast)
 	}
 	if m.require_oauth_only != nil {
 		fields = append(fields, group.FieldRequireOauthOnly)
@@ -26106,6 +26064,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.max_reasoning_effort != nil {
 		fields = append(fields, group.FieldMaxReasoningEffort)
+	}
+	if m.max_reasoning_effort_over_limit != nil {
+		fields = append(fields, group.FieldMaxReasoningEffortOverLimit)
 	}
 	if m.reasoning_effort_mappings != nil {
 		fields = append(fields, group.FieldReasoningEffortMappings)
@@ -26171,8 +26132,6 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.AllowBatchImageGeneration()
 	case group.FieldImageRateIndependent:
 		return m.ImageRateIndependent()
-	case group.FieldImageBillingUseRequestedCount:
-		return m.ImageBillingUseRequestedCount()
 	case group.FieldImageRateMultiplier:
 		return m.ImageRateMultiplier()
 	case group.FieldImagePrice1k:
@@ -26229,12 +26188,12 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.SortOrder()
 	case group.FieldAllowMessagesDispatch:
 		return m.AllowMessagesDispatch()
-	case group.FieldDisableResponsesAPI:
-		return m.DisableResponsesAPI()
-	case group.FieldDisableChatCompletionsAPI:
-		return m.DisableChatCompletionsAPI()
 	case group.FieldAllowLive:
 		return m.AllowLive()
+	case group.FieldForceOpenaiFast:
+		return m.ForceOpenaiFast()
+	case group.FieldFreeOpenaiFast:
+		return m.FreeOpenaiFast()
 	case group.FieldRequireOauthOnly:
 		return m.RequireOauthOnly()
 	case group.FieldRequirePrivacySet:
@@ -26249,6 +26208,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.RpmLimit()
 	case group.FieldMaxReasoningEffort:
 		return m.MaxReasoningEffort()
+	case group.FieldMaxReasoningEffortOverLimit:
+		return m.MaxReasoningEffortOverLimit()
 	case group.FieldReasoningEffortMappings:
 		return m.ReasoningEffortMappings()
 	case group.FieldProfitControlEnabled:
@@ -26310,8 +26271,6 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAllowBatchImageGeneration(ctx)
 	case group.FieldImageRateIndependent:
 		return m.OldImageRateIndependent(ctx)
-	case group.FieldImageBillingUseRequestedCount:
-		return m.OldImageBillingUseRequestedCount(ctx)
 	case group.FieldImageRateMultiplier:
 		return m.OldImageRateMultiplier(ctx)
 	case group.FieldImagePrice1k:
@@ -26368,12 +26327,12 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldSortOrder(ctx)
 	case group.FieldAllowMessagesDispatch:
 		return m.OldAllowMessagesDispatch(ctx)
-	case group.FieldDisableResponsesAPI:
-		return m.OldDisableResponsesAPI(ctx)
-	case group.FieldDisableChatCompletionsAPI:
-		return m.OldDisableChatCompletionsAPI(ctx)
 	case group.FieldAllowLive:
 		return m.OldAllowLive(ctx)
+	case group.FieldForceOpenaiFast:
+		return m.OldForceOpenaiFast(ctx)
+	case group.FieldFreeOpenaiFast:
+		return m.OldFreeOpenaiFast(ctx)
 	case group.FieldRequireOauthOnly:
 		return m.OldRequireOauthOnly(ctx)
 	case group.FieldRequirePrivacySet:
@@ -26388,6 +26347,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldRpmLimit(ctx)
 	case group.FieldMaxReasoningEffort:
 		return m.OldMaxReasoningEffort(ctx)
+	case group.FieldMaxReasoningEffortOverLimit:
+		return m.OldMaxReasoningEffortOverLimit(ctx)
 	case group.FieldReasoningEffortMappings:
 		return m.OldReasoningEffortMappings(ctx)
 	case group.FieldProfitControlEnabled:
@@ -26558,13 +26519,6 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetImageRateIndependent(v)
-		return nil
-	case group.FieldImageBillingUseRequestedCount:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetImageBillingUseRequestedCount(v)
 		return nil
 	case group.FieldImageRateMultiplier:
 		v, ok := value.(float64)
@@ -26762,26 +26716,26 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAllowMessagesDispatch(v)
 		return nil
-	case group.FieldDisableResponsesAPI:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDisableResponsesAPI(v)
-		return nil
-	case group.FieldDisableChatCompletionsAPI:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDisableChatCompletionsAPI(v)
-		return nil
 	case group.FieldAllowLive:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAllowLive(v)
+		return nil
+	case group.FieldForceOpenaiFast:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetForceOpenaiFast(v)
+		return nil
+	case group.FieldFreeOpenaiFast:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFreeOpenaiFast(v)
 		return nil
 	case group.FieldRequireOauthOnly:
 		v, ok := value.(bool)
@@ -26831,6 +26785,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMaxReasoningEffort(v)
+		return nil
+	case group.FieldMaxReasoningEffortOverLimit:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxReasoningEffortOverLimit(v)
 		return nil
 	case group.FieldReasoningEffortMappings:
 		v, ok := value.([]domain.ReasoningEffortMapping)
@@ -27235,9 +27196,6 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldMonthlyLimitUsd) {
 		fields = append(fields, group.FieldMonthlyLimitUsd)
 	}
-	if m.FieldCleared(group.FieldImageBillingUseRequestedCount) {
-		fields = append(fields, group.FieldImageBillingUseRequestedCount)
-	}
 	if m.FieldCleared(group.FieldImagePrice1k) {
 		fields = append(fields, group.FieldImagePrice1k)
 	}
@@ -27286,12 +27244,6 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldModelRouting) {
 		fields = append(fields, group.FieldModelRouting)
 	}
-	if m.FieldCleared(group.FieldDisableResponsesAPI) {
-		fields = append(fields, group.FieldDisableResponsesAPI)
-	}
-	if m.FieldCleared(group.FieldDisableChatCompletionsAPI) {
-		fields = append(fields, group.FieldDisableChatCompletionsAPI)
-	}
 	return fields
 }
 
@@ -27323,9 +27275,6 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldMonthlyLimitUsd:
 		m.ClearMonthlyLimitUsd()
-		return nil
-	case group.FieldImageBillingUseRequestedCount:
-		m.ClearImageBillingUseRequestedCount()
 		return nil
 	case group.FieldImagePrice1k:
 		m.ClearImagePrice1k()
@@ -27374,12 +27323,6 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldModelRouting:
 		m.ClearModelRouting()
-		return nil
-	case group.FieldDisableResponsesAPI:
-		m.ClearDisableResponsesAPI()
-		return nil
-	case group.FieldDisableChatCompletionsAPI:
-		m.ClearDisableChatCompletionsAPI()
 		return nil
 	}
 	return fmt.Errorf("unknown Group nullable field %s", name)
@@ -27454,9 +27397,6 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldImageRateIndependent:
 		m.ResetImageRateIndependent()
-		return nil
-	case group.FieldImageBillingUseRequestedCount:
-		m.ResetImageBillingUseRequestedCount()
 		return nil
 	case group.FieldImageRateMultiplier:
 		m.ResetImageRateMultiplier()
@@ -27542,14 +27482,14 @@ func (m *GroupMutation) ResetField(name string) error {
 	case group.FieldAllowMessagesDispatch:
 		m.ResetAllowMessagesDispatch()
 		return nil
-	case group.FieldDisableResponsesAPI:
-		m.ResetDisableResponsesAPI()
-		return nil
-	case group.FieldDisableChatCompletionsAPI:
-		m.ResetDisableChatCompletionsAPI()
-		return nil
 	case group.FieldAllowLive:
 		m.ResetAllowLive()
+		return nil
+	case group.FieldForceOpenaiFast:
+		m.ResetForceOpenaiFast()
+		return nil
+	case group.FieldFreeOpenaiFast:
+		m.ResetFreeOpenaiFast()
 		return nil
 	case group.FieldRequireOauthOnly:
 		m.ResetRequireOauthOnly()
@@ -27571,6 +27511,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldMaxReasoningEffort:
 		m.ResetMaxReasoningEffort()
+		return nil
+	case group.FieldMaxReasoningEffortOverLimit:
+		m.ResetMaxReasoningEffortOverLimit()
 		return nil
 	case group.FieldReasoningEffortMappings:
 		m.ResetReasoningEffortMappings()

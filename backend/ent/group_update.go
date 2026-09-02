@@ -381,26 +381,6 @@ func (_u *GroupUpdate) SetNillableImageRateIndependent(v *bool) *GroupUpdate {
 	return _u
 }
 
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (_u *GroupUpdate) SetImageBillingUseRequestedCount(v bool) *GroupUpdate {
-	_u.mutation.SetImageBillingUseRequestedCount(v)
-	return _u
-}
-
-// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
-func (_u *GroupUpdate) SetNillableImageBillingUseRequestedCount(v *bool) *GroupUpdate {
-	if v != nil {
-		_u.SetImageBillingUseRequestedCount(*v)
-	}
-	return _u
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (_u *GroupUpdate) ClearImageBillingUseRequestedCount() *GroupUpdate {
-	_u.mutation.ClearImageBillingUseRequestedCount()
-	return _u
-}
-
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (_u *GroupUpdate) SetImageRateMultiplier(v float64) *GroupUpdate {
 	_u.mutation.ResetImageRateMultiplier()
@@ -995,46 +975,6 @@ func (_u *GroupUpdate) SetNillableAllowMessagesDispatch(v *bool) *GroupUpdate {
 	return _u
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (_u *GroupUpdate) SetDisableResponsesAPI(v bool) *GroupUpdate {
-	_u.mutation.SetDisableResponsesAPI(v)
-	return _u
-}
-
-// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
-func (_u *GroupUpdate) SetNillableDisableResponsesAPI(v *bool) *GroupUpdate {
-	if v != nil {
-		_u.SetDisableResponsesAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (_u *GroupUpdate) ClearDisableResponsesAPI() *GroupUpdate {
-	_u.mutation.ClearDisableResponsesAPI()
-	return _u
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (_u *GroupUpdate) SetDisableChatCompletionsAPI(v bool) *GroupUpdate {
-	_u.mutation.SetDisableChatCompletionsAPI(v)
-	return _u
-}
-
-// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
-func (_u *GroupUpdate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdate {
-	if v != nil {
-		_u.SetDisableChatCompletionsAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (_u *GroupUpdate) ClearDisableChatCompletionsAPI() *GroupUpdate {
-	_u.mutation.ClearDisableChatCompletionsAPI()
-	return _u
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (_u *GroupUpdate) SetAllowLive(v bool) *GroupUpdate {
 	_u.mutation.SetAllowLive(v)
@@ -1045,6 +985,34 @@ func (_u *GroupUpdate) SetAllowLive(v bool) *GroupUpdate {
 func (_u *GroupUpdate) SetNillableAllowLive(v *bool) *GroupUpdate {
 	if v != nil {
 		_u.SetAllowLive(*v)
+	}
+	return _u
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (_u *GroupUpdate) SetForceOpenaiFast(v bool) *GroupUpdate {
+	_u.mutation.SetForceOpenaiFast(v)
+	return _u
+}
+
+// SetNillableForceOpenaiFast sets the "force_openai_fast" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableForceOpenaiFast(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetForceOpenaiFast(*v)
+	}
+	return _u
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (_u *GroupUpdate) SetFreeOpenaiFast(v bool) *GroupUpdate {
+	_u.mutation.SetFreeOpenaiFast(v)
+	return _u
+}
+
+// SetNillableFreeOpenaiFast sets the "free_openai_fast" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableFreeOpenaiFast(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetFreeOpenaiFast(*v)
 	}
 	return _u
 }
@@ -1150,6 +1118,20 @@ func (_u *GroupUpdate) SetMaxReasoningEffort(v string) *GroupUpdate {
 func (_u *GroupUpdate) SetNillableMaxReasoningEffort(v *string) *GroupUpdate {
 	if v != nil {
 		_u.SetMaxReasoningEffort(*v)
+	}
+	return _u
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (_u *GroupUpdate) SetMaxReasoningEffortOverLimit(v string) *GroupUpdate {
+	_u.mutation.SetMaxReasoningEffortOverLimit(v)
+	return _u
+}
+
+// SetNillableMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableMaxReasoningEffortOverLimit(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetMaxReasoningEffortOverLimit(*v)
 	}
 	return _u
 }
@@ -1547,6 +1529,11 @@ func (_u *GroupUpdate) check() error {
 			return &ValidationError{Name: "max_reasoning_effort", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.MaxReasoningEffortOverLimit(); ok {
+		if err := group.MaxReasoningEffortOverLimitValidator(v); err != nil {
+			return &ValidationError{Name: "max_reasoning_effort_over_limit", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort_over_limit": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -1657,12 +1644,6 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.ImageBillingUseRequestedCount(); ok {
-		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
-	}
-	if _u.mutation.ImageBillingUseRequestedCountCleared() {
-		_spec.ClearField(group.FieldImageBillingUseRequestedCount, field.TypeBool)
 	}
 	if value, ok := _u.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
@@ -1860,20 +1841,14 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AllowMessagesDispatch(); ok {
 		_spec.SetField(group.FieldAllowMessagesDispatch, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
-		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableResponsesAPICleared() {
-		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
-	}
-	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
-		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableChatCompletionsAPICleared() {
-		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
-	}
 	if value, ok := _u.mutation.AllowLive(); ok {
 		_spec.SetField(group.FieldAllowLive, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ForceOpenaiFast(); ok {
+		_spec.SetField(group.FieldForceOpenaiFast, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FreeOpenaiFast(); ok {
+		_spec.SetField(group.FieldFreeOpenaiFast, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.RequireOauthOnly(); ok {
 		_spec.SetField(group.FieldRequireOauthOnly, field.TypeBool, value)
@@ -1898,6 +1873,9 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.MaxReasoningEffort(); ok {
 		_spec.SetField(group.FieldMaxReasoningEffort, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.MaxReasoningEffortOverLimit(); ok {
+		_spec.SetField(group.FieldMaxReasoningEffortOverLimit, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ReasoningEffortMappings(); ok {
 		_spec.SetField(group.FieldReasoningEffortMappings, field.TypeJSON, value)
@@ -2580,26 +2558,6 @@ func (_u *GroupUpdateOne) SetNillableImageRateIndependent(v *bool) *GroupUpdateO
 	return _u
 }
 
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (_u *GroupUpdateOne) SetImageBillingUseRequestedCount(v bool) *GroupUpdateOne {
-	_u.mutation.SetImageBillingUseRequestedCount(v)
-	return _u
-}
-
-// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
-func (_u *GroupUpdateOne) SetNillableImageBillingUseRequestedCount(v *bool) *GroupUpdateOne {
-	if v != nil {
-		_u.SetImageBillingUseRequestedCount(*v)
-	}
-	return _u
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (_u *GroupUpdateOne) ClearImageBillingUseRequestedCount() *GroupUpdateOne {
-	_u.mutation.ClearImageBillingUseRequestedCount()
-	return _u
-}
-
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (_u *GroupUpdateOne) SetImageRateMultiplier(v float64) *GroupUpdateOne {
 	_u.mutation.ResetImageRateMultiplier()
@@ -3194,46 +3152,6 @@ func (_u *GroupUpdateOne) SetNillableAllowMessagesDispatch(v *bool) *GroupUpdate
 	return _u
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (_u *GroupUpdateOne) SetDisableResponsesAPI(v bool) *GroupUpdateOne {
-	_u.mutation.SetDisableResponsesAPI(v)
-	return _u
-}
-
-// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
-func (_u *GroupUpdateOne) SetNillableDisableResponsesAPI(v *bool) *GroupUpdateOne {
-	if v != nil {
-		_u.SetDisableResponsesAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (_u *GroupUpdateOne) ClearDisableResponsesAPI() *GroupUpdateOne {
-	_u.mutation.ClearDisableResponsesAPI()
-	return _u
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (_u *GroupUpdateOne) SetDisableChatCompletionsAPI(v bool) *GroupUpdateOne {
-	_u.mutation.SetDisableChatCompletionsAPI(v)
-	return _u
-}
-
-// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
-func (_u *GroupUpdateOne) SetNillableDisableChatCompletionsAPI(v *bool) *GroupUpdateOne {
-	if v != nil {
-		_u.SetDisableChatCompletionsAPI(*v)
-	}
-	return _u
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (_u *GroupUpdateOne) ClearDisableChatCompletionsAPI() *GroupUpdateOne {
-	_u.mutation.ClearDisableChatCompletionsAPI()
-	return _u
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (_u *GroupUpdateOne) SetAllowLive(v bool) *GroupUpdateOne {
 	_u.mutation.SetAllowLive(v)
@@ -3244,6 +3162,34 @@ func (_u *GroupUpdateOne) SetAllowLive(v bool) *GroupUpdateOne {
 func (_u *GroupUpdateOne) SetNillableAllowLive(v *bool) *GroupUpdateOne {
 	if v != nil {
 		_u.SetAllowLive(*v)
+	}
+	return _u
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (_u *GroupUpdateOne) SetForceOpenaiFast(v bool) *GroupUpdateOne {
+	_u.mutation.SetForceOpenaiFast(v)
+	return _u
+}
+
+// SetNillableForceOpenaiFast sets the "force_openai_fast" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableForceOpenaiFast(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetForceOpenaiFast(*v)
+	}
+	return _u
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (_u *GroupUpdateOne) SetFreeOpenaiFast(v bool) *GroupUpdateOne {
+	_u.mutation.SetFreeOpenaiFast(v)
+	return _u
+}
+
+// SetNillableFreeOpenaiFast sets the "free_openai_fast" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableFreeOpenaiFast(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetFreeOpenaiFast(*v)
 	}
 	return _u
 }
@@ -3349,6 +3295,20 @@ func (_u *GroupUpdateOne) SetMaxReasoningEffort(v string) *GroupUpdateOne {
 func (_u *GroupUpdateOne) SetNillableMaxReasoningEffort(v *string) *GroupUpdateOne {
 	if v != nil {
 		_u.SetMaxReasoningEffort(*v)
+	}
+	return _u
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (_u *GroupUpdateOne) SetMaxReasoningEffortOverLimit(v string) *GroupUpdateOne {
+	_u.mutation.SetMaxReasoningEffortOverLimit(v)
+	return _u
+}
+
+// SetNillableMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableMaxReasoningEffortOverLimit(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetMaxReasoningEffortOverLimit(*v)
 	}
 	return _u
 }
@@ -3759,6 +3719,11 @@ func (_u *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "max_reasoning_effort", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.MaxReasoningEffortOverLimit(); ok {
+		if err := group.MaxReasoningEffortOverLimitValidator(v); err != nil {
+			return &ValidationError{Name: "max_reasoning_effort_over_limit", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort_over_limit": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -3886,12 +3851,6 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.ImageRateIndependent(); ok {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
-	}
-	if value, ok := _u.mutation.ImageBillingUseRequestedCount(); ok {
-		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
-	}
-	if _u.mutation.ImageBillingUseRequestedCountCleared() {
-		_spec.ClearField(group.FieldImageBillingUseRequestedCount, field.TypeBool)
 	}
 	if value, ok := _u.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
@@ -4089,20 +4048,14 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	if value, ok := _u.mutation.AllowMessagesDispatch(); ok {
 		_spec.SetField(group.FieldAllowMessagesDispatch, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.DisableResponsesAPI(); ok {
-		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableResponsesAPICleared() {
-		_spec.ClearField(group.FieldDisableResponsesAPI, field.TypeBool)
-	}
-	if value, ok := _u.mutation.DisableChatCompletionsAPI(); ok {
-		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
-	}
-	if _u.mutation.DisableChatCompletionsAPICleared() {
-		_spec.ClearField(group.FieldDisableChatCompletionsAPI, field.TypeBool)
-	}
 	if value, ok := _u.mutation.AllowLive(); ok {
 		_spec.SetField(group.FieldAllowLive, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ForceOpenaiFast(); ok {
+		_spec.SetField(group.FieldForceOpenaiFast, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.FreeOpenaiFast(); ok {
+		_spec.SetField(group.FieldFreeOpenaiFast, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.RequireOauthOnly(); ok {
 		_spec.SetField(group.FieldRequireOauthOnly, field.TypeBool, value)
@@ -4127,6 +4080,9 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.MaxReasoningEffort(); ok {
 		_spec.SetField(group.FieldMaxReasoningEffort, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.MaxReasoningEffortOverLimit(); ok {
+		_spec.SetField(group.FieldMaxReasoningEffortOverLimit, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ReasoningEffortMappings(); ok {
 		_spec.SetField(group.FieldReasoningEffortMappings, field.TypeJSON, value)

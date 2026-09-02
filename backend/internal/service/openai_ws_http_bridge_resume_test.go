@@ -49,7 +49,7 @@ func TestProxyOpenAIWSHTTPBridgeTurnLaterTurn429FailsOverBeforeClientWrite(t *te
 
 	result, err := svc.proxyOpenAIWSHTTPBridgeTurn(
 		context.Background(), c, account, "access-token", payload, len(payload),
-		"gpt-5.6-sol", "", "", "", 0, "", 281,
+		"gpt-5.6-sol", "", "", "", "", 281,
 		func([]byte) error {
 			writes++
 			return nil
@@ -84,7 +84,7 @@ func TestProxyOpenAIWSHTTPBridgeTurnLaterTurnDoesNotFailOverAfterDownstreamOutpu
 
 	result, err := svc.proxyOpenAIWSHTTPBridgeTurn(
 		context.Background(), c, account, "sk-test", payload, len(payload),
-		"gpt-5", "", "", "", 0, "", 281,
+		"gpt-5", "", "", "", "", 281,
 		func(message []byte) error {
 			writes = append(writes, append([]byte(nil), message...))
 			return nil

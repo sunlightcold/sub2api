@@ -70,7 +70,6 @@ type APIKeyAuthGroupSnapshot struct {
 	AllowImageGeneration            bool                          `json:"allow_image_generation"`
 	AllowBatchImageGeneration       bool                          `json:"allow_batch_image_generation"`
 	ImageRateIndependent            bool                          `json:"image_rate_independent"`
-	ImageBillingUseRequestedCount   *bool                         `json:"image_billing_use_requested_count,omitempty"`
 	ImageRateMultiplier             float64                       `json:"image_rate_multiplier"`
 	ImagePrice1K                    *float64                      `json:"image_price_1k,omitempty"`
 	ImagePrice2K                    *float64                      `json:"image_price_2k,omitempty"`
@@ -103,9 +102,9 @@ type APIKeyAuthGroupSnapshot struct {
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool                              `json:"allow_messages_dispatch"`
-	DisableResponsesAPI         *bool                             `json:"disable_responses_api,omitempty"`
-	DisableChatCompletionsAPI   *bool                             `json:"disable_chat_completions_api,omitempty"`
 	AllowLive                   bool                              `json:"allow_live"`
+	ForceOpenAIFast             bool                              `json:"force_openai_fast"`
+	FreeOpenAIFast              bool                              `json:"free_openai_fast"`
 	DefaultMappedModel          string                            `json:"default_mapped_model,omitempty"`
 	MessagesDispatchModelConfig OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config,omitempty"`
 	ModelsListConfig            GroupModelsListConfig             `json:"models_list_config,omitempty"`
@@ -115,6 +114,8 @@ type APIKeyAuthGroupSnapshot struct {
 
 	// MaxReasoningEffort OpenAI/Codex 请求的推理强度上限，空字符串表示不限制。
 	MaxReasoningEffort string `json:"max_reasoning_effort,omitempty"`
+	// MaxReasoningEffortOverLimit 超过上限时的访问控制：downgrade（默认）或 deny。
+	MaxReasoningEffortOverLimit string `json:"max_reasoning_effort_over_limit,omitempty"`
 	// ReasoningEffortMappings rewrites explicit effort values before the ceiling.
 	ReasoningEffortMappings []ReasoningEffortMapping `json:"reasoning_effort_mappings"`
 

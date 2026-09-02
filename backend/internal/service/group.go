@@ -41,23 +41,20 @@ type Group struct {
 	DefaultValidityDays int
 
 	// 图片生成计费配置（antigravity 和 gemini 平台使用）
-	AllowImageGeneration      bool
-	AllowBatchImageGeneration bool
-	ImageRateIndependent      bool
-	// ImageBillingUseRequestedCount enables the safer image billing count source.
-	// nil/false preserves the legacy behavior of billing by upstream output count.
-	ImageBillingUseRequestedCount *bool
-	ImageRateMultiplier           float64
-	ImagePrice1K                  *float64
-	ImagePrice2K                  *float64
-	ImagePrice4K                  *float64
-	BatchImageDiscountMultiplier  float64
-	BatchImageHoldMultiplier      float64
-	VideoRateIndependent          bool
-	VideoRateMultiplier           float64
-	VideoPrice480P                *float64
-	VideoPrice720P                *float64
-	VideoPrice1080P               *float64
+	AllowImageGeneration         bool
+	AllowBatchImageGeneration    bool
+	ImageRateIndependent         bool
+	ImageRateMultiplier          float64
+	ImagePrice1K                 *float64
+	ImagePrice2K                 *float64
+	ImagePrice4K                 *float64
+	BatchImageDiscountMultiplier float64
+	BatchImageHoldMultiplier     float64
+	VideoRateIndependent         bool
+	VideoRateMultiplier          float64
+	VideoPrice480P               *float64
+	VideoPrice720P               *float64
+	VideoPrice1080P              *float64
 	// VideoModelPrices is optional per-model-family per-second pricing
 	// (groups.video_model_prices JSONB). Shape: family → resolution → USD/s.
 	// When set for a model, overrides VideoPrice* for that model only.
@@ -102,9 +99,9 @@ type Group struct {
 
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch       bool
-	DisableResponsesAPI         *bool
-	DisableChatCompletionsAPI   *bool
 	AllowLive                   bool
+	ForceOpenAIFast             bool // 强制 OpenAI 网关请求使用 service_tier=priority
+	FreeOpenAIFast              bool // OpenAI Fast 请求按 Standard 价格向用户计费
 	RequireOAuthOnly            bool // 仅允许非 apikey 类型账号关联（OpenAI/Antigravity/Anthropic/Gemini）
 	RequirePrivacySet           bool // 调度时仅允许 privacy 已成功设置的账号（OpenAI/Antigravity/Anthropic/Gemini）
 	DefaultMappedModel          string
@@ -118,6 +115,9 @@ type Group struct {
 	// MaxReasoningEffort limits the effective OpenAI/Codex reasoning effort.
 	// Empty means unlimited; supported values are minimal/low/medium/high/xhigh/max.
 	MaxReasoningEffort string
+	// MaxReasoningEffortOverLimit is the access control when an explicit effort
+	// exceeds the ceiling: downgrade (default) or deny.
+	MaxReasoningEffortOverLimit string
 	// ReasoningEffortMappings rewrites explicit request values before applying the ceiling.
 	ReasoningEffortMappings []ReasoningEffortMapping
 
@@ -228,18 +228,6 @@ func IsGroupContextValid(group *Group) bool {
 		return false
 	}
 	return true
-}
-
-func GroupDisablesResponsesAPI(group *Group) bool {
-	return group != nil && group.DisableResponsesAPI != nil && *group.DisableResponsesAPI
-}
-
-func GroupDisablesChatCompletionsAPI(group *Group) bool {
-	return group != nil && group.DisableChatCompletionsAPI != nil && *group.DisableChatCompletionsAPI
-}
-
-func GroupUsesRequestedImageBillingCount(group *Group) bool {
-	return group != nil && group.ImageBillingUseRequestedCount != nil && *group.ImageBillingUseRequestedCount
 }
 
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表

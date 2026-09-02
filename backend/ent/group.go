@@ -64,8 +64,6 @@ type Group struct {
 	AllowBatchImageGeneration bool `json:"allow_batch_image_generation,omitempty"`
 	// 图片生成是否使用独立倍率；false 表示共享分组有效倍率
 	ImageRateIndependent bool `json:"image_rate_independent,omitempty"`
-	// 图片生成是否按请求参数 n 计费；NULL/false 保持按上游返回图片数计费
-	ImageBillingUseRequestedCount *bool `json:"image_billing_use_requested_count,omitempty"`
 	// 图片生成独立倍率，仅 image_rate_independent=true 时生效
 	ImageRateMultiplier float64 `json:"image_rate_multiplier,omitempty"`
 	// ImagePrice1k holds the value of the "image_price_1k" field.
@@ -122,12 +120,12 @@ type Group struct {
 	SortOrder int `json:"sort_order,omitempty"`
 	// 是否允许 /v1/messages 调度到此 OpenAI 分组
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch,omitempty"`
-	// 是否禁用该分组的 Responses API；NULL/false 保持现有行为
-	DisableResponsesAPI *bool `json:"disable_responses_api,omitempty"`
-	// 是否禁用该分组的 Chat Completions API；NULL/false 保持现有行为
-	DisableChatCompletionsAPI *bool `json:"disable_chat_completions_api,omitempty"`
 	// 是否允许此 OpenAI 分组访问 Live 接口
 	AllowLive bool `json:"allow_live,omitempty"`
+	// 是否强制此 OpenAI/Composite 分组请求使用 service_tier=priority
+	ForceOpenaiFast bool `json:"force_openai_fast,omitempty"`
+	// 是否让此 OpenAI/Composite 分组的 Fast 请求按 Standard 价格计费
+	FreeOpenaiFast bool `json:"free_openai_fast,omitempty"`
 	// 仅允许非 apikey 类型账号关联到此分组
 	RequireOauthOnly bool `json:"require_oauth_only,omitempty"`
 	// 调度时仅允许 privacy 已成功设置的账号
@@ -142,6 +140,8 @@ type Group struct {
 	RpmLimit int `json:"rpm_limit,omitempty"`
 	// OpenAI reasoning effort 上限；可选 minimal/low/medium/high/xhigh/max
 	MaxReasoningEffort string `json:"max_reasoning_effort,omitempty"`
+	// 超过推理强度上限时的访问控制：downgrade 自动降档，deny 拒绝访问
+	MaxReasoningEffortOverLimit string `json:"max_reasoning_effort_over_limit,omitempty"`
 	// OpenAI reasoning effort 自定义精确映射；先映射再应用上限
 	ReasoningEffortMappings []domain.ReasoningEffortMapping `json:"reasoning_effort_mappings,omitempty"`
 	// 是否启用利润控制：调度时仅允许账号计费倍率满足毛利率要求的账号进入候选池
@@ -258,13 +258,13 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldVideoModelPrices, group.FieldModelPricing, group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig, group.FieldReasoningEffortMappings:
 			values[i] = new([]byte)
-		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldImageBillingUseRequestedCount, group.FieldVideoRateIndependent, group.FieldLongContextPricingEnabled, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldDisableResponsesAPI, group.FieldDisableChatCompletionsAPI, group.FieldAllowLive, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet, group.FieldProfitControlEnabled:
+		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldVideoRateIndependent, group.FieldLongContextPricingEnabled, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldAllowLive, group.FieldForceOpenaiFast, group.FieldFreeOpenaiFast, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet, group.FieldProfitControlEnabled:
 			values[i] = new(sql.NullBool)
 		case group.FieldRateMultiplier, group.FieldPeakRateMultiplier, group.FieldDailyLimitUsd, group.FieldWeeklyLimitUsd, group.FieldMonthlyLimitUsd, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k, group.FieldBatchImageDiscountMultiplier, group.FieldBatchImageHoldMultiplier, group.FieldVideoRateMultiplier, group.FieldVideoPrice480p, group.FieldVideoPrice720p, group.FieldVideoPrice1080p, group.FieldWebSearchPricePerCall, group.FieldSearchPricePer1k, group.FieldAudioRealtimePricePerMin, group.FieldAudioTtsPricePerMillionChars, group.FieldAudioSttPricePerHour, group.FieldProfitMinMargin, group.FieldProfitSafetyBuffer:
 			values[i] = new(sql.NullFloat64)
 		case group.FieldID, group.FieldDefaultValidityDays, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder, group.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
-		case group.FieldName, group.FieldDescription, group.FieldPeakStart, group.FieldPeakEnd, group.FieldStatus, group.FieldDuplicateOperationID, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel, group.FieldMaxReasoningEffort:
+		case group.FieldName, group.FieldDescription, group.FieldPeakStart, group.FieldPeakEnd, group.FieldStatus, group.FieldDuplicateOperationID, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel, group.FieldMaxReasoningEffort, group.FieldMaxReasoningEffortOverLimit:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt, group.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -426,13 +426,6 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field image_rate_independent", values[i])
 			} else if value.Valid {
 				_m.ImageRateIndependent = value.Bool
-			}
-		case group.FieldImageBillingUseRequestedCount:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field image_billing_use_requested_count", values[i])
-			} else if value.Valid {
-				_m.ImageBillingUseRequestedCount = new(bool)
-				*_m.ImageBillingUseRequestedCount = value.Bool
 			}
 		case group.FieldImageRateMultiplier:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -623,25 +616,23 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AllowMessagesDispatch = value.Bool
 			}
-		case group.FieldDisableResponsesAPI:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field disable_responses_api", values[i])
-			} else if value.Valid {
-				_m.DisableResponsesAPI = new(bool)
-				*_m.DisableResponsesAPI = value.Bool
-			}
-		case group.FieldDisableChatCompletionsAPI:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field disable_chat_completions_api", values[i])
-			} else if value.Valid {
-				_m.DisableChatCompletionsAPI = new(bool)
-				*_m.DisableChatCompletionsAPI = value.Bool
-			}
 		case group.FieldAllowLive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field allow_live", values[i])
 			} else if value.Valid {
 				_m.AllowLive = value.Bool
+			}
+		case group.FieldForceOpenaiFast:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field force_openai_fast", values[i])
+			} else if value.Valid {
+				_m.ForceOpenaiFast = value.Bool
+			}
+		case group.FieldFreeOpenaiFast:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field free_openai_fast", values[i])
+			} else if value.Valid {
+				_m.FreeOpenaiFast = value.Bool
 			}
 		case group.FieldRequireOauthOnly:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -688,6 +679,12 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field max_reasoning_effort", values[i])
 			} else if value.Valid {
 				_m.MaxReasoningEffort = value.String
+			}
+		case group.FieldMaxReasoningEffortOverLimit:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field max_reasoning_effort_over_limit", values[i])
+			} else if value.Valid {
+				_m.MaxReasoningEffortOverLimit = value.String
 			}
 		case group.FieldReasoningEffortMappings:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -869,11 +866,6 @@ func (_m *Group) String() string {
 	builder.WriteString("image_rate_independent=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ImageRateIndependent))
 	builder.WriteString(", ")
-	if v := _m.ImageBillingUseRequestedCount; v != nil {
-		builder.WriteString("image_billing_use_requested_count=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
 	builder.WriteString("image_rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ImageRateMultiplier))
 	builder.WriteString(", ")
@@ -984,18 +976,14 @@ func (_m *Group) String() string {
 	builder.WriteString("allow_messages_dispatch=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllowMessagesDispatch))
 	builder.WriteString(", ")
-	if v := _m.DisableResponsesAPI; v != nil {
-		builder.WriteString("disable_responses_api=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
-	if v := _m.DisableChatCompletionsAPI; v != nil {
-		builder.WriteString("disable_chat_completions_api=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
 	builder.WriteString("allow_live=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AllowLive))
+	builder.WriteString(", ")
+	builder.WriteString("force_openai_fast=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ForceOpenaiFast))
+	builder.WriteString(", ")
+	builder.WriteString("free_openai_fast=")
+	builder.WriteString(fmt.Sprintf("%v", _m.FreeOpenaiFast))
 	builder.WriteString(", ")
 	builder.WriteString("require_oauth_only=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RequireOauthOnly))
@@ -1017,6 +1005,9 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("max_reasoning_effort=")
 	builder.WriteString(_m.MaxReasoningEffort)
+	builder.WriteString(", ")
+	builder.WriteString("max_reasoning_effort_over_limit=")
+	builder.WriteString(_m.MaxReasoningEffortOverLimit)
 	builder.WriteString(", ")
 	builder.WriteString("reasoning_effort_mappings=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ReasoningEffortMappings))

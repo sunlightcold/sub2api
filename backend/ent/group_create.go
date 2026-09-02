@@ -330,20 +330,6 @@ func (_c *GroupCreate) SetNillableImageRateIndependent(v *bool) *GroupCreate {
 	return _c
 }
 
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (_c *GroupCreate) SetImageBillingUseRequestedCount(v bool) *GroupCreate {
-	_c.mutation.SetImageBillingUseRequestedCount(v)
-	return _c
-}
-
-// SetNillableImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field if the given value is not nil.
-func (_c *GroupCreate) SetNillableImageBillingUseRequestedCount(v *bool) *GroupCreate {
-	if v != nil {
-		_c.SetImageBillingUseRequestedCount(*v)
-	}
-	return _c
-}
-
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (_c *GroupCreate) SetImageRateMultiplier(v float64) *GroupCreate {
 	_c.mutation.SetImageRateMultiplier(v)
@@ -704,34 +690,6 @@ func (_c *GroupCreate) SetNillableAllowMessagesDispatch(v *bool) *GroupCreate {
 	return _c
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (_c *GroupCreate) SetDisableResponsesAPI(v bool) *GroupCreate {
-	_c.mutation.SetDisableResponsesAPI(v)
-	return _c
-}
-
-// SetNillableDisableResponsesAPI sets the "disable_responses_api" field if the given value is not nil.
-func (_c *GroupCreate) SetNillableDisableResponsesAPI(v *bool) *GroupCreate {
-	if v != nil {
-		_c.SetDisableResponsesAPI(*v)
-	}
-	return _c
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (_c *GroupCreate) SetDisableChatCompletionsAPI(v bool) *GroupCreate {
-	_c.mutation.SetDisableChatCompletionsAPI(v)
-	return _c
-}
-
-// SetNillableDisableChatCompletionsAPI sets the "disable_chat_completions_api" field if the given value is not nil.
-func (_c *GroupCreate) SetNillableDisableChatCompletionsAPI(v *bool) *GroupCreate {
-	if v != nil {
-		_c.SetDisableChatCompletionsAPI(*v)
-	}
-	return _c
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (_c *GroupCreate) SetAllowLive(v bool) *GroupCreate {
 	_c.mutation.SetAllowLive(v)
@@ -742,6 +700,34 @@ func (_c *GroupCreate) SetAllowLive(v bool) *GroupCreate {
 func (_c *GroupCreate) SetNillableAllowLive(v *bool) *GroupCreate {
 	if v != nil {
 		_c.SetAllowLive(*v)
+	}
+	return _c
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (_c *GroupCreate) SetForceOpenaiFast(v bool) *GroupCreate {
+	_c.mutation.SetForceOpenaiFast(v)
+	return _c
+}
+
+// SetNillableForceOpenaiFast sets the "force_openai_fast" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableForceOpenaiFast(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetForceOpenaiFast(*v)
+	}
+	return _c
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (_c *GroupCreate) SetFreeOpenaiFast(v bool) *GroupCreate {
+	_c.mutation.SetFreeOpenaiFast(v)
+	return _c
+}
+
+// SetNillableFreeOpenaiFast sets the "free_openai_fast" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableFreeOpenaiFast(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetFreeOpenaiFast(*v)
 	}
 	return _c
 }
@@ -840,6 +826,20 @@ func (_c *GroupCreate) SetMaxReasoningEffort(v string) *GroupCreate {
 func (_c *GroupCreate) SetNillableMaxReasoningEffort(v *string) *GroupCreate {
 	if v != nil {
 		_c.SetMaxReasoningEffort(*v)
+	}
+	return _c
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (_c *GroupCreate) SetMaxReasoningEffortOverLimit(v string) *GroupCreate {
+	_c.mutation.SetMaxReasoningEffortOverLimit(v)
+	return _c
+}
+
+// SetNillableMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableMaxReasoningEffortOverLimit(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetMaxReasoningEffortOverLimit(*v)
 	}
 	return _c
 }
@@ -1137,6 +1137,14 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultAllowLive
 		_c.mutation.SetAllowLive(v)
 	}
+	if _, ok := _c.mutation.ForceOpenaiFast(); !ok {
+		v := group.DefaultForceOpenaiFast
+		_c.mutation.SetForceOpenaiFast(v)
+	}
+	if _, ok := _c.mutation.FreeOpenaiFast(); !ok {
+		v := group.DefaultFreeOpenaiFast
+		_c.mutation.SetFreeOpenaiFast(v)
+	}
 	if _, ok := _c.mutation.RequireOauthOnly(); !ok {
 		v := group.DefaultRequireOauthOnly
 		_c.mutation.SetRequireOauthOnly(v)
@@ -1164,6 +1172,10 @@ func (_c *GroupCreate) defaults() error {
 	if _, ok := _c.mutation.MaxReasoningEffort(); !ok {
 		v := group.DefaultMaxReasoningEffort
 		_c.mutation.SetMaxReasoningEffort(v)
+	}
+	if _, ok := _c.mutation.MaxReasoningEffortOverLimit(); !ok {
+		v := group.DefaultMaxReasoningEffortOverLimit
+		_c.mutation.SetMaxReasoningEffortOverLimit(v)
 	}
 	if _, ok := _c.mutation.ReasoningEffortMappings(); !ok {
 		v := group.DefaultReasoningEffortMappings
@@ -1328,6 +1340,12 @@ func (_c *GroupCreate) check() error {
 	if _, ok := _c.mutation.AllowLive(); !ok {
 		return &ValidationError{Name: "allow_live", err: errors.New(`ent: missing required field "Group.allow_live"`)}
 	}
+	if _, ok := _c.mutation.ForceOpenaiFast(); !ok {
+		return &ValidationError{Name: "force_openai_fast", err: errors.New(`ent: missing required field "Group.force_openai_fast"`)}
+	}
+	if _, ok := _c.mutation.FreeOpenaiFast(); !ok {
+		return &ValidationError{Name: "free_openai_fast", err: errors.New(`ent: missing required field "Group.free_openai_fast"`)}
+	}
 	if _, ok := _c.mutation.RequireOauthOnly(); !ok {
 		return &ValidationError{Name: "require_oauth_only", err: errors.New(`ent: missing required field "Group.require_oauth_only"`)}
 	}
@@ -1357,6 +1375,14 @@ func (_c *GroupCreate) check() error {
 	if v, ok := _c.mutation.MaxReasoningEffort(); ok {
 		if err := group.MaxReasoningEffortValidator(v); err != nil {
 			return &ValidationError{Name: "max_reasoning_effort", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.MaxReasoningEffortOverLimit(); !ok {
+		return &ValidationError{Name: "max_reasoning_effort_over_limit", err: errors.New(`ent: missing required field "Group.max_reasoning_effort_over_limit"`)}
+	}
+	if v, ok := _c.mutation.MaxReasoningEffortOverLimit(); ok {
+		if err := group.MaxReasoningEffortOverLimitValidator(v); err != nil {
+			return &ValidationError{Name: "max_reasoning_effort_over_limit", err: fmt.Errorf(`ent: validator failed for field "Group.max_reasoning_effort_over_limit": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ReasoningEffortMappings(); !ok {
@@ -1486,10 +1512,6 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldImageRateIndependent, field.TypeBool, value)
 		_node.ImageRateIndependent = value
 	}
-	if value, ok := _c.mutation.ImageBillingUseRequestedCount(); ok {
-		_spec.SetField(group.FieldImageBillingUseRequestedCount, field.TypeBool, value)
-		_node.ImageBillingUseRequestedCount = &value
-	}
 	if value, ok := _c.mutation.ImageRateMultiplier(); ok {
 		_spec.SetField(group.FieldImageRateMultiplier, field.TypeFloat64, value)
 		_node.ImageRateMultiplier = value
@@ -1602,17 +1624,17 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldAllowMessagesDispatch, field.TypeBool, value)
 		_node.AllowMessagesDispatch = value
 	}
-	if value, ok := _c.mutation.DisableResponsesAPI(); ok {
-		_spec.SetField(group.FieldDisableResponsesAPI, field.TypeBool, value)
-		_node.DisableResponsesAPI = &value
-	}
-	if value, ok := _c.mutation.DisableChatCompletionsAPI(); ok {
-		_spec.SetField(group.FieldDisableChatCompletionsAPI, field.TypeBool, value)
-		_node.DisableChatCompletionsAPI = &value
-	}
 	if value, ok := _c.mutation.AllowLive(); ok {
 		_spec.SetField(group.FieldAllowLive, field.TypeBool, value)
 		_node.AllowLive = value
+	}
+	if value, ok := _c.mutation.ForceOpenaiFast(); ok {
+		_spec.SetField(group.FieldForceOpenaiFast, field.TypeBool, value)
+		_node.ForceOpenaiFast = value
+	}
+	if value, ok := _c.mutation.FreeOpenaiFast(); ok {
+		_spec.SetField(group.FieldFreeOpenaiFast, field.TypeBool, value)
+		_node.FreeOpenaiFast = value
 	}
 	if value, ok := _c.mutation.RequireOauthOnly(); ok {
 		_spec.SetField(group.FieldRequireOauthOnly, field.TypeBool, value)
@@ -1641,6 +1663,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MaxReasoningEffort(); ok {
 		_spec.SetField(group.FieldMaxReasoningEffort, field.TypeString, value)
 		_node.MaxReasoningEffort = value
+	}
+	if value, ok := _c.mutation.MaxReasoningEffortOverLimit(); ok {
+		_spec.SetField(group.FieldMaxReasoningEffortOverLimit, field.TypeString, value)
+		_node.MaxReasoningEffortOverLimit = value
 	}
 	if value, ok := _c.mutation.ReasoningEffortMappings(); ok {
 		_spec.SetField(group.FieldReasoningEffortMappings, field.TypeJSON, value)
@@ -2117,24 +2143,6 @@ func (u *GroupUpsert) SetImageRateIndependent(v bool) *GroupUpsert {
 // UpdateImageRateIndependent sets the "image_rate_independent" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateImageRateIndependent() *GroupUpsert {
 	u.SetExcluded(group.FieldImageRateIndependent)
-	return u
-}
-
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (u *GroupUpsert) SetImageBillingUseRequestedCount(v bool) *GroupUpsert {
-	u.Set(group.FieldImageBillingUseRequestedCount, v)
-	return u
-}
-
-// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
-func (u *GroupUpsert) UpdateImageBillingUseRequestedCount() *GroupUpsert {
-	u.SetExcluded(group.FieldImageBillingUseRequestedCount)
-	return u
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (u *GroupUpsert) ClearImageBillingUseRequestedCount() *GroupUpsert {
-	u.SetNull(group.FieldImageBillingUseRequestedCount)
 	return u
 }
 
@@ -2678,42 +2686,6 @@ func (u *GroupUpsert) UpdateAllowMessagesDispatch() *GroupUpsert {
 	return u
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (u *GroupUpsert) SetDisableResponsesAPI(v bool) *GroupUpsert {
-	u.Set(group.FieldDisableResponsesAPI, v)
-	return u
-}
-
-// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
-func (u *GroupUpsert) UpdateDisableResponsesAPI() *GroupUpsert {
-	u.SetExcluded(group.FieldDisableResponsesAPI)
-	return u
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (u *GroupUpsert) ClearDisableResponsesAPI() *GroupUpsert {
-	u.SetNull(group.FieldDisableResponsesAPI)
-	return u
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (u *GroupUpsert) SetDisableChatCompletionsAPI(v bool) *GroupUpsert {
-	u.Set(group.FieldDisableChatCompletionsAPI, v)
-	return u
-}
-
-// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
-func (u *GroupUpsert) UpdateDisableChatCompletionsAPI() *GroupUpsert {
-	u.SetExcluded(group.FieldDisableChatCompletionsAPI)
-	return u
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (u *GroupUpsert) ClearDisableChatCompletionsAPI() *GroupUpsert {
-	u.SetNull(group.FieldDisableChatCompletionsAPI)
-	return u
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (u *GroupUpsert) SetAllowLive(v bool) *GroupUpsert {
 	u.Set(group.FieldAllowLive, v)
@@ -2723,6 +2695,30 @@ func (u *GroupUpsert) SetAllowLive(v bool) *GroupUpsert {
 // UpdateAllowLive sets the "allow_live" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateAllowLive() *GroupUpsert {
 	u.SetExcluded(group.FieldAllowLive)
+	return u
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (u *GroupUpsert) SetForceOpenaiFast(v bool) *GroupUpsert {
+	u.Set(group.FieldForceOpenaiFast, v)
+	return u
+}
+
+// UpdateForceOpenaiFast sets the "force_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateForceOpenaiFast() *GroupUpsert {
+	u.SetExcluded(group.FieldForceOpenaiFast)
+	return u
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (u *GroupUpsert) SetFreeOpenaiFast(v bool) *GroupUpsert {
+	u.Set(group.FieldFreeOpenaiFast, v)
+	return u
+}
+
+// UpdateFreeOpenaiFast sets the "free_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateFreeOpenaiFast() *GroupUpsert {
+	u.SetExcluded(group.FieldFreeOpenaiFast)
 	return u
 }
 
@@ -2813,6 +2809,18 @@ func (u *GroupUpsert) SetMaxReasoningEffort(v string) *GroupUpsert {
 // UpdateMaxReasoningEffort sets the "max_reasoning_effort" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateMaxReasoningEffort() *GroupUpsert {
 	u.SetExcluded(group.FieldMaxReasoningEffort)
+	return u
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (u *GroupUpsert) SetMaxReasoningEffortOverLimit(v string) *GroupUpsert {
+	u.Set(group.FieldMaxReasoningEffortOverLimit, v)
+	return u
+}
+
+// UpdateMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateMaxReasoningEffortOverLimit() *GroupUpsert {
+	u.SetExcluded(group.FieldMaxReasoningEffortOverLimit)
 	return u
 }
 
@@ -3278,27 +3286,6 @@ func (u *GroupUpsertOne) SetImageRateIndependent(v bool) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateImageRateIndependent() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateImageRateIndependent()
-	})
-}
-
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (u *GroupUpsertOne) SetImageBillingUseRequestedCount(v bool) *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetImageBillingUseRequestedCount(v)
-	})
-}
-
-// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
-func (u *GroupUpsertOne) UpdateImageBillingUseRequestedCount() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateImageBillingUseRequestedCount()
-	})
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (u *GroupUpsertOne) ClearImageBillingUseRequestedCount() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearImageBillingUseRequestedCount()
 	})
 }
 
@@ -3932,48 +3919,6 @@ func (u *GroupUpsertOne) UpdateAllowMessagesDispatch() *GroupUpsertOne {
 	})
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (u *GroupUpsertOne) SetDisableResponsesAPI(v bool) *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetDisableResponsesAPI(v)
-	})
-}
-
-// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
-func (u *GroupUpsertOne) UpdateDisableResponsesAPI() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateDisableResponsesAPI()
-	})
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (u *GroupUpsertOne) ClearDisableResponsesAPI() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearDisableResponsesAPI()
-	})
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (u *GroupUpsertOne) SetDisableChatCompletionsAPI(v bool) *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetDisableChatCompletionsAPI(v)
-	})
-}
-
-// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
-func (u *GroupUpsertOne) UpdateDisableChatCompletionsAPI() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateDisableChatCompletionsAPI()
-	})
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (u *GroupUpsertOne) ClearDisableChatCompletionsAPI() *GroupUpsertOne {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearDisableChatCompletionsAPI()
-	})
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (u *GroupUpsertOne) SetAllowLive(v bool) *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
@@ -3985,6 +3930,34 @@ func (u *GroupUpsertOne) SetAllowLive(v bool) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateAllowLive() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateAllowLive()
+	})
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (u *GroupUpsertOne) SetForceOpenaiFast(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetForceOpenaiFast(v)
+	})
+}
+
+// UpdateForceOpenaiFast sets the "force_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateForceOpenaiFast() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateForceOpenaiFast()
+	})
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (u *GroupUpsertOne) SetFreeOpenaiFast(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetFreeOpenaiFast(v)
+	})
+}
+
+// UpdateFreeOpenaiFast sets the "free_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateFreeOpenaiFast() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateFreeOpenaiFast()
 	})
 }
 
@@ -4090,6 +4063,20 @@ func (u *GroupUpsertOne) SetMaxReasoningEffort(v string) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateMaxReasoningEffort() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateMaxReasoningEffort()
+	})
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (u *GroupUpsertOne) SetMaxReasoningEffortOverLimit(v string) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetMaxReasoningEffortOverLimit(v)
+	})
+}
+
+// UpdateMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateMaxReasoningEffortOverLimit() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateMaxReasoningEffortOverLimit()
 	})
 }
 
@@ -4734,27 +4721,6 @@ func (u *GroupUpsertBulk) UpdateImageRateIndependent() *GroupUpsertBulk {
 	})
 }
 
-// SetImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field.
-func (u *GroupUpsertBulk) SetImageBillingUseRequestedCount(v bool) *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetImageBillingUseRequestedCount(v)
-	})
-}
-
-// UpdateImageBillingUseRequestedCount sets the "image_billing_use_requested_count" field to the value that was provided on create.
-func (u *GroupUpsertBulk) UpdateImageBillingUseRequestedCount() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateImageBillingUseRequestedCount()
-	})
-}
-
-// ClearImageBillingUseRequestedCount clears the value of the "image_billing_use_requested_count" field.
-func (u *GroupUpsertBulk) ClearImageBillingUseRequestedCount() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearImageBillingUseRequestedCount()
-	})
-}
-
 // SetImageRateMultiplier sets the "image_rate_multiplier" field.
 func (u *GroupUpsertBulk) SetImageRateMultiplier(v float64) *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
@@ -5385,48 +5351,6 @@ func (u *GroupUpsertBulk) UpdateAllowMessagesDispatch() *GroupUpsertBulk {
 	})
 }
 
-// SetDisableResponsesAPI sets the "disable_responses_api" field.
-func (u *GroupUpsertBulk) SetDisableResponsesAPI(v bool) *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetDisableResponsesAPI(v)
-	})
-}
-
-// UpdateDisableResponsesAPI sets the "disable_responses_api" field to the value that was provided on create.
-func (u *GroupUpsertBulk) UpdateDisableResponsesAPI() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateDisableResponsesAPI()
-	})
-}
-
-// ClearDisableResponsesAPI clears the value of the "disable_responses_api" field.
-func (u *GroupUpsertBulk) ClearDisableResponsesAPI() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearDisableResponsesAPI()
-	})
-}
-
-// SetDisableChatCompletionsAPI sets the "disable_chat_completions_api" field.
-func (u *GroupUpsertBulk) SetDisableChatCompletionsAPI(v bool) *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.SetDisableChatCompletionsAPI(v)
-	})
-}
-
-// UpdateDisableChatCompletionsAPI sets the "disable_chat_completions_api" field to the value that was provided on create.
-func (u *GroupUpsertBulk) UpdateDisableChatCompletionsAPI() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.UpdateDisableChatCompletionsAPI()
-	})
-}
-
-// ClearDisableChatCompletionsAPI clears the value of the "disable_chat_completions_api" field.
-func (u *GroupUpsertBulk) ClearDisableChatCompletionsAPI() *GroupUpsertBulk {
-	return u.Update(func(s *GroupUpsert) {
-		s.ClearDisableChatCompletionsAPI()
-	})
-}
-
 // SetAllowLive sets the "allow_live" field.
 func (u *GroupUpsertBulk) SetAllowLive(v bool) *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
@@ -5438,6 +5362,34 @@ func (u *GroupUpsertBulk) SetAllowLive(v bool) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateAllowLive() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateAllowLive()
+	})
+}
+
+// SetForceOpenaiFast sets the "force_openai_fast" field.
+func (u *GroupUpsertBulk) SetForceOpenaiFast(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetForceOpenaiFast(v)
+	})
+}
+
+// UpdateForceOpenaiFast sets the "force_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateForceOpenaiFast() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateForceOpenaiFast()
+	})
+}
+
+// SetFreeOpenaiFast sets the "free_openai_fast" field.
+func (u *GroupUpsertBulk) SetFreeOpenaiFast(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetFreeOpenaiFast(v)
+	})
+}
+
+// UpdateFreeOpenaiFast sets the "free_openai_fast" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateFreeOpenaiFast() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateFreeOpenaiFast()
 	})
 }
 
@@ -5543,6 +5495,20 @@ func (u *GroupUpsertBulk) SetMaxReasoningEffort(v string) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateMaxReasoningEffort() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateMaxReasoningEffort()
+	})
+}
+
+// SetMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field.
+func (u *GroupUpsertBulk) SetMaxReasoningEffortOverLimit(v string) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetMaxReasoningEffortOverLimit(v)
+	})
+}
+
+// UpdateMaxReasoningEffortOverLimit sets the "max_reasoning_effort_over_limit" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateMaxReasoningEffortOverLimit() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateMaxReasoningEffortOverLimit()
 	})
 }
 

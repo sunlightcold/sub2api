@@ -636,16 +636,15 @@ type ForwardResult struct {
 	ServiceTier *string
 
 	// 图片生成计费字段（图片生成模型使用）
-	ImageCount          int    // 生成的图片数量
-	RequestedImageCount int    // 请求的图片数量；仅在分组开关启用时用于计费
-	ImageSize           string // 最终计费尺寸 "1K", "2K", "4K"
-	ImageInputSize      string // 请求中的原始图片尺寸
-	ImageOutputSize     string // 上游响应中的图片尺寸
-	ImageOutputSizes    []string
-	ImageSizeSource     string
-	ImageSizeBreakdown  map[string]int
-	SearchCount         int
-	AudioUsage          *AudioUsage
+	ImageCount         int    // 生成的图片数量
+	ImageSize          string // 最终计费尺寸 "1K", "2K", "4K"
+	ImageInputSize     string // 请求中的原始图片尺寸
+	ImageOutputSize    string // 上游响应中的图片尺寸
+	ImageOutputSizes   []string
+	ImageSizeSource    string
+	ImageSizeBreakdown map[string]int
+	SearchCount        int
+	AudioUsage         *AudioUsage
 }
 
 // GatewayFailureStage identifies which request stage failed. The zero value is

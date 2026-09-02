@@ -1000,17 +1000,13 @@ func filterSchedulerExtra(extra map[string]any) map[string]any {
 		"openai_ws_force_http",
 		"openai_responses_mode",
 		"openai_responses_supported",
-		service.OpenAIFirstTokenMetricModeExtraKey,
-		"openai_cache_read_correction_enabled",
-		"openai_cache_read_ratio_min",
-		"openai_cache_read_ratio_max",
-		"openai_cache_read_warming_ratio_min",
-		"openai_cache_read_warming_ratio_max",
-		"openai_cache_read_cold_ratio_min",
-		"openai_cache_read_cold_ratio_max",
-		"openai_cache_read_min_input_tokens",
-		"openai_cache_state_ttl_minutes",
-		"openai_cache_prefix_max_hash_bytes",
+		// 透传开关必须进投影：候选过滤(ListSchedulableAccounts)读的是本投影，
+		// 而 Account.IsModelSupported 靠 extra 上的这两个键短路 model_mapping 白名单。
+		// 裁掉它们，透传账号在选号阶段会退回按(常为过期的)白名单判定并被误判为
+		// model_not_supported —— 转发阶段却仍按透传工作，表现为"单独测账号能通、
+		// 走网关报 no available accounts"。
+		"openai_passthrough",
+		"openai_oauth_passthrough",
 		"codex_fingerprint_mode",
 		"codex_fingerprint_seed",
 		"codex_5h_used_percent",

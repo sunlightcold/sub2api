@@ -72,7 +72,7 @@
               <input v-model="editAdaptiveBaseUrls[item.value]" type="text" class="input" />
             </div>
           </div>
-          <p v-if="account.platform !== 'deepseek'" class="input-hint">
+          <p v-if="!cnSupportsNativeResponses(account.platform)" class="input-hint">
             {{ t('admin.accounts.cnProviders.apiProtocol.responsesFallbackDesc') }}
           </p>
         </div>
@@ -1759,28 +1759,6 @@
         </div>
       </div>
 
-      <!-- OpenAI first token metric mode -->
-      <div
-        v-if="account?.platform === 'openai' && (account?.type === 'oauth' || account?.type === 'setup-token' || account?.type === 'apikey')"
-        class="border-t border-gray-200 pt-4 dark:border-dark-600"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <label class="input-label mb-0">{{ t('admin.accounts.openai.firstTokenMetricMode') }}</label>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {{ t('admin.accounts.openai.firstTokenMetricModeDesc') }}
-            </p>
-          </div>
-          <div class="w-64">
-            <Select
-              v-model="openAIFirstTokenMetricMode"
-              :options="openAIFirstTokenMetricModeOptions"
-              data-testid="openai-first-token-metric-mode-select"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- OpenAI APIKey Responses API support mode -->
       <div
         v-if="account?.platform === 'openai' && account?.type === 'apikey'"
@@ -1853,65 +1831,6 @@
           :aria-label="t('admin.accounts.upstreamBilling.autoProbe')"
           @update:model-value="handleUpstreamBillingAutoProbeChange"
         />
-      </div>
-
-      <!-- OpenAI API Key cache-read correction -->
-      <div
-        v-if="account?.platform === 'openai' && account?.type === 'apikey'"
-        class="space-y-4 border-t border-gray-200 pt-4 dark:border-dark-600"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <label class="input-label mb-0">{{ t('admin.accounts.openai.cacheReadCorrection') }}</label>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {{ t('admin.accounts.openai.cacheReadCorrectionDesc') }}
-            </p>
-          </div>
-          <button
-            type="button"
-            @click="openAICacheReadCorrectionEnabled = !openAICacheReadCorrectionEnabled"
-            :class="[
-              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-              openAICacheReadCorrectionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
-            ]"
-          >
-            <span
-              :class="[
-                'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                openAICacheReadCorrectionEnabled ? 'translate-x-5' : 'translate-x-0'
-              ]"
-            />
-          </button>
-        </div>
-        <div v-if="openAICacheReadCorrectionEnabled" class="space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-dark-700">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMin') }}</label>
-              <input v-model.number="openAICacheReadRatioMin" type="number" min="0" max="1" step="0.01" class="input" />
-            </div>
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMax') }}</label>
-              <input v-model.number="openAICacheReadRatioMax" type="number" min="0" max="1" step="0.01" class="input" />
-            </div>
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMin') }}</label>
-              <input v-model.number="openAICacheReadWarmingRatioMin" type="number" min="0" max="1" step="0.01" class="input" />
-            </div>
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMax') }}</label>
-              <input v-model.number="openAICacheReadWarmingRatioMax" type="number" min="0" max="1" step="0.01" class="input" />
-            </div>
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadMinInputTokens') }}</label>
-              <input v-model.number="openAICacheReadMinInputTokens" type="number" min="1" step="1" class="input" />
-            </div>
-            <div>
-              <label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadStateTTLMinutes') }}</label>
-              <input v-model.number="openAICacheReadStateTTLMinutes" type="number" min="1" max="1440" step="1" class="input" />
-            </div>
-          </div>
-          <p class="input-hint">{{ t('admin.accounts.openai.cacheReadCorrectionHint') }}</p>
-        </div>
       </div>
 
       <OllamaCloudUsageSettings
@@ -2299,19 +2218,6 @@
             />
           </button>
         </div>
-      </div>
-
-      <div>
-        <label class="input-label">{{ t('admin.accounts.usageLatencyOffsetMs') }}</label>
-        <input
-          v-model.number="usageLatencyOffsetMs"
-          type="number"
-          min="0"
-          step="1"
-          class="input"
-          data-testid="usage-latency-offset-ms"
-        />
-        <p class="input-hint">{{ t('admin.accounts.usageLatencyOffsetMsHint') }}</p>
       </div>
 
       <div
@@ -2974,7 +2880,6 @@ import type {
   CheckMixedChannelResponse,
   OpenAICompactMode,
   OpenAIResponsesMode,
-  OpenAIFirstTokenMetricMode,
   OpenAIEndpointCapability,
   OllamaCloudUsageState
 } from '@/types'
@@ -3004,6 +2909,7 @@ import {
   isHeaderOverrideCapable,
   splitHeaderOverridesObject,
   validateHeaderOverrideRows,
+  cnSupportsNativeResponses,
   defaultCNAdaptiveBaseUrls,
   defaultCNBaseUrl,
   HEADER_OVERRIDE_ENABLED_CREDENTIAL_KEY,
@@ -3152,7 +3058,7 @@ const cnProtocolOptions = computed<Array<{ value: CnApiProtocol; labelKey: strin
     { value: 'chat_completions', labelKey: 'chatCompletions' },
     { value: 'anthropic', labelKey: 'anthropic' }
   ]
-  if (props.account?.platform === 'deepseek') {
+  if (cnSupportsNativeResponses(props.account?.platform ?? '')) {
     opts.push({ value: 'responses', labelKey: 'responses' })
   }
   return opts
@@ -3162,7 +3068,7 @@ const editAdaptiveProtocolOptions = computed<Array<{ value: CnNativeApiProtocol;
     { value: 'chat_completions', labelKey: 'chatCompletions' },
     { value: 'anthropic', labelKey: 'anthropic' }
   ]
-  if (props.account?.platform === 'deepseek') opts.push({ value: 'responses', labelKey: 'responses' })
+  if (cnSupportsNativeResponses(props.account?.platform ?? '')) opts.push({ value: 'responses', labelKey: 'responses' })
   return opts
 })
 watch(editApiProtocol, (protocol, previousProtocol) => {
@@ -3295,7 +3201,6 @@ const autoPause5hThreshold = ref<number | null>(null)
 const autoPause7dThreshold = ref<number | null>(null)
 const autoPause5hDisabled = ref(false)
 const autoPause7dDisabled = ref(false)
-const usageLatencyOffsetMs = ref<number | null>(null)
 const autoResetCreditEnabled = ref(false)
 const autoResetCredit5hThreshold = ref(100)
 const autoResetCredit7dThreshold = ref(100)
@@ -3364,15 +3269,7 @@ const openAILongContextBillingEnabled = ref(false)
 const editPlanType = ref<string>('')
 const openAICompactMode = ref<OpenAICompactMode>('auto')
 const openAIResponsesMode = ref<OpenAIResponsesMode>('auto')
-const openAIFirstTokenMetricMode = ref<OpenAIFirstTokenMetricMode>('first_output')
 const openAIEndpointCapabilities = ref<OpenAIEndpointCapability[]>(['chat_completions', 'embeddings'])
-const openAICacheReadCorrectionEnabled = ref(false)
-const openAICacheReadRatioMin = ref(0.88)
-const openAICacheReadRatioMax = ref(0.94)
-const openAICacheReadWarmingRatioMin = ref(0.35)
-const openAICacheReadWarmingRatioMax = ref(0.75)
-const openAICacheReadMinInputTokens = ref(1024)
-const openAICacheReadStateTTLMinutes = ref(60)
 const openaiOAuthResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const openaiAPIKeyResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const codexCLIOnlyEnabled = ref(false)
@@ -3515,10 +3412,6 @@ const openAIResponsesModeOptions = computed(() => [
   { value: 'force_responses', label: t('admin.accounts.openai.responsesModeForceResponses') },
   { value: 'force_chat_completions', label: t('admin.accounts.openai.responsesModeForceChatCompletions') }
 ])
-const openAIFirstTokenMetricModeOptions = computed(() => [
-  { value: 'first_response', label: t('admin.accounts.openai.firstTokenMetricModeFirstResponse') },
-  { value: 'first_output', label: t('admin.accounts.openai.firstTokenMetricModeFirstOutput') }
-])
 const openAITextEndpointCapabilityLabel = computed(() => {
   if (openAIResponsesMode.value === 'force_responses') {
     return t('admin.accounts.openai.capabilityResponses')
@@ -3598,83 +3491,11 @@ const applyOpenAIEndpointCapabilities = (credentials: Record<string, unknown>) =
   }
   credentials.openai_capabilities = capabilities
 }
-const clampRatio = (value: number, fallback: number) => {
-  if (!Number.isFinite(value)) return fallback
-  if (value > 1) value = value / 100
-  return Math.min(1, Math.max(0, value))
-}
-
-const readNumberExtra = (extra: Record<string, unknown> | undefined, key: string, fallback: number) => {
-  const raw = extra?.[key]
-  return typeof raw === 'number' && Number.isFinite(raw) ? raw : fallback
-}
-
-const resetOpenAICacheReadCorrectionState = () => {
-  openAICacheReadCorrectionEnabled.value = false
-  openAICacheReadRatioMin.value = 0.88
-  openAICacheReadRatioMax.value = 0.94
-  openAICacheReadWarmingRatioMin.value = 0.35
-  openAICacheReadWarmingRatioMax.value = 0.75
-  openAICacheReadMinInputTokens.value = 1024
-  openAICacheReadStateTTLMinutes.value = 60
-}
-
-const loadOpenAICacheReadCorrectionExtra = (extra: Record<string, unknown> | undefined) => {
-  resetOpenAICacheReadCorrectionState()
-  openAICacheReadCorrectionEnabled.value = extra?.openai_cache_read_correction_enabled === true
-  openAICacheReadRatioMin.value = readNumberExtra(extra, 'openai_cache_read_ratio_min', 0.88)
-  openAICacheReadRatioMax.value = readNumberExtra(extra, 'openai_cache_read_ratio_max', 0.94)
-  openAICacheReadWarmingRatioMin.value = readNumberExtra(extra, 'openai_cache_read_warming_ratio_min', 0.35)
-  openAICacheReadWarmingRatioMax.value = readNumberExtra(extra, 'openai_cache_read_warming_ratio_max', 0.75)
-  openAICacheReadMinInputTokens.value = readNumberExtra(extra, 'openai_cache_read_min_input_tokens', 1024)
-  openAICacheReadStateTTLMinutes.value = readNumberExtra(extra, 'openai_cache_state_ttl_minutes', 60)
-}
-
-const writeOpenAICacheReadCorrectionExtra = (extra: Record<string, unknown>) => {
-  if (!openAICacheReadCorrectionEnabled.value) {
-    delete extra.openai_cache_read_correction_enabled
-    delete extra.openai_cache_read_ratio_min
-    delete extra.openai_cache_read_ratio_max
-    delete extra.openai_cache_read_warming_ratio_min
-    delete extra.openai_cache_read_warming_ratio_max
-    delete extra.openai_cache_read_min_input_tokens
-    delete extra.openai_cache_state_ttl_minutes
-    return
-  }
-  const warmMin = clampRatio(openAICacheReadRatioMin.value, 0.88)
-  const warmMax = clampRatio(openAICacheReadRatioMax.value, 0.94)
-  const warmingMin = clampRatio(openAICacheReadWarmingRatioMin.value, 0.35)
-  const warmingMax = clampRatio(openAICacheReadWarmingRatioMax.value, 0.75)
-  extra.openai_cache_read_correction_enabled = true
-  extra.openai_cache_read_ratio_min = Math.min(warmMin, warmMax)
-  extra.openai_cache_read_ratio_max = Math.max(warmMin, warmMax)
-  extra.openai_cache_read_warming_ratio_min = Math.min(warmingMin, warmingMax)
-  extra.openai_cache_read_warming_ratio_max = Math.max(warmingMin, warmingMax)
-  extra.openai_cache_read_min_input_tokens = Math.max(1, Math.trunc(openAICacheReadMinInputTokens.value || 1024))
-  extra.openai_cache_state_ttl_minutes = Math.max(1, Math.trunc(openAICacheReadStateTTLMinutes.value || 60))
-}
-
-const writeUsageLatencyOffsetExtra = (extra: Record<string, unknown>) => {
-  const offsetMs = Number(usageLatencyOffsetMs.value)
-  if (!Number.isFinite(offsetMs) || offsetMs <= 0) {
-    delete extra.usage_latency_offset_ms
-    return
-  }
-  extra.usage_latency_offset_ms = Math.trunc(offsetMs)
-}
-
 const normalizeOpenAIResponsesMode = (mode: unknown): OpenAIResponsesMode => {
-  if (
-    mode === 'force_responses' ||
-    mode === 'force_chat_completions'
-  ) {
+  if (mode === 'force_responses' || mode === 'force_chat_completions') {
     return mode
   }
   return 'auto'
-}
-
-const normalizeOpenAIFirstTokenMetricMode = (mode: unknown): OpenAIFirstTokenMetricMode => {
-  return mode === 'first_response' ? 'first_response' : 'first_output'
 }
 const isOpenAIModelRestrictionDisabled = computed(() =>
   props.account?.platform === 'openai' && openaiPassthroughEnabled.value
@@ -3911,9 +3732,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
 	autoPause7dThreshold.value = typeof extra?.auto_pause_7d_threshold === 'number' ? extra.auto_pause_7d_threshold * 100 : null
 	autoPause5hDisabled.value = extra?.auto_pause_5h_disabled === true
 	autoPause7dDisabled.value = extra?.auto_pause_7d_disabled === true
-  usageLatencyOffsetMs.value = typeof extra?.usage_latency_offset_ms === 'number'
-    ? Math.max(0, Math.trunc(extra.usage_latency_offset_ms))
-    : null
 	autoResetCreditEnabled.value = extra?.auto_reset_credit_enabled === true
 	autoResetCredit5hThreshold.value =
 		typeof extra?.auto_reset_credit_5h_threshold === 'number' ? extra.auto_reset_credit_5h_threshold * 100 : 100
@@ -3930,7 +3748,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   editPlanType.value = ''
   openAICompactMode.value = 'auto'
   openAIResponsesMode.value = 'auto'
-  openAIFirstTokenMetricMode.value = 'first_output'
   openAIEndpointCapabilities.value = ['chat_completions', 'embeddings']
   openAICompactModelMappings.value = []
   openaiOAuthResponsesWebSocketV2Mode.value = OPENAI_WS_MODE_OFF
@@ -3939,7 +3756,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   codexCLIOnlyAppServerEnabled.value = false
   codexFingerprintMode.value = 'off'
   codexImageToolMode.value = 'inherit'
-  resetOpenAICacheReadCorrectionState()
   anthropicPassthroughEnabled.value = false
   anthropicAPIKeyAuthScheme.value = 'x_api_key'
   webSearchEmulationMode.value = 'default'
@@ -3954,7 +3770,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
       ? readPlanType(newAccount.credentials as Record<string, unknown> | undefined)
       : ''
     openAICompactMode.value = (extra?.openai_compact_mode as OpenAICompactMode) || 'auto'
-    openAIFirstTokenMetricMode.value = normalizeOpenAIFirstTokenMetricMode(extra?.openai_first_token_metric_mode)
     if (newAccount.type === 'apikey') {
       openAIResponsesMode.value = normalizeOpenAIResponsesMode(extra?.openai_responses_mode)
       openAIEndpointCapabilities.value = readOpenAIEndpointCapabilities(
@@ -3963,7 +3778,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
       if (!openAITextGenerationCapabilityEnabled.value) {
         openAIResponsesMode.value = 'auto'
       }
-      loadOpenAICacheReadCorrectionExtra(extra)
     }
     const codexImageGenerationBridgeValue = typeof extra?.codex_image_generation_bridge === 'boolean'
       ? extra.codex_image_generation_bridge
@@ -4134,7 +3948,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
         storedProtocol === 'responses'
           ? storedProtocol
           : 'chat_completions'
-      if (newAccount.platform !== 'deepseek' && editApiProtocol.value === 'responses') {
+      if (!cnSupportsNativeResponses(newAccount.platform) && editApiProtocol.value === 'responses') {
         editApiProtocol.value = 'chat_completions'
       }
       const adaptiveDefaults = defaultCNAdaptiveBaseUrls(newAccount.platform, editAccountMode.value)
@@ -5381,18 +5195,12 @@ const handleSubmit = async () => {
       } else {
         newExtra.openai_compact_mode = openAICompactMode.value
       }
-      if (openAIFirstTokenMetricMode.value === 'first_response') {
-        newExtra.openai_first_token_metric_mode = 'first_response'
-      } else {
-        delete newExtra.openai_first_token_metric_mode
-      }
 		if (props.account.type === 'apikey') {
         if (!openAITextGenerationCapabilityEnabled.value || openAIResponsesMode.value === 'auto') {
           delete newExtra.openai_responses_mode
         } else {
           newExtra.openai_responses_mode = openAIResponsesMode.value
         }
-        writeOpenAICacheReadCorrectionExtra(newExtra)
 		}
 		if (autoPause5hThreshold.value != null && autoPause5hThreshold.value > 0) {
 			newExtra.auto_pause_5h_threshold = autoPause5hThreshold.value / 100
@@ -5526,14 +5334,6 @@ const handleSubmit = async () => {
       }
       // Quota notify config
       writeQuotaNotifyToExtra(newExtra, 'update')
-      updatePayload.extra = newExtra
-    }
-
-    {
-      const currentExtra = (updatePayload.extra as Record<string, unknown>) ||
-        (props.account.extra as Record<string, unknown>) || {}
-      const newExtra: Record<string, unknown> = { ...currentExtra }
-      writeUsageLatencyOffsetExtra(newExtra)
       updatePayload.extra = newExtra
     }
 

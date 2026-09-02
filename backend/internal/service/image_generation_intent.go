@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/tidwall/gjson"
@@ -420,16 +419,14 @@ func apiKeyGroup(apiKey *APIKey) *Group {
 }
 
 type OpenAIResponsesImageBillingConfig struct {
-	Model               string
-	SizeTier            string
-	InputSize           string
-	RequestedImageCount int
+	Model     string
+	SizeTier  string
+	InputSize string
 }
 
 func resolveOpenAIResponsesImageBillingConfigDetailed(reqBody map[string]any, fallbackModel string) (OpenAIResponsesImageBillingConfig, error) {
 	imageModel := ""
 	imageSize := ""
-	requestedImageCount := 0
 	hasImageTool := false
 	if reqBody != nil {
 		rawTools, _ := reqBody["tools"].([]any)
@@ -441,7 +438,6 @@ func resolveOpenAIResponsesImageBillingConfigDetailed(reqBody map[string]any, fa
 			hasImageTool = true
 			imageModel = strings.TrimSpace(firstNonEmptyString(toolMap["model"]))
 			imageSize = strings.TrimSpace(firstNonEmptyString(toolMap["size"]))
-			requestedImageCount = positiveIntFromAny(toolMap["n"])
 			break
 		}
 		if imageSize == "" {
@@ -462,10 +458,9 @@ func resolveOpenAIResponsesImageBillingConfigDetailed(reqBody map[string]any, fa
 	}
 	sizeTier := normalizeOpenAIImageSizeTier(imageSize)
 	return OpenAIResponsesImageBillingConfig{
-		Model:               imageModel,
-		SizeTier:            sizeTier,
-		InputSize:           imageSize,
-		RequestedImageCount: requestedImageCount,
+		Model:     imageModel,
+		SizeTier:  sizeTier,
+		InputSize: imageSize,
 	}, nil
 }
 
@@ -480,7 +475,6 @@ func resolveOpenAIResponsesImageBillingConfigFromBody(body []byte, fallbackModel
 func resolveOpenAIResponsesImageBillingConfigDetailedFromBody(body []byte, fallbackModel string) (OpenAIResponsesImageBillingConfig, error) {
 	imageModel := ""
 	imageSize := ""
-	requestedImageCount := 0
 	hasImageTool := false
 	if len(body) > 0 && gjson.ValidBytes(body) {
 		tools := gjson.GetBytes(body, "tools")
@@ -492,7 +486,6 @@ func resolveOpenAIResponsesImageBillingConfigDetailedFromBody(body []byte, fallb
 				hasImageTool = true
 				imageModel = openAIJSONString(item.Get("model"))
 				imageSize = openAIJSONString(item.Get("size"))
-				requestedImageCount = positiveIntFromGJSON(item.Get("n"))
 				return false
 			})
 		}
@@ -513,10 +506,9 @@ func resolveOpenAIResponsesImageBillingConfigDetailedFromBody(body []byte, fallb
 		imageModel = strings.TrimSpace(fallbackModel)
 	}
 	return OpenAIResponsesImageBillingConfig{
-		Model:               imageModel,
-		SizeTier:            normalizeOpenAIImageSizeTier(imageSize),
-		InputSize:           imageSize,
-		RequestedImageCount: requestedImageCount,
+		Model:     imageModel,
+		SizeTier:  normalizeOpenAIImageSizeTier(imageSize),
+		InputSize: imageSize,
 	}, nil
 }
 
@@ -533,38 +525,4 @@ func openAIJSONString(value gjson.Result) string {
 		return ""
 	}
 	return strings.TrimSpace(value.String())
-}
-
-func positiveIntFromGJSON(value gjson.Result) int {
-	if value.Type != gjson.Number {
-		return 0
-	}
-	n := int(value.Int())
-	if n <= 0 {
-		return 0
-	}
-	return n
-}
-
-func positiveIntFromAny(value any) int {
-	switch v := value.(type) {
-	case int:
-		if v > 0 {
-			return v
-		}
-	case int64:
-		if v > 0 {
-			return int(v)
-		}
-	case float64:
-		if v > 0 {
-			return int(v)
-		}
-	case json.Number:
-		n, err := v.Int64()
-		if err == nil && n > 0 {
-			return int(n)
-		}
-	}
-	return 0
 }

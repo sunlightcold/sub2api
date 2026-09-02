@@ -544,9 +544,13 @@ export interface OpenAIMessagesDispatchModelConfig {
   exact_model_mappings?: Record<string, string>
 }
 
+export type ReasoningEffortMatchType = 'exact' | 'prefix' | 'suffix'
+
 export interface ReasoningEffortMapping {
   from: string
   to: string
+  match_type?: ReasoningEffortMatchType
+  model?: string
 }
 
 export interface Group {
@@ -557,6 +561,7 @@ export interface Group {
   rate_multiplier: number
   rpm_limit?: number // Group-level RPM cap (0 = unlimited); overrides user-level rpm_limit when set
   max_reasoning_effort?: string // OpenAI/Codex reasoning ceiling; empty means unlimited
+  max_reasoning_effort_over_limit?: string // downgrade (default) or deny when over the ceiling
   reasoning_effort_mappings?: ReasoningEffortMapping[]
   is_exclusive: boolean
   status: 'active' | 'inactive'
@@ -569,7 +574,6 @@ export interface Group {
   allow_image_generation: boolean
   allow_batch_image_generation: boolean
   image_rate_independent: boolean
-  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier: number
   batch_image_discount_multiplier: number
   batch_image_hold_multiplier: number
@@ -612,6 +616,8 @@ export interface Group {
 }
 
 export interface AdminGroup extends Group {
+  force_openai_fast: boolean
+  free_openai_fast: boolean
   model_pricing: import('@/api/admin/channels').ChannelModelPricing[]
   // 分组利润控制（openai/anthropic/gemini/grok/antigravity 分组可启用；margin/buffer 为小数存储）。
   // 仅管理员可见：与 rate_multiplier 相乘即可反推上游成本上限，不得下放到 Group。
@@ -638,8 +644,6 @@ export interface AdminGroup extends Group {
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   models_list_config?: ModelsListConfig
-  disable_responses_api?: boolean | null
-  disable_chat_completions_api?: boolean | null
 
   // 分组排序
   sort_order: number
@@ -778,11 +782,12 @@ export interface CreateGroupRequest {
   weekly_limit_usd?: number | null
   monthly_limit_usd?: number | null
   long_context_pricing_enabled?: boolean
+  force_openai_fast?: boolean
+  free_openai_fast?: boolean
   model_pricing?: import('@/api/admin/channels').ChannelModelPricing[]
   allow_image_generation?: boolean
   allow_batch_image_generation?: boolean
   image_rate_independent?: boolean
-  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   batch_image_discount_multiplier?: number
   batch_image_hold_multiplier?: number
@@ -815,8 +820,6 @@ export interface CreateGroupRequest {
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
   allow_messages_dispatch?: boolean
-  disable_responses_api?: boolean | null
-  disable_chat_completions_api?: boolean | null
   allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
@@ -824,6 +827,7 @@ export interface CreateGroupRequest {
   model_routing_enabled?: boolean
   rpm_limit?: number
   max_reasoning_effort?: string
+  max_reasoning_effort_over_limit?: string
   reasoning_effort_mappings?: ReasoningEffortMapping[]
   require_oauth_only?: boolean
   require_privacy_set?: boolean
@@ -843,11 +847,12 @@ export interface UpdateGroupRequest {
   weekly_limit_usd?: number | null
   monthly_limit_usd?: number | null
   long_context_pricing_enabled?: boolean
+  force_openai_fast?: boolean
+  free_openai_fast?: boolean
   model_pricing?: import('@/api/admin/channels').ChannelModelPricing[]
   allow_image_generation?: boolean
   allow_batch_image_generation?: boolean
   image_rate_independent?: boolean
-  image_billing_use_requested_count?: boolean | null
   image_rate_multiplier?: number
   batch_image_discount_multiplier?: number
   batch_image_hold_multiplier?: number
@@ -880,8 +885,6 @@ export interface UpdateGroupRequest {
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
   allow_messages_dispatch?: boolean
-  disable_responses_api?: boolean | null
-  disable_chat_completions_api?: boolean | null
   allow_live?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
@@ -889,6 +892,7 @@ export interface UpdateGroupRequest {
   model_routing_enabled?: boolean
   rpm_limit?: number
   max_reasoning_effort?: string
+  max_reasoning_effort_over_limit?: string
   reasoning_effort_mappings?: ReasoningEffortMapping[]
   require_oauth_only?: boolean
   require_privacy_set?: boolean
@@ -1429,11 +1433,7 @@ export interface CodexUsageSnapshot {
 }
 
 export type OpenAICompactMode = 'auto' | 'force_on' | 'force_off'
-export type OpenAIResponsesMode =
-  | 'auto'
-  | 'force_responses'
-  | 'force_chat_completions'
-export type OpenAIFirstTokenMetricMode = 'first_response' | 'first_output'
+export type OpenAIResponsesMode = 'auto' | 'force_responses' | 'force_chat_completions'
 export type OpenAIEndpointCapability = 'chat_completions' | 'embeddings'
 
 export interface OpenAICompactState {
@@ -1732,34 +1732,11 @@ export interface UsageLogAccountSummary {
   name: string
 }
 
-export interface UsageUpstreamTiming {
-  gateway_prepare_ms?: number
-  upstream_headers_ms?: number
-  upstream_first_sse_ms?: number
-  ttft_ms?: number
-  gateway_first_output_ms?: number
-  client_ttft_ms?: number
-  upstream_generation_ms?: number
-  stream_tail_ms?: number
-  post_headers_ms?: number
-  total_ms?: number
-  // Legacy keys kept so older diagnostic rows can still be normalized in the UI.
-  pre_upstream_ms?: number
-  upstream_do_ms?: number
-  first_sse_ms?: number
-  first_client_output_ms?: number
-  terminal_ms?: number
-  stream_end_ms?: number
-  forward_ms?: number
-  [key: string]: number | undefined
-}
-
 export interface AdminUsageLog extends UsageLog {
   upstream_model?: string | null
   upstream_reasoning_effort?: string | null
   upstream_response_model?: string | null
   upstream_model_mismatch?: boolean | null
-  upstream_timing?: UsageUpstreamTiming | null
   model_mapping_chain?: string | null
 
   // 账号计费倍率（仅管理员可见）
@@ -1786,7 +1763,6 @@ export interface UsageCleanupFilters {
   request_type?: UsageRequestType | null
   stream?: boolean | null
   billing_type?: number | null
-  billing_mode?: string | null
 }
 
 export interface UsageCleanupTask {

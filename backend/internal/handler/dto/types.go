@@ -106,15 +106,14 @@ type Group struct {
 	LongContextPricingEnabled bool     `json:"long_context_pricing_enabled"`
 
 	// 图片生成计费配置（仅 antigravity 平台使用）
-	AllowImageGeneration          bool    `json:"allow_image_generation"`
-	AllowBatchImageGeneration     bool    `json:"allow_batch_image_generation"`
-	ImageRateIndependent          bool    `json:"image_rate_independent"`
-	ImageBillingUseRequestedCount *bool   `json:"image_billing_use_requested_count,omitempty"`
-	ImageRateMultiplier           float64 `json:"image_rate_multiplier"`
-	BatchImageDiscountMultiplier  float64 `json:"batch_image_discount_multiplier"`
-	BatchImageHoldMultiplier      float64 `json:"batch_image_hold_multiplier"`
-	VideoRateIndependent          bool    `json:"video_rate_independent"`
-	VideoRateMultiplier           float64 `json:"video_rate_multiplier"`
+	AllowImageGeneration         bool    `json:"allow_image_generation"`
+	AllowBatchImageGeneration    bool    `json:"allow_batch_image_generation"`
+	ImageRateIndependent         bool    `json:"image_rate_independent"`
+	ImageRateMultiplier          float64 `json:"image_rate_multiplier"`
+	BatchImageDiscountMultiplier float64 `json:"batch_image_discount_multiplier"`
+	BatchImageHoldMultiplier     float64 `json:"batch_image_hold_multiplier"`
+	VideoRateIndependent         bool    `json:"video_rate_independent"`
+	VideoRateMultiplier          float64 `json:"video_rate_multiplier"`
 	// 高峰时段倍率配置
 	PeakRateEnabled    bool     `json:"peak_rate_enabled"`
 	PeakStart          string   `json:"peak_start"`
@@ -154,7 +153,9 @@ type Group struct {
 	RPMLimit int `json:"rpm_limit"`
 	// MaxReasoningEffort OpenAI/Codex 请求的推理强度上限，空字符串表示不限制。
 	MaxReasoningEffort string `json:"max_reasoning_effort"`
-	// ReasoningEffortMappings OpenAI/Codex 推理强度精确映射。
+	// MaxReasoningEffortOverLimit 超过上限时的访问控制：downgrade（默认）或 deny。
+	MaxReasoningEffortOverLimit string `json:"max_reasoning_effort_over_limit"`
+	// ReasoningEffortMappings OpenAI/Codex 推理强度映射，可按模型精确名、前缀或后缀限定。
 	ReasoningEffortMappings []domain.ReasoningEffortMapping `json:"reasoning_effort_mappings"`
 
 	CreatedAt time.Time `json:"created_at"`
@@ -165,6 +166,10 @@ type Group struct {
 // 注意：普通用户接口不得返回 model_routing/account_count/account_groups 等内部信息。
 type AdminGroup struct {
 	Group
+	// ForceOpenAIFast 是管理端请求策略，用户侧分组 DTO 无需暴露。
+	ForceOpenAIFast bool `json:"force_openai_fast"`
+	// FreeOpenAIFast 是管理端计费策略，用户侧分组 DTO 无需暴露。
+	FreeOpenAIFast bool `json:"free_openai_fast"`
 
 	// 分组利润控制（五个 token 平台分组可启用；margin/buffer 为小数存储）。
 	// 仅管理员可见：这三个字段与同响应中的 rate_multiplier 相乘即可反推出
@@ -185,8 +190,6 @@ type AdminGroup struct {
 	DefaultMappedModel          string                                   `json:"default_mapped_model"`
 	MessagesDispatchModelConfig domain.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
 	ModelsListConfig            domain.GroupModelsListConfig             `json:"models_list_config"`
-	DisableResponsesAPI         *bool                                    `json:"disable_responses_api,omitempty"`
-	DisableChatCompletionsAPI   *bool                                    `json:"disable_chat_completions_api,omitempty"`
 
 	// 支持的模型系列（仅 antigravity 平台使用）
 	SupportedModelScopes    []string       `json:"supported_model_scopes"`
@@ -581,9 +584,6 @@ type AdminUsageLog struct {
 	// UpstreamModelMismatch is nil when the upstream did not declare a model.
 	UpstreamModelMismatch *bool `json:"upstream_model_mismatch,omitempty"`
 
-	// UpstreamTiming contains raw administrator-only timing diagnostics in milliseconds.
-	UpstreamTiming UsageUpstreamTiming `json:"upstream_timing,omitempty"`
-
 	// ChannelID 渠道 ID
 	ChannelID *int64 `json:"channel_id,omitempty"`
 	// ModelMappingChain 模型映射链，如 "a→b→c"
@@ -603,8 +603,6 @@ type AdminUsageLog struct {
 	Account *AccountSummary `json:"account,omitempty"`
 }
 
-type UsageUpstreamTiming map[string]int64
-
 type UsageCleanupFilters struct {
 	StartTime   time.Time `json:"start_time"`
 	EndTime     time.Time `json:"end_time"`
@@ -616,7 +614,6 @@ type UsageCleanupFilters struct {
 	RequestType *string   `json:"request_type,omitempty"`
 	Stream      *bool     `json:"stream,omitempty"`
 	BillingType *int8     `json:"billing_type,omitempty"`
-	BillingMode *string   `json:"billing_mode,omitempty"`
 }
 
 type UsageCleanupTask struct {

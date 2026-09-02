@@ -108,7 +108,6 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 	}
 
 	upstreamStart := time.Now()
-	var upstreamHeadersAt time.Time
 	var resp *http.Response
 	for attempt := 0; ; attempt++ {
 		upstreamReq, buildErr := buildGrokResponsesRequest(upstreamCtx, c, account, patchedBody, token, cacheIdentity, s.cfg, s.settingService)
@@ -117,8 +116,7 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 		}
 
 		resp, err = s.doOpenAIUpstream(upstreamReq, proxyURL, account)
-		upstreamHeadersAt = time.Now()
-		SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, upstreamHeadersAt.Sub(upstreamStart).Milliseconds())
+		SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, time.Since(upstreamStart).Milliseconds())
 		if err != nil {
 			return nil, s.handleOpenAIUpstreamTransportError(ctx, c, account, err, false)
 		}
@@ -210,10 +208,6 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 	var usage *OpenAIUsage
 	var firstTokenMs *int
 	responseID := ""
-	grokTiming := UsageUpstreamTiming{}
-	setUsageTimingElapsed(grokTiming, usageTimingGatewayPrepareMs, startTime)
-	setUsageTimingMs(grokTiming, usageTimingUpstreamHeadersMs, upstreamHeadersAt.Sub(upstreamStart).Milliseconds())
-	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, patchedBody, originalModel)
 	searchCount := 0
 	imageCount := 0
 	var imageOutputSizes []string
@@ -226,19 +220,18 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 		if hasGrokResponsesClientToolMapping(clientToolMapping) {
 			resp.Body = newGrokResponsesClientToolStreamBody(resp.Body, clientToolMapping, maxLineSize)
 		}
-		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, upstreamHeadersAt, originalModel, upstreamModel, cacheReadCorrection)
+		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
 		if err != nil {
 			return nil, err
 		}
 		usage = streamResult.usage
 		firstTokenMs = streamResult.firstTokenMs
 		responseID = strings.TrimSpace(streamResult.responseID)
-		mergeUsageTiming(grokTiming, streamResult.upstreamTiming)
 		searchCount = streamResult.searchCount
 		imageCount = streamResult.imageCount
 		imageOutputSizes = streamResult.imageOutputSizes
 	} else {
-		nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel, cacheReadCorrection)
+		nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel)
 		if err != nil {
 			return nil, err
 		}
@@ -252,11 +245,6 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 	if usage == nil {
 		usage = &OpenAIUsage{}
 	}
-	duration := time.Since(startTime)
-	if !reqStream {
-		setUsageTimingMs(grokTiming, usageTimingPostHeadersMs, duration.Milliseconds()-upstreamHeadersAt.Sub(startTime).Milliseconds())
-	}
-	setUsageTimingMs(grokTiming, usageTimingTotalMs, duration.Milliseconds())
 	reasoningEffort := extractOpenAIReasoningEffortFromBody(patchedBody, originalModel)
 	result := &OpenAIForwardResult{
 		RequestID:       firstNonEmpty(resp.Header.Get("x-request-id"), resp.Header.Get("xai-request-id")),
@@ -268,9 +256,8 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 		Stream:          reqStream,
 		OpenAIWSMode:    false,
 		ResponseHeaders: resp.Header.Clone(),
-		Duration:        duration,
+		Duration:        time.Since(startTime),
 		FirstTokenMs:    firstTokenMs,
-		UpstreamTiming:  grokTiming,
 	}
 	// Propagate search/image counters from the shared Responses handler — without
 	// this, stream/JSON counting runs but search_price_per_1k / image bills never apply.

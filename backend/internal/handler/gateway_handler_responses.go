@@ -43,10 +43,6 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		zap.Int64("api_key_id", apiKey.ID),
 		zap.Any("group_id", apiKey.GroupID),
 	)
-	if service.GroupDisablesResponsesAPI(apiKey.Group) {
-		h.responsesErrorResponse(c, http.StatusForbidden, "permission_error", "Responses API is disabled for this group")
-		return
-	}
 
 	// Read request body
 	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
@@ -362,7 +358,6 @@ func (h *GatewayHandler) responsesErrorResponse(c *gin.Context, status int, code
 	c.JSON(status, gin.H{
 		"error": gin.H{
 			"code":    code,
-			"type":    code,
 			"message": message,
 		},
 	})

@@ -413,7 +413,6 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 	imageBillingModel string,
 	imageSizeTier string,
 	imageInputSize string,
-	requestedImageCount int,
 	grokCacheIdentity string,
 	turn int,
 	writeClientMessage func([]byte) error,
@@ -667,7 +666,6 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		result.wsAccountFailoverReplayInput = replayCollector.AllItems()
 		if imageCount > 0 {
 			result.ImageCount = imageCount
-			result.RequestedImageCount = requestedImageCount
 			result.ImageSize = imageSizeTier
 			result.ImageInputSize = imageInputSize
 			result.ImageOutputSizes = imageCounter.Sizes()
