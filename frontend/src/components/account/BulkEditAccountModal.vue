@@ -1267,6 +1267,28 @@
         </div>
       </div>
 
+      <!-- OpenAI API Key cache-read correction -->
+      <div v-if="allOpenAIAPIKey" class="border-t border-gray-200 pt-4 dark:border-dark-600">
+        <div class="mb-3 flex items-center justify-between">
+          <div class="flex-1 pr-4">
+            <label class="input-label mb-0">{{ t('admin.accounts.openai.cacheReadCorrection') }}</label>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.accounts.openai.cacheReadCorrectionDesc') }}</p>
+          </div>
+          <input v-model="enableOpenAICacheReadCorrection" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+        </div>
+        <div :class="!enableOpenAICacheReadCorrection && 'pointer-events-none opacity-50'" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMin') }}</label><input v-model.number="openAICacheReadRatioMin" type="number" min="0" max="1" step="0.01" class="input" /></div>
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmRatioMax') }}</label><input v-model.number="openAICacheReadRatioMax" type="number" min="0" max="1" step="0.01" class="input" /></div>
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMin') }}</label><input v-model.number="openAICacheReadWarmingRatioMin" type="number" min="0" max="1" step="0.01" class="input" /></div>
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadWarmingRatioMax') }}</label><input v-model.number="openAICacheReadWarmingRatioMax" type="number" min="0" max="1" step="0.01" class="input" /></div>
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadMinInputTokens') }}</label><input v-model.number="openAICacheReadMinInputTokens" type="number" min="1" step="1" class="input" /></div>
+            <div><label class="input-label text-xs">{{ t('admin.accounts.openai.cacheReadStateTTLMinutes') }}</label><input v-model.number="openAICacheReadStateTTLMinutes" type="number" min="1" max="1440" step="1" class="input" /></div>
+          </div>
+          <p class="input-hint">{{ t('admin.accounts.openai.cacheReadCorrectionHint') }}</p>
+        </div>
+      </div>
+
       <!-- RPM Limit (仅全部为 Anthropic OAuth/SetupToken 时显示) -->
       <div v-if="allAnthropicOAuthOrSetupToken" class="border-t border-gray-200 pt-4 dark:border-dark-600">
         <div class="mb-3 flex items-center justify-between">
@@ -1701,6 +1723,13 @@ const openAIEndpointCapabilities = ref<OpenAIEndpointCapability[]>([
   'embeddings'
 ])
 const openAIResponsesMode = ref<OpenAIResponsesMode>('auto')
+const enableOpenAICacheReadCorrection = ref(false)
+const openAICacheReadRatioMin = ref(0.88)
+const openAICacheReadRatioMax = ref(0.94)
+const openAICacheReadWarmingRatioMin = ref(0.35)
+const openAICacheReadWarmingRatioMax = ref(0.75)
+const openAICacheReadMinInputTokens = ref(1024)
+const openAICacheReadStateTTLMinutes = ref(60)
 const openaiOAuthResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const openaiAPIKeyResponsesWebSocketV2Mode = ref<OpenAIWSMode>(OPENAI_WS_MODE_OFF)
 const upstreamBillingAutoProbeMode = ref<'enabled' | 'disabled'>('enabled')
@@ -2114,6 +2143,17 @@ const buildUpdatePayload = (): Record<string, unknown> | null => {
     extra.openai_compact_mode = openAICompactMode.value
   }
 
+  if (enableOpenAICacheReadCorrection.value) {
+    const extra = ensureExtra()
+    extra.openai_cache_read_correction_enabled = true
+    extra.openai_cache_read_ratio_min = openAICacheReadRatioMin.value
+    extra.openai_cache_read_ratio_max = openAICacheReadRatioMax.value
+    extra.openai_cache_read_warming_ratio_min = openAICacheReadWarmingRatioMin.value
+    extra.openai_cache_read_warming_ratio_max = openAICacheReadWarmingRatioMax.value
+    extra.openai_cache_read_min_input_tokens = Math.trunc(openAICacheReadMinInputTokens.value || 1024)
+    extra.openai_cache_state_ttl_minutes = Math.trunc(openAICacheReadStateTTLMinutes.value || 60)
+  }
+
   if (enableOpenAICompactModelMapping.value) {
     credentials.compact_model_mapping = buildOpenAICompactModelMapping() ?? {}
     credentialsChanged = true
@@ -2386,6 +2426,13 @@ watch(
       openAILongContextBillingEnabled.value = false
       openAIEndpointCapabilities.value = ['chat_completions', 'embeddings']
       openAIResponsesMode.value = 'auto'
+      enableOpenAICacheReadCorrection.value = false
+      openAICacheReadRatioMin.value = 0.88
+      openAICacheReadRatioMax.value = 0.94
+      openAICacheReadWarmingRatioMin.value = 0.35
+      openAICacheReadWarmingRatioMax.value = 0.75
+      openAICacheReadMinInputTokens.value = 1024
+      openAICacheReadStateTTLMinutes.value = 60
       modelRestrictionMode.value = 'whitelist'
       allowedModels.value = []
       modelMappings.value = []

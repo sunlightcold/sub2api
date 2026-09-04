@@ -322,6 +322,7 @@ func (s *OpenAIGatewayService) forwardAsChatCompletions(
 	}
 	responsesBody = updatedBody
 	responsesReq.ServiceTier = normalizedOpenAIServiceTierValue(gjson.GetBytes(responsesBody, "service_tier").String())
+	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, responsesBody, originalModel)
 
 	// 5. Get access token
 	token, _, err := s.GetAccessToken(ctx, account)
@@ -387,9 +388,9 @@ func (s *OpenAIGatewayService) forwardAsChatCompletions(
 	var result *OpenAIForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleChatStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body))
+		result, handleErr = s.handleChatStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body), cacheReadCorrection)
 	} else {
-		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime, cacheReadCorrection)
 	}
 
 	// cyber_policy：标记已设、error 已按 Chat Completions 格式发给客户端。丢弃 result、
@@ -492,8 +493,13 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	billingModel string,
 	upstreamModel string,
 	startTime time.Time,
+	cacheReadCorrectionOpt ...*openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
+	var cacheReadCorrection *openAICacheReadCorrectionContext
+	if len(cacheReadCorrectionOpt) > 0 {
+		cacheReadCorrection = cacheReadCorrectionOpt[0]
+	}
 
 	finalResponse, usage, acc, err := s.readOpenAICompatBufferedTerminal(resp, c, "openai chat_completions buffered", requestID)
 	if err != nil {
@@ -562,6 +568,19 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 	// When the terminal event has an empty output array, reconstruct from
 	// accumulated delta events so the client receives the full content.
 	acc.SupplementResponseOutput(finalResponse)
+	if c != nil && c.Request != nil {
+		beforeCached := usage.CacheReadInputTokens
+		s.correctOpenAICacheReadUsageOnly(c.Request.Context(), account, cacheReadCorrection, &usage, requestID)
+		if usage.CacheReadInputTokens != beforeCached {
+			if finalResponse.Usage == nil {
+				finalResponse.Usage = &apicompat.ResponsesUsage{}
+			}
+			if finalResponse.Usage.InputTokensDetails == nil {
+				finalResponse.Usage.InputTokensDetails = &apicompat.ResponsesInputTokensDetails{}
+			}
+			finalResponse.Usage.InputTokensDetails.CachedTokens = usage.CacheReadInputTokens
+		}
+	}
 
 	chatResp := apicompat.ResponsesToChatCompletions(finalResponse, originalModel)
 
@@ -650,8 +669,13 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	upstreamModel string,
 	startTime time.Time,
 	requestBodyLen int,
+	cacheReadCorrectionOpt ...*openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
+	var cacheReadCorrection *openAICacheReadCorrectionContext
+	if len(cacheReadCorrectionOpt) > 0 {
+		cacheReadCorrection = cacheReadCorrectionOpt[0]
+	}
 	writeStreamHeaders := s.newStreamHeaderWriter(c, resp.Header)
 
 	state := apicompat.NewResponsesEventToChatState()
@@ -741,11 +765,25 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 		isTerminalEvent := isOpenAICompatResponsesTerminalEvent(event.Type)
 		if isTerminalEvent {
 			terminalEventType = strings.TrimSpace(event.Type)
-			if event.Usage != nil {
-				usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
+			corrected := false
+			if correctedPayload, correctedUsage, didCorrect := s.correctOpenAICacheReadResponseBody(c.Request.Context(), account, cacheReadCorrection, []byte(payload), requestID); didCorrect {
+				payload = string(correctedPayload)
+				if correctedUsage != nil {
+					usage = *correctedUsage
+				}
+				if err := json.Unmarshal([]byte(payload), &event); err != nil {
+					logger.L().Warn("openai chat_completions stream: failed to parse corrected terminal event", zap.Error(err), zap.String("request_id", requestID))
+				} else {
+					corrected = true
+				}
 			}
-			if event.Response != nil && event.Response.Usage != nil {
-				usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
+			if !corrected {
+				if event.Usage != nil {
+					usage = copyOpenAIUsageFromResponsesUsage(event.Usage)
+				}
+				if event.Response != nil && event.Response.Usage != nil {
+					usage = copyOpenAIUsageFromResponsesUsage(event.Response.Usage)
+				}
 			}
 		}
 		if strings.TrimSpace(event.Type) == "response.failed" || strings.TrimSpace(event.Type) == "error" {

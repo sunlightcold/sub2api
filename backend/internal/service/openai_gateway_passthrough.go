@@ -443,9 +443,10 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		if extractOpenAICodexTurnState(resp.Header) != "" {
 			s.noteOpenAICodexTurnStateProvenance(c, account)
 		}
+		cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, body, reqModel)
 
 		if reqStream {
-			result, handleErr := s.handleStreamingResponsePassthrough(ctx, resp, c, account, startTime, reqModel, upstreamPassthroughModel)
+			result, handleErr := s.handleStreamingResponsePassthrough(ctx, resp, c, account, startTime, reqModel, upstreamPassthroughModel, cacheReadCorrection)
 			if handleErr != nil {
 				if retryBody, fallbackModel, retry := s.applyOpenAIPassthroughCompactFallbackFromSignal(
 					c, account, requestedModel, body, handleErr, compactModelFallbackRetried, resp,
@@ -472,7 +473,7 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 			imageCount = result.imageCount
 			imageOutputSizes = result.imageOutputSizes
 		} else {
-			result, handleErr := s.handleNonStreamingResponsePassthrough(ctx, resp, c, account, reqModel, upstreamPassthroughModel)
+			result, handleErr := s.handleNonStreamingResponsePassthrough(ctx, resp, c, account, reqModel, upstreamPassthroughModel, cacheReadCorrection)
 			if handleErr != nil {
 				if retryBody, fallbackModel, retry := s.applyOpenAIPassthroughCompactFallbackFromSignal(
 					c, account, requestedModel, body, handleErr, compactModelFallbackRetried, resp,
@@ -1824,7 +1825,12 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 	startTime time.Time,
 	originalModel string,
 	mappedModel string,
+	cacheReadCorrectionOpt ...*openAICacheReadCorrectionContext,
 ) (*openaiStreamingResultPassthrough, error) {
+	var cacheReadCorrection *openAICacheReadCorrectionContext
+	if len(cacheReadCorrectionOpt) > 0 {
+		cacheReadCorrection = cacheReadCorrectionOpt[0]
+	}
 	observer := upstreamResponseModelObserverFromContext(c)
 	if observer == nil {
 		observer = beginUpstreamResponseModelObservation(c)
@@ -2114,6 +2120,15 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				if trimmedData != "[DONE]" {
 					terminalEventType = eventType
 				}
+				if correctedData, correctedUsage, corrected := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, dataBytes, upstreamRequestID); corrected {
+					dataBytes = correctedData
+					trimmedData = strings.TrimSpace(string(correctedData))
+					line = "data: " + string(correctedData)
+					eventType = strings.TrimSpace(gjson.Get(trimmedData, "type").String())
+					if correctedUsage != nil {
+						*usage = *correctedUsage
+					}
+				}
 			}
 			if responseID == "" {
 				responseID = extractOpenAIResponseIDFromJSONBytes(dataBytes)
@@ -2254,7 +2269,12 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	account *Account,
 	originalModel string,
 	mappedModel string,
+	cacheReadCorrectionOpt ...*openAICacheReadCorrectionContext,
 ) (*openaiNonStreamingResultPassthrough, error) {
+	var cacheReadCorrection *openAICacheReadCorrectionContext
+	if len(cacheReadCorrectionOpt) > 0 {
+		cacheReadCorrection = cacheReadCorrectionOpt[0]
+	}
 	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
 		return nil, err
@@ -2288,6 +2308,13 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	if !usageParsed {
 		// 兜底：尝试从 SSE 文本中解析 usage
 		usage = s.parseSSEUsageFromBody(string(body))
+	} else if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, body, resp.Header.Get("x-request-id")); correctedUsage != nil || bodyChanged {
+		if bodyChanged {
+			body = correctedBody
+		}
+		if correctedUsage != nil {
+			usage = correctedUsage
+		}
 	}
 	logOpenAISuccessMissingUsage(ctx, c, account, resp, usage, "json", false)
 

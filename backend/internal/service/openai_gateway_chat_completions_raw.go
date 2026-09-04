@@ -159,6 +159,7 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 		}
 	}
 	upstreamBody = applyOllamaCloudRawChatCompletionsRequest(account, upstreamBody)
+	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, upstreamBody, originalModel)
 
 	logger.L().Debug("openai chat_completions raw: forwarding without protocol conversion",
 		zap.Int64("account_id", account.ID),
@@ -231,9 +232,9 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 	var result *OpenAIForwardResult
 	var forwardErr error
 	if clientStream {
-		result, forwardErr = s.streamRawChatCompletions(c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, len(body))
+		result, forwardErr = s.streamRawChatCompletionsWithCorrection(ctx, c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, len(body), cacheReadCorrection)
 	} else {
-		result, forwardErr = s.bufferRawChatCompletions(c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+		result, forwardErr = s.bufferRawChatCompletionsWithCorrection(ctx, c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, cacheReadCorrection)
 	}
 	if result != nil {
 		addOpenAIUsage(&result.Usage, bridgeUsage)
@@ -271,6 +272,23 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 	serviceTier *string,
 	startTime time.Time,
 	requestBodyLen int,
+) (*OpenAIForwardResult, error) {
+	return s.streamRawChatCompletionsWithCorrection(c.Request.Context(), c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, requestBodyLen, nil)
+}
+
+func (s *OpenAIGatewayService) streamRawChatCompletionsWithCorrection(
+	ctx context.Context,
+	c *gin.Context,
+	resp *http.Response,
+	account *Account,
+	originalModel string,
+	billingModel string,
+	upstreamModel string,
+	reasoningEffort *string,
+	serviceTier *string,
+	startTime time.Time,
+	requestBodyLen int,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
 ) (*OpenAIForwardResult, error) {
 	observer := upstreamResponseModelObserverFromContext(c)
 	if observer == nil {
@@ -330,6 +348,13 @@ func (s *OpenAIGatewayService) streamRawChatCompletions(
 				observer.ObserveOpenAI([]byte(payload), strings.TrimSpace(gjson.Get(payload, "type").String()))
 				usageOnlyChunk := isOpenAIChatUsageOnlyStreamChunk(payload)
 				if u := extractCCStreamUsage(payload); u != nil {
+					originalCached := u.CacheReadInputTokens
+					s.correctOpenAICacheReadUsageOnly(ctx, account, cacheReadCorrection, u, requestID)
+					if u.CacheReadInputTokens != originalCached {
+						if updated, updateErr := sjson.Set(payload, "usage.prompt_tokens_details.cached_tokens", u.CacheReadInputTokens); updateErr == nil {
+							line = strings.Replace(line, payload, updated, 1)
+						}
+					}
 					usage = *u
 				}
 				if firstTokenMs == nil && !usageOnlyChunk {
@@ -485,6 +510,22 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 	serviceTier *string,
 	startTime time.Time,
 ) (*OpenAIForwardResult, error) {
+	return s.bufferRawChatCompletionsWithCorrection(c.Request.Context(), c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, nil)
+}
+
+func (s *OpenAIGatewayService) bufferRawChatCompletionsWithCorrection(
+	ctx context.Context,
+	c *gin.Context,
+	resp *http.Response,
+	account *Account,
+	originalModel string,
+	billingModel string,
+	upstreamModel string,
+	reasoningEffort *string,
+	serviceTier *string,
+	startTime time.Time,
+	cacheReadCorrection *openAICacheReadCorrectionContext,
+) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
@@ -503,6 +544,14 @@ func (s *OpenAIGatewayService) bufferRawChatCompletions(
 	var usage OpenAIUsage
 	if parsedUsage, ok := extractOpenAIUsageFromJSONBytes(respBody); ok {
 		usage = parsedUsage
+		if correctedBody, correctedUsage, bodyChanged := s.correctOpenAICacheReadResponseBody(ctx, account, cacheReadCorrection, respBody, requestID); correctedUsage != nil || bodyChanged {
+			if bodyChanged {
+				respBody = correctedBody
+			}
+			if correctedUsage != nil {
+				usage = *correctedUsage
+			}
+		}
 	}
 	responseModel := gjson.GetBytes(respBody, "model").String()
 	if requiresBillableGrokChatUsage(account, billingModel, upstreamModel, responseModel) && !hasBillableGrokChatUsage(usage) {

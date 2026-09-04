@@ -211,6 +211,7 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 	searchCount := 0
 	imageCount := 0
 	var imageOutputSizes []string
+	cacheReadCorrection := s.prepareOpenAICacheReadCorrection(ctx, c, account, patchedBody, originalModel)
 	if reqStream {
 		maxLineSize := defaultMaxLineSize
 		if s.cfg != nil && s.cfg.Gateway.MaxLineSize > 0 {
@@ -220,7 +221,7 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 		if hasGrokResponsesClientToolMapping(clientToolMapping) {
 			resp.Body = newGrokResponsesClientToolStreamBody(resp.Body, clientToolMapping, maxLineSize)
 		}
-		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, upstreamModel)
+		streamResult, err := s.handleStreamingResponseWithReasoning(ctx, resp, c, account, startTime, originalModel, upstreamModel, "", openAIStreamingResponseOptions{cacheReadCorrection: cacheReadCorrection})
 		if err != nil {
 			return nil, err
 		}
@@ -231,7 +232,7 @@ func (s *OpenAIGatewayService) forwardGrokResponses(
 		imageCount = streamResult.imageCount
 		imageOutputSizes = streamResult.imageOutputSizes
 	} else {
-		nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel)
+		nonStreamResult, err := s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, upstreamModel, cacheReadCorrection)
 		if err != nil {
 			return nil, err
 		}
