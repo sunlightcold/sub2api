@@ -255,27 +255,12 @@ func (s *OpenAIGatewayService) rawChatCompletionsURL(account *Account) (string, 
 	return s.openAIChatCompletionsTargetURL(account)
 }
 
-// streamRawChatCompletions 透传上游 CC SSE 流到客户端，并提取 usage（包括
+// streamRawChatCompletionsWithCorrection 透传上游 CC SSE 流到客户端，并提取 usage（包括
 // 末尾 [DONE] 之前的 chunk 中的 usage 字段，按 OpenAI CC 协议）。
 //
 // usage 字段仅在客户端请求 stream_options.include_usage=true 时出现于上游响应中。
 // 网关会对上游强制打开 include_usage 以保证计费完整，并原样向下游透传 usage，
 // 让级联代理或下游计费系统也能拿到完整用量。
-func (s *OpenAIGatewayService) streamRawChatCompletions(
-	c *gin.Context,
-	resp *http.Response,
-	account *Account,
-	originalModel string,
-	billingModel string,
-	upstreamModel string,
-	reasoningEffort *string,
-	serviceTier *string,
-	startTime time.Time,
-	requestBodyLen int,
-) (*OpenAIForwardResult, error) {
-	return s.streamRawChatCompletionsWithCorrection(c.Request.Context(), c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, requestBodyLen, nil)
-}
-
 func (s *OpenAIGatewayService) streamRawChatCompletionsWithCorrection(
 	ctx context.Context,
 	c *gin.Context,
@@ -498,21 +483,7 @@ func extractCCStreamUsage(payload string) *OpenAIUsage {
 	return &u
 }
 
-// bufferRawChatCompletions 透传上游 CC 非流式 JSON 响应。
-func (s *OpenAIGatewayService) bufferRawChatCompletions(
-	c *gin.Context,
-	resp *http.Response,
-	account *Account,
-	originalModel string,
-	billingModel string,
-	upstreamModel string,
-	reasoningEffort *string,
-	serviceTier *string,
-	startTime time.Time,
-) (*OpenAIForwardResult, error) {
-	return s.bufferRawChatCompletionsWithCorrection(c.Request.Context(), c, resp, account, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime, nil)
-}
-
+// bufferRawChatCompletionsWithCorrection 透传上游 CC 非流式 JSON 响应。
 func (s *OpenAIGatewayService) bufferRawChatCompletionsWithCorrection(
 	ctx context.Context,
 	c *gin.Context,
