@@ -644,6 +644,14 @@ export default {
       apiKeyRequired: 'API Key *',
       apiKeyPlaceholder: 'sk-ant-api03-...',
       apiKeyHint: '您的 Claude Console API Key',
+      upstreamRequestIdHeader: '上游ID',
+      upstreamRequestIdHeaderPlaceholder: '留空不记录',
+      upstreamRequestIdHeaderHelp: {
+        intro: '填写直接上游在响应头中声明请求标识的头名，记录到用量明细的“上游ID”列；留空则不记录。',
+        examplesTitle: '常见取值',
+        sub2apiNote: '对应对方用量明细的请求ID列',
+        official: '{platform} 官方 API'
+      },
       // OpenAI specific hints
       openai: {
         baseUrlHint: '留空使用官方 OpenAI API',
@@ -689,6 +697,9 @@ export default {
           '仅影响首 Token 延迟统计。官方默认口径等待首个实际输出事件；可选口径会把首个上游响应事件计为首 Token。',
         firstTokenMetricModeFirstResponse: '可选口径：首个上游响应事件',
         firstTokenMetricModeFirstOutput: '官方默认：首个实际输出',
+        imagesUrlToB64Json: '生图结果 URL 转 base64',
+        imagesUrlToB64JsonDesc:
+          '仅对 OpenAI API Key 的 Images 非流式响应生效。上游返回的图片缺少 b64_json 但带 url 时，网关下载该 url 并以 base64 回填 b64_json（url 保留），兼容按官方接口实现的客户端；下载失败则原样返回。',
         endpointCapabilities: '端点能力',
         endpointCapabilitiesDesc:
           '用于调度筛选。文本端点会跟随上方 Responses API 支持显示为 Responses、Chat Completions 或自动模式；Embeddings 独立控制 /v1/embeddings。',
@@ -850,7 +861,8 @@ export default {
       syncUpstreamModelsEmpty: '上游没有返回可同步的模型',
       syncUpstreamModelsFailed: '同步上游模型失败',
       syncUpstreamModelsError: '同步上游模型失败：{message}',
-      syncUpstreamModelsMetadataIncomplete: '模型 ID 已同步，但能力元数据不完整，能力信息未更新。',
+      syncUpstreamModelsMetadataIncomplete: '模型 ID 已同步，但未能更新任何能力元数据。',
+      syncUpstreamModelsMetadataPartial: '已更新部分模型的能力元数据；其余模型能力仍不完整。',
       clearAllModels: '清除所有模型',
       customModelName: '自定义模型名称',
       enterCustomModelName: '输入自定义模型名称',
